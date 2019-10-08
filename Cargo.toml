@@ -1,0 +1,21 @@
+[package]
+name = "cloud-storage-rs"
+version = "0.1.0"
+authors = ["Luuk Wester <luuk.wester@gmail.com>"]
+edition = "2018"
+description = "A crate for uploading files to Google cloud storage, and for generating download urls."
+license = "MIT"
+
+
+[dependencies]
+reqwest = "0.9.21"
+url = "1.7.2"
+jsonwebtoken = "6.0.1"
+serde = { version = "1.0.101", features = ["derive"] }
+serde_json = "1.0.41"
+base64 = "0.10.1"
+lazy_static = "1.4.0"
+dotenv = "0.14.1"
+openssl = "0.10.25"
+chrono = "0.4.9"
+hex = "0.3.2"
