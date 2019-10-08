@@ -1,6 +1,6 @@
 [package]
 name = "cloud-storage-rs"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Luuk Wester <luuk.wester@gmail.com>"]
 edition = "2018"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
@@ -8,6 +8,9 @@ license = "MIT"
 repository = "https://github.com/ThouCheese/cloud-storage-rs"
 documentation = "https://docs.rs/cloud-storage-rs"
 keywords = ["google", "cloud", "storage"]
+readme = "README.md"
+categories = ["api-bindings", "web-programming"]
+maintenance = { status = "actively-developed" }
 
 [dependencies]
 reqwest = "0.9.21"

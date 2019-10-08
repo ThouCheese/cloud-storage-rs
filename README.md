@@ -19,3 +19,7 @@ this fixed, let me know!
 
 The service account should also have the roles `Service Account Token Creator` (for generating
 access tokens) and `Storage Object Admin` (for generating sign urls to download the files).
+
+The exposed API is very bare-bones right now, only allowing storing, reading, moving and deleting.
+Feel free to open up a pull request is you need more complete support, it shouldn't be too much
+work to add more endpoints.
