@@ -12,7 +12,7 @@ keywords = ["google", "cloud", "storage"]
 [dependencies]
 reqwest = "0.9.21"
 url = "1.7.2"
-jsonwebtoken = "6.0.1"
+jsonwebtoken = "5"
 serde = { version = "1.0.101", features = ["derive"] }
 serde_json = "1.0.41"
 base64 = "0.10.1"
