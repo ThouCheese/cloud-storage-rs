@@ -1,7 +1,9 @@
-/// Represents any of the ways storing something in Google Cloud Storage can fail
+/// Represents any of the ways storing something in Google Cloud Storage can fail.
 #[derive(Debug)]
 pub struct Error {
-    msg: String,
+    /// If the response status code of Google is not 2**, then the http body returned by Google is
+    /// simply placed in this field
+    pub msg: String,
 }
 
 impl Error {

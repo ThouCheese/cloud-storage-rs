@@ -6,37 +6,42 @@
 //! a new token is fetched from google, which is then again cached for one hour. Caching these
 //! tokens is thread-safe, but does require locking.
 //!
-//! Authentication is provided from the service-account.json file that you can download from the
-//! cloud storage console. Then you must grant this service account the roles `Service Account 
-//! Token Creator` and `Storage Object Admin`. Then specify the path to the service accont file
-//! using a .env file or a proper environtment parameter, with the name `SERVICE_ACCOUNT`.
+//! This project talks to Google using a `Service Account`. A service account is an account that you
+//! must create in the [cloud storage console](https://console.cloud.google.com/). When the account
+//! is created, you can download the file `service-account-********.json`. Store this file somewhere
+//! on your machine, and place the path to this file in the environment parameter `SERVICE_ACCOUNT`.
+//! Environment parameters declared in the `.env` file are also registered. The service account can
+//! then be granted `Roles` in the cloud storage console. The roles required for this project to
+//! function are `Service Account Token Creator` and `Storage Object Admin`.
 //!
 //!
 //! ## Examples:
 //! Creating a new Bucket in Google Cloud Storage:
 //! ```rust,no_run
-//! use cloud_storage_rs::Bucket;
-//!
 //! let bucket = Bucket::create("mybucket").unwrap();
 //! ```
 //! Connecting to an existing Bucket in Google Cloud Storage:
 //! ```
-//! use cloud_storage_rs::Bucket;
-//!
 //! let bucket = Bucket::existing("mybucket"); // note: doesn't fail, even if the name is incorrect
 //! ```
 //! Read a file from disk and store it on googles server:
 //! ```rust,no_run
-//! use std::io::prelude::*;
-//! use std::fs::File;
-//! use cloud_storage_rs::Bucket;
-//!
 //! let mut bytes: Vec<u8> = Vec::new();
 //! for byte in File::open("myfile.txt").unwrap().bytes() {
 //!     bytes.push(byte.unwrap())
 //! }
 //! let bucket = Bucket::existing("mybucket");
 //! bucket.upload(&bytes, "mydifferentfilename.txt", "text/plain");
+//! ```
+//! Renaming or and moving a file
+//! ```rust,no_run
+//! let bucket = Bucket::existing("mybucket");
+//! bucket.update("old/path/to/resource.txt", "newname.txt").unwrap();
+//! ```
+//! Removing a file
+//! ```rust,no_run
+//! let bucket = Bucket::existing("mybucket");
+//! bucket.update("old/path/to/resource.txt", "newname.txt").unwrap();
 //! ```
 
 #![deny(unsafe_code, missing_docs)]
@@ -47,7 +52,6 @@ mod service_account;
 mod token;
 
 pub use crate::error::Error;
-// use crate::resources::service_account::ServiceAccount;
 use crate::service_account::SERVICE_ACCOUNT;
 use crate::token::Token;
 use chrono as chr;
@@ -56,7 +60,6 @@ use openssl::{hash::MessageDigest, pkey::PKey, sha, sign::Signer};
 use reqwest::header::*;
 use std::{collections::HashMap, sync::Mutex};
 use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
-// use hex::ToHex;
 
 // delay construction of these since mutex are not thread-safe and we have no reason to assume that
 // the user will not attempt concurrent access
@@ -71,7 +74,10 @@ lazy_static! {
     ));
 }
 
-/// Represents a Bucket in Google Cloud Storage that can be used to upload, download or move files
+/// Represents a Bucket in Google Cloud Storage that can be used to upload, download or move files.
+/// Internally, the files in the bucket live in a flat namespace, that is, the slashes that indicate
+/// folders are simply part of the filename. This means that renaming a file and moving it to a
+/// different directory are the same operation.
 pub struct Bucket {
     name: String,
 }
@@ -107,7 +113,7 @@ impl Bucket {
         result
     }
 
-    /// Creates a new Bucket resource on Goolges server, then returns a struct representing this
+    /// Creates a new Bucket resource on Goolge's server, then returns a struct representing this
     /// Bucket.
     /// ```rust,no_run
     /// let bucket = Bucket::create("my-companies-staging-bucket").unwrap();
@@ -177,7 +183,7 @@ impl Bucket {
     // }
 
     /// Allows renaming a file. Note that since a files name is its full path, you can use the
-    /// renaming capacities to move files as well
+    /// renaming capacities to move files as well.
     /// ```
     /// let bucket = Bucket::existing("cat-photos");
     /// bucket.update("recently read cat.png", "cuties/old cat.png").expect("cat not moved");
@@ -231,7 +237,11 @@ impl Bucket {
     /// access to the file, then the signed url will result in a `404` or a `401`.
     /// ```
     /// let bucket = Bucket::existing("cat-photos");
-    /// bucket.download_url("cuties/old cat.png");
+    /// let url = bucket.download_url("cuties/old cat.png");
+    /// // now we can download the file as desired, for example:
+    /// let file = reqwest::blocking::get(&url).unwrap()
+    ///     .bytes().unwrap();
+    /// // we now have the file again
     /// ```
     pub fn download_url(&self, file_path: &str, duration: u32) -> String {
         self.sign(file_path, duration, "GET")
