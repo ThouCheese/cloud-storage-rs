@@ -53,7 +53,7 @@ impl Token {
         let exp = now + 3600;
 
         let claims = Claims {
-            iss: dbg!(SERVICE_ACCOUNT.client_email.clone()),
+            iss: SERVICE_ACCOUNT.client_email.clone(),
             scope: scope.into(),
             aud: "https://www.googleapis.com/oauth2/v4/token".to_string(),
             exp,

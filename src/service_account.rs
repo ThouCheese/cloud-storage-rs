@@ -3,8 +3,7 @@ use lazy_static::lazy_static;
 
 fn get_service_account() -> service_account::ServiceAccount {
     dotenv::dotenv().ok();
-    let path =
-        dbg!(std::env::var("SERVICE_ACCOUNT").expect("SERVICE_ACCOUNT environment parameter required"));
+    let path = std::env::var("SERVICE_ACCOUNT").expect("SERVICE_ACCOUNT environment parameter required");
     let file = std::fs::read_to_string(path).expect("SERVICE_ACCOUNT file not found");
     let account: service_account::ServiceAccount =
         serde_json::from_str(&file).expect("serivce account file not valid");
