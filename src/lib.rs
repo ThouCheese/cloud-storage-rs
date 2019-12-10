@@ -118,13 +118,15 @@ impl Bucket {
     /// ```rust,no_run
     /// let bucket = Bucket::create("my-companies-staging-bucket").unwrap();
     /// ```
-    pub fn create(name: &str) -> Result<Self, Error> {
+    pub fn create(name: &str, location: Option<&str>) -> Result<Self, Error> {
         const BASE_URL: &str = "https://www.googleapis.com/storage/v1/b";
         let url = format!("{}?project={}", BASE_URL, SERVICE_ACCOUNT.project_id);
         let client = reqwest::Client::new();
         let mut body = HashMap::new();
         body.insert("name", name);
-        body.insert("location", "europe-west4");
+        if let Some(location) = location {
+            body.insert("location", location);
+        }
         let mut response = client
             .post(&url)
             .headers(Self::get_headers())
@@ -278,7 +280,7 @@ impl Bucket {
 
         // 5 construct the signed url
         format!(
-            "https://storage.googleapis.com{path_to_resource}?{query_string}&X-Goog-Signature={request_signature}",
+            "https://storage.googleapis.com{path_to_resource}?response-content-disposition=attachment;&{query_string}&X-Goog-Signature={request_signature}",
             path_to_resource=file_path,
             query_string=query_string,
             request_signature=signature,
@@ -349,6 +351,6 @@ mod tests {
 
     #[test]
     fn create_bucket() {
-        Bucket::create("tmp-bckt").unwrap();
+        Bucket::create("tmp-bckt", None).unwrap();
     }
 }
