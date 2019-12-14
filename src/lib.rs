@@ -280,7 +280,7 @@ impl Bucket {
 
         // 5 construct the signed url
         format!(
-            "https://storage.googleapis.com{path_to_resource}?&{query_string}&X-Goog-Signature={request_signature}",
+            "https://storage.googleapis.com{path_to_resource}?{query_string}&X-Goog-Signature={request_signature}",
             path_to_resource=file_path,
             query_string=query_string,
             request_signature=signature,
