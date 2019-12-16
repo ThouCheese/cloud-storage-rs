@@ -1,3 +1,5 @@
+/// The struct is the parsed service account json file. It is publicly exported to enable easier
+/// debugging of which service account is currently used.
 #[derive(serde::Deserialize, Debug)]
 pub struct ServiceAccount {
     #[serde(rename = "type")]
