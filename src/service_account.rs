@@ -14,5 +14,7 @@ fn get_service_account() -> service_account::ServiceAccount {
 }
 
 lazy_static! {
+    /// The struct is the parsed service account json file. It is publicly exported to enable easier
+    /// debugging of which service account is currently used.
     pub static ref SERVICE_ACCOUNT: service_account::ServiceAccount = get_service_account();
 }
