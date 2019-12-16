@@ -52,7 +52,7 @@ mod service_account;
 mod token;
 
 pub use crate::error::Error;
-use crate::service_account::SERVICE_ACCOUNT;
+pub use crate::service_account::SERVICE_ACCOUNT;
 use crate::token::Token;
 use chrono as chr;
 use lazy_static::lazy_static;
