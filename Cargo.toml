@@ -1,6 +1,6 @@
 [package]
-name = "cloud-storage-rs"
-version = "0.2.4"
+name = "cloud-storage"
+version = "0.3.0"
 authors = ["Luuk Wester <luuk.wester@gmail.com>"]
 edition = "2018"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
@@ -13,14 +13,15 @@ categories = ["api-bindings", "web-programming"]
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-reqwest = "0.9.21"
-url = "1.7.2"
-jsonwebtoken = "7.0.0-alpha.2"
-serde = { version = "1.0.101", features = ["derive"] }
-serde_json = "1.0.41"
-base64 = "0.10.1"
-lazy_static = "1.4.0"
-dotenv = "0.14.1"
-openssl = "0.10.25"
-chrono = "0.4.9"
-hex = "0.3.2"
+reqwest = { version = "0.10.0", features = ["json", "blocking"] }
+percent-encoding = "2"
+url = "1"
+jsonwebtoken = "5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.11"
+lazy_static = "1"
+dotenv = "0.15"
+openssl = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+hex = "0.4"

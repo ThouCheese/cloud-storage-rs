@@ -1,7 +1,6 @@
+use crate::error::Error;
 use openssl::{pkey::PKey, rsa::Rsa};
 use serde::{Deserialize, Serialize};
-
-use crate::service_account::SERVICE_ACCOUNT;
 
 /// This struct contains contains a token, an expiry, and an access scope.
 pub struct Token {
@@ -36,24 +35,27 @@ impl Token {
         }
     }
 
-    pub fn get(&mut self) -> String {
+    pub fn get<'a>(&'a mut self) -> Result<String, Error> {
         match self.token {
-            Some((ref token, exp)) if exp > now() => token.clone(),
+            Some((ref token, exp)) if exp > now() => Ok(token.clone()),
             _ => self.retrieve(),
         }
     }
 
-    fn retrieve(&mut self) -> String {
-        self.token = Some(Self::get_token(&self.access_scope));
-        self.token.clone().unwrap().0
+    fn retrieve(&mut self) -> Result<String, Error> {
+        self.token = Some(Self::get_token(&self.access_scope)?);
+        match self.token {
+            Some(ref token) => Ok(token.0.clone()),
+            None => unreachable!(),
+        }
     }
 
-    fn get_token(scope: &str) -> (String, u64) {
+    fn get_token(scope: &str) -> Result<(String, u64), Error> {
         let now = now();
         let exp = now + 3600;
 
         let claims = Claims {
-            iss: SERVICE_ACCOUNT.client_email.clone(),
+            iss: crate::SERVICE_ACCOUNT.client_email.clone(),
             scope: scope.into(),
             aud: "https://www.googleapis.com/oauth2/v4/token".to_string(),
             exp,
@@ -61,23 +63,21 @@ impl Token {
         };
         let mut header = jsonwebtoken::Header::default();
         header.alg = jsonwebtoken::Algorithm::RS256;
-        let rsa = Rsa::private_key_from_pem(SERVICE_ACCOUNT.private_key.as_bytes()).unwrap();
-        let private_key = PKey::from_rsa(rsa).unwrap();
+        let rsa = Rsa::private_key_from_pem(crate::SERVICE_ACCOUNT.private_key.as_bytes())?;
+        let private_key = PKey::from_rsa(rsa)?;
         let private_key = &private_key.private_key_to_der().unwrap();
-        // let private_key = include_bytes!("../../private_key2.der");
-        let jwt = jsonwebtoken::encode(&header, &claims, private_key).unwrap();
+        let jwt = jsonwebtoken::encode(&header, &claims, private_key)?;
         let body = [
             ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
             ("assertion", &jwt),
         ];
-        let client = reqwest::Client::new();
-        let mut response = client
+        let client = reqwest::blocking::Client::new();
+        let response: TokenResponse = client
             .post("https://www.googleapis.com/oauth2/v4/token")
             .form(&body)
-            .send()
-            .unwrap();
-        let response: TokenResponse = response.json().unwrap();
-        (response.access_token, exp)
+            .send()?
+            .json()?;
+        Ok((response.access_token, exp))
     }
 }
 
