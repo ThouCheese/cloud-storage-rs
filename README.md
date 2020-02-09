@@ -3,8 +3,14 @@
 [![cloud-storage-rs on crates.io](https://img.shields.io/crates/v/cloud-storage-rs.svg)](https://crates.io/crates/cloud-storage)
 [![stripe-rust on docs.rs](https://docs.rs/cloud-storage-rs/badge.svg)](https://docs.rs/cloud-storage)
 
-A library that can be used to push blobs to [Google Cloud Storage](https://cloud.google.com/storage/), and then generate download links to those files:
-
+A library that can be used to push blobs to [Google Cloud Storage](https://cloud.google.com/storage/), and then generate download links to those files.
+### Usage
+Add the following line to you Cargo.toml
+```
+[dependencies]
+cloud-storage = "0.3"
+```
+### Examples
 ```
 // create a new Bucket
 let bucket = Bucket::create("mybucket").unwrap();
