@@ -197,6 +197,54 @@ impl Object {
         }
     }
 
+
+    /// Create a new object. This works in the same way as `Object::create`, except it does not need
+    /// to load the entire file in ram.
+    /// ## Example
+    /// ```rust,no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
+    /// use cloud_storage::Object;
+    ///
+    /// let mut file = std::io::Cursor::new(read_cute_cat("cat.png"));
+    /// Object::create_streamed("cat-photos", &mut file, 10, "recently read cat.png", "image/png")
+    ///     .expect("cat not uploaded");
+    /// Ok(())
+    /// # }
+    /// ```
+    pub fn create_streamed<R: std::io::Read + Send + 'static>(
+        bucket: &str,
+        file: R,
+        length: u64,
+        filename: &str,
+        mime_type: &str,
+    ) -> Result<Self, Error> {
+        use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
+
+        // has its own url for some reason
+        const BASE_URL: &str = "https://www.googleapis.com/upload/storage/v1/b";
+        let client = reqwest::blocking::Client::new();
+        let url = &format!(
+            "{}/{}/o?uploadType=media&name={}",
+            BASE_URL, bucket, filename
+        );
+        let mut headers = crate::get_headers()?;
+        headers.insert(CONTENT_TYPE, mime_type.to_string().parse().unwrap());
+        headers.insert(CONTENT_LENGTH, length.to_string().parse().unwrap());
+        // let ptr: &mut (dyn std::io::Read + Send + Sync) = file.into();
+        let body = reqwest::blocking::Body::sized(file, length);
+        let response = client
+            .post(url)
+            .headers(headers)
+            .body(body)
+            .send()?;
+        if response.status() == 200 {
+            Ok(serde_json::from_str(&response.text()?)?)
+        } else {
+            Err(Error::new(&response.text().unwrap()))
+        }
+    }
+
     /// Obtain a list of objects within this Bucket.
     /// ### Example
     /// ```no_run   
