@@ -1,6 +1,6 @@
 [package]
 name = "cloud-storage"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Luuk Wester <luuk.wester@gmail.com>"]
 edition = "2018"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
