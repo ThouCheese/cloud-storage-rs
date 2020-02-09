@@ -160,12 +160,15 @@ impl Object {
     /// interpreted according to the mime type you specified.
     /// ## Example
     /// ```rust,no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
     /// use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
     /// Object::create("cat-photos", &file, "recently read cat.png", "image/png")
     ///     .expect("cat not uploaded");
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn create(
         bucket: &str,
@@ -178,13 +181,10 @@ impl Object {
         // has its own url for some reason
         const BASE_URL: &str = "https://www.googleapis.com/upload/storage/v1/b";
         let client = reqwest::blocking::Client::new();
-        let url = &format!(
-            "{}/{}/o?uploadType=media&name={}",
-            BASE_URL, bucket, filename
-        );
+        let url = &format!("{}/{}/o?uploadType=media&name={}", BASE_URL, bucket, filename);
         let mut headers = crate::get_headers()?;
-        headers.insert(CONTENT_TYPE, mime_type.to_string().parse().unwrap());
-        headers.insert(CONTENT_LENGTH, file.len().to_string().parse().unwrap());
+        headers.insert(CONTENT_TYPE, mime_type.to_string().parse()?);
+        headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
         let response = client
             .post(url)
             .headers(headers)
@@ -193,7 +193,7 @@ impl Object {
         if response.status() == 200 {
             Ok(serde_json::from_str(&response.text()?)?)
         } else {
-            Err(Error::new(&response.text().unwrap()))
+            Err(Error::new(&response.text()?))
         }
     }
 
@@ -207,7 +207,7 @@ impl Object {
     /// use cloud_storage::Object;
     ///
     /// let mut file = std::io::Cursor::new(read_cute_cat("cat.png"));
-    /// Object::create_streamed("cat-photos", &mut file, 10, "recently read cat.png", "image/png")
+    /// Object::create_streamed("cat-photos", file, 10, "recently read cat.png", "image/png")
     ///     .expect("cat not uploaded");
     /// Ok(())
     /// # }
@@ -229,9 +229,8 @@ impl Object {
             BASE_URL, bucket, filename
         );
         let mut headers = crate::get_headers()?;
-        headers.insert(CONTENT_TYPE, mime_type.to_string().parse().unwrap());
-        headers.insert(CONTENT_LENGTH, length.to_string().parse().unwrap());
-        // let ptr: &mut (dyn std::io::Read + Send + Sync) = file.into();
+        headers.insert(CONTENT_TYPE, mime_type.to_string().parse()?);
+        headers.insert(CONTENT_LENGTH, length.to_string().parse()?);
         let body = reqwest::blocking::Body::sized(file, length);
         let response = client
             .post(url)
@@ -241,16 +240,19 @@ impl Object {
         if response.status() == 200 {
             Ok(serde_json::from_str(&response.text()?)?)
         } else {
-            Err(Error::new(&response.text().unwrap()))
+            Err(Error::new(&response.text()?))
         }
     }
 
     /// Obtain a list of objects within this Bucket.
     /// ### Example
-    /// ```no_run   
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
     /// use cloud_storage::Object;
     ///
-    /// let all_objects = Object::list("my_bucket").unwrap();
+    /// let all_objects = Object::list("my_bucket")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn list(bucket: &str) -> Result<Vec<Self>, Error> {
         let url = format!("{}/b/{}/o", crate::BASE_URL, bucket);
@@ -263,7 +265,16 @@ impl Object {
         Ok(result?.items)
     }
 
-    /// Read a single object.
+    /// Obtains a single object with the specified name in the specified bucket.
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// use cloud_storage::Object;
+    ///
+    /// let object = Object::read("my_bucket", "path/to/my/file.png")?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn read(bucket: &str, file_name: &str) -> Result<Self, Error> {
         let url = format!("{}/b/{}/o/{}", crate::BASE_URL, bucket, file_name);
         let client = reqwest::blocking::Client::new();
@@ -275,7 +286,18 @@ impl Object {
         Ok(result?)
     }
 
-    /// Modify this object
+    /// Obtains a single object with the specified name in the specified bucket.
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// use cloud_storage::Object;
+    ///
+    /// let mut object = Object::read("my_bucket", "path/to/my/file.png")?;
+    /// object.content_type = Some("application/xml".to_string());
+    /// object.update();
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn update(&self) -> Result<Self, Error> {
         let url = format!("{}/b/{}/o/{}", crate::BASE_URL, self.bucket, self.name);
         let client = reqwest::blocking::Client::new();
@@ -288,7 +310,17 @@ impl Object {
         Ok(result?)
     }
 
-    /// Delete this object
+    /// Obtains a single object with the specified name in the specified bucket.
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// use cloud_storage::Object;
+    ///
+    /// let mut object = Object::read("my_bucket", "path/to/my/file.png")?;
+    /// object.delete();
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn delete(self) -> Result<(), Error> {
         let url = format!("{}/b/{}/o/{}", crate::BASE_URL, self.bucket, self.name);
         let client = reqwest::blocking::Client::new();
@@ -300,7 +332,35 @@ impl Object {
         }
     }
 
-    /// Allows composing up to 32 objects into a single one.
+    /// Obtains a single object with the specified name in the specified bucket.
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// use cloud_storage::object::{Object, ComposeRequest};
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1")?;
+    /// let obj2 = Object::read("my_bucket", "file2")?;
+    /// let compose_request = ComposeRequest {
+    ///     kind: "storage#composeRequest".to_string(),
+    ///     source_objects: vec![
+    ///         SourceObject {
+    ///             name: obj1.name.clone(),
+    ///             generation: None,
+    ///             object_preconditions: None,
+    ///         },
+    ///         SourceObject {
+    ///             name: obj2.name.clone(),
+    ///             generation: None,
+    ///             object_preconditions: None,
+    ///         },
+    ///     ],
+    ///     destination: None,
+    /// };
+    /// let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file")?;
+    /// // obj3 is now a file with the content of obj1 and obj2 concatted together.
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn compose(
         bucket: &str,
         req: &ComposeRequest,
@@ -323,6 +383,17 @@ impl Object {
     }
 
     /// Copy this object to the target bucket and path
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// use cloud_storage::object::{Object, ComposeRequest};
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1")?;
+    /// let obj2 = Object::copy("my_other_bucket", "file2")?;
+    /// // obj2 is now a copy of obj1.
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn copy(&self, destination_bucket: &str, path: &str) -> Result<Self, Error> {
         use reqwest::header::CONTENT_LENGTH;
 
@@ -336,7 +407,7 @@ impl Object {
         );
         let client = reqwest::blocking::Client::new();
         let mut headers = crate::get_headers()?;
-        headers.insert(CONTENT_LENGTH, "0".parse().unwrap());
+        headers.insert(CONTENT_LENGTH, "0".parse()?);
         let response: GoogleResponse<Self> = client.post(&url).headers(headers).send()?.json()?;
         Ok(response?)
     }
@@ -349,6 +420,17 @@ impl Object {
     /// * Encryption,
     /// * Storage class.
     /// These limitations mean that for now, the rewrite and the copy methods do the same thing.
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// use cloud_storage::object::Object;
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1")?;
+    /// let obj2 = Object::rewrite("my_other_bucket", "file2")?;
+    /// // obj2 is now a copy of obj1.
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn rewrite(&self, destination_bucket: &str, path: &str) -> Result<Self, Error> {
         use reqwest::header::CONTENT_LENGTH;
 
@@ -362,7 +444,7 @@ impl Object {
         );
         let client = reqwest::blocking::Client::new();
         let mut headers = crate::get_headers()?;
-        headers.insert(CONTENT_LENGTH, "0".parse().unwrap());
+        headers.insert(CONTENT_LENGTH, "0".parse()?);
         let response: GoogleResponse<RewriteResponse> =
             client.post(&url).headers(headers).send()?.json()?;
         Ok(response?.resource)
@@ -371,19 +453,31 @@ impl Object {
     /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
     /// which is valid for `duration` seconds, and lets the posessor download the file contents
     /// without any authentication.
-    pub fn download_url(&self, duration: u32) -> String {
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// use cloud_storage::object::{Object, ComposeRequest};
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1")?;
+    /// let url = obj1.download_url(50)?
+    /// // url is now a url to which an unauthenticated user can make a request to download a file
+    /// // for 50 seconds.
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn download_url(&self, duration: u32) -> Result<String, Error> {
         self.sign(&self.name, duration, "GET")
     }
 
-    /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
-    /// which is valid for `duration` seconds, and lets the posessor upload new file contents.
-    /// without any authentication.
-    pub fn upload_url(&self, duration: u32) -> String {
-        self.sign(&self.name, duration, "POST")
-    }
+    // /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
+    // /// which is valid for `duration` seconds, and lets the posessor upload new file contents.
+    // /// without any authentication.
+    // pub fn upload_url(&self, duration: u32) -> Result<String, Error> {
+    //     self.sign(&self.name, duration, "POST")
+    // }
 
     #[inline(always)]
-    fn sign(&self, file_path: &str, duration: u32, http_verb: &str) -> String {
+    fn sign(&self, file_path: &str, duration: u32, http_verb: &str) -> Result<String, Error> {
         use openssl::sha;
 
         // 1 construct the canonical request
@@ -410,17 +504,17 @@ impl Object {
 
         // 4 sign the string to sign with RSA - SHA256
         let buffer = Self::sign_str(&string_to_sign);
-        let signature = hex::encode(&buffer);
+        let signature = hex::encode(&buffer?);
 
         // 5 construct the signed url
-        format!(
+        Ok(format!(
             "https://storage.googleapis.com{path_to_resource}?\
             {query_string}&\
             X-Goog-Signature={request_signature}",
             path_to_resource = file_path,
             query_string = query_string,
             request_signature = signature,
-        )
+        ))
     }
 
     #[inline(always)]
@@ -478,14 +572,13 @@ impl Object {
     }
 
     #[inline(always)]
-    fn sign_str(message: &str) -> Vec<u8> {
+    fn sign_str(message: &str) -> Result<Vec<u8>, Error> {
         use openssl::{hash::MessageDigest, pkey::PKey, sign::Signer};
 
-        let key =
-            PKey::private_key_from_pem(crate::SERVICE_ACCOUNT.private_key.as_bytes()).unwrap();
-        let mut signer = Signer::new(MessageDigest::sha256(), &key).unwrap();
-        signer.update(message.as_bytes()).unwrap();
-        signer.sign_to_vec().unwrap()
+        let key = PKey::private_key_from_pem(crate::SERVICE_ACCOUNT.private_key.as_bytes())?;
+        let mut signer = Signer::new(MessageDigest::sha256(), &key)?;
+        signer.update(message.as_bytes())?;
+        Ok(signer.sign_to_vec()?)
     }
 }
 
@@ -512,44 +605,57 @@ mod tests {
     use super::*;
 
     #[test]
-    fn create() {
+    fn create() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        Object::create(&bucket.name, &[0, 1], "test-create", "text/plain").unwrap();
+        Object::create(&bucket.name, &[0, 1], "test-create", "text/plain")?;
+        Ok(())
     }
 
     #[test]
-    fn list() {
+    fn create_streamed() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket();
+        let cursor = std::io::Cursor::new([0, 1]);
+        Object::create_streamed(&bucket.name, cursor, 2, "test-create-streamed", "text/plain")?;
+        Ok(())
+    }
+
+    #[test]
+    fn list() -> Result<(), Box<dyn std::error::Error>> {
         let test_bucket = crate::read_test_bucket();
-        Object::list(&test_bucket.name).unwrap();
+        Object::list(&test_bucket.name)?;
+        Ok(())
     }
 
     #[test]
-    fn read() {
+    fn read() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        Object::create(&bucket.name, &[0, 1], "test-read", "text/plain").unwrap();
-        Object::read(&bucket.name, "test-read").unwrap();
+        Object::create(&bucket.name, &[0, 1], "test-read", "text/plain")?;
+        Object::read(&bucket.name, "test-read")?;
+        Ok(())
     }
 
     #[test]
-    fn update() {
+    fn update() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        let mut obj = Object::create(&bucket.name, &[0, 1], "test-update", "text/plain").unwrap();
+        let mut obj = Object::create(&bucket.name, &[0, 1], "test-update", "text/plain")?;
         obj.content_type = Some("application/xml".to_string());
-        obj.update().unwrap();
+        obj.update()?;
+        Ok(())
     }
 
     #[test]
-    fn delete() {
+    fn delete() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        let obj = Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain").unwrap();
-        obj.delete().unwrap();
+        let obj = Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
+        obj.delete()?;
+        Ok(())
     }
 
     #[test]
-    fn compose() {
+    fn compose() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        let obj1 = Object::create(&bucket.name, &[0, 1], "test-compose-1", "text/plain").unwrap();
-        let obj2 = Object::create(&bucket.name, &[2, 3], "test-compose-2", "text/plain").unwrap();
+        let obj1 = Object::create(&bucket.name, &[0, 1], "test-compose-1", "text/plain")?;
+        let obj2 = Object::create(&bucket.name, &[2, 3], "test-compose-2", "text/plain")?;
         let compose_request = ComposeRequest {
             kind: "storage#composeRequest".to_string(),
             source_objects: vec![
@@ -566,32 +672,35 @@ mod tests {
             ],
             destination: None,
         };
-        let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file").unwrap();
-        let url = obj3.download_url(100);
-        let content = reqwest::blocking::get(&url).unwrap().text().unwrap();
+        let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file")?;
+        let url = obj3.download_url(100)?;
+        let content = reqwest::blocking::get(&url)?.text()?;
         assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
+        Ok(())
     }
 
     #[test]
-    fn copy() {
+    fn copy() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        let original = Object::create(&bucket.name, &[2, 3], "test-copy", "text/plain").unwrap();
-        original.copy(&bucket.name, "test-copy - copy").unwrap();
+        let original = Object::create(&bucket.name, &[2, 3], "test-copy", "text/plain")?;
+        original.copy(&bucket.name, "test-copy - copy")?;
+        Ok(())
     }
 
     #[test]
-    fn rewrite() {
+    fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        let obj = Object::create(&bucket.name, &[0, 1], "test-rewrite", "text/plain").unwrap();
-        let obj = obj.rewrite(&bucket.name, "test-rewritten").unwrap();
-        let url = dbg!(obj.download_url(100));
+        let obj = Object::create(&bucket.name, &[0, 1], "test-rewrite", "text/plain")?;
+        let obj = obj.rewrite(&bucket.name, "test-rewritten")?;
+        let url = dbg!(obj.download_url(100)?);
         let client = reqwest::blocking::Client::new();
-        let download = client.head(&url).send().unwrap();
+        let download = client.head(&url).send()?;
         assert_eq!(download.status().as_u16(), 200);
+        Ok(())
     }
 
     #[test]
-    fn test_url_encoding() {
+    fn test_url_encoding() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
         let complicated_names = [
             "asdf",
@@ -602,11 +711,12 @@ mod tests {
             "測試文件",
         ];
         for name in &complicated_names {
-            let obj = Object::create(&bucket.name, &[0, 1], name, "text/plain").unwrap();
-            let url = obj.download_url(100);
+            let obj = Object::create(&bucket.name, &[0, 1], name, "text/plain")?;
+            let url = obj.download_url(100)?;
             let client = reqwest::blocking::Client::new();
-            let download = client.head(&url).send().unwrap();
+            let download = client.head(&url).send()?;
             assert_eq!(download.status().as_u16(), 200);
         }
+        Ok(())
     }
 }

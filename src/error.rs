@@ -1,3 +1,4 @@
+
 /// Represents any of the ways storing something in Google Cloud Storage can fail.
 #[derive(Debug)]
 pub enum Error {
@@ -61,6 +62,12 @@ impl From<jsonwebtoken::errors::Error> for Error {
 impl From<serde_json::error::Error> for Error {
     fn from(err: serde_json::error::Error) -> Self {
         Self::Serialization(err)
+    }
+}
+
+impl From<reqwest::header::InvalidHeaderValue> for Error {
+    fn from(err: reqwest::header::InvalidHeaderValue) -> Self {
+        Self::Other(err.to_string())
     }
 }
 
