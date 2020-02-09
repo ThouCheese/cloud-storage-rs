@@ -4,7 +4,7 @@
 //!
 //! Google Cloud Storage is a product by Google that allows for cheap file storage, with a
 //! relatively sophisticated API. The idea is that storage happens in `Bucket`s, which are
-//! filesystems with a globally unqinue name. You can make as many of these `Bucket`s as you like!
+//! filesystems with a globally unique name. You can make as many of these `Bucket`s as you like!
 //!
 //! This project talks to Google using a `Service Account`. A service account is an account that you
 //! must create in the [cloud storage console](https://console.cloud.google.com/). When the account
