@@ -75,7 +75,10 @@ impl Notification {
             .json(new_notification)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// View a notification configuration.
@@ -92,26 +95,25 @@ impl Notification {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Retrieves a list of notification subscriptions for a given bucket.}
     pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
         let url = dbg!(format!("{}/v1/b/{}/notificationConfigs", crate::BASE_URL, bucket));
         let client = reqwest::blocking::Client::new();
-        // let result: GoogleResponse<ListResponse<Self>> = client
-        //     .get(&url)
-        //     .headers(crate::get_headers()?)
-        //     .send()?
-        //     .json()?;
-        // Ok(result?.items)
-        let response = dbg!(client
+        let result: GoogleResponse<ListResponse<Self>> = client
             .get(&url)
             .headers(crate::get_headers()?)
             .send()?
-            .text()?);
-        let result: ListResponse<Self> = dbg!(serde_json::from_str(&response)).unwrap();
-        Ok(result.items)
+            .json()?;
+        match result {
+            GoogleResponse::Success(s) => Ok(s.items),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Permanently deletes a notification subscription.

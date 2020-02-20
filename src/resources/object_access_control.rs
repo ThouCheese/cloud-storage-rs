@@ -121,7 +121,10 @@ impl ObjectAccessControl {
             .json(new_object_access_control)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Retrieves `ACL` entries on the specified object.
@@ -138,7 +141,10 @@ impl ObjectAccessControl {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?.items)
+        match result {
+            GoogleResponse::Success(s) => Ok(s.items),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Returns the `ACL` entry for the specified entity on the specified bucket.
@@ -161,7 +167,10 @@ impl ObjectAccessControl {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Updates an ACL entry on the specified object.
@@ -185,7 +194,10 @@ impl ObjectAccessControl {
             .json(self)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Permanently deletes the ACL entry for the specified entity on the specified object.

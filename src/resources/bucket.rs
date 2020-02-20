@@ -573,7 +573,10 @@ impl Bucket {
             .json(new_bucket)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Returns all `Bucket`s within this project.
@@ -597,7 +600,10 @@ impl Bucket {
             .query(&query)
             .send()?
             .json()?;
-        Ok(result?.items)
+        match result {
+            GoogleResponse::Success(s) => Ok(s.items),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Returns a single `Bucket` by its name. If the Bucket does not exist, an error is returned.
@@ -625,7 +631,10 @@ impl Bucket {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Update an existing `Bucket`. If you declare you bucket as mutable, you can edit its fields.
@@ -661,7 +670,10 @@ impl Bucket {
             .json(self)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Delete an existing `Bucket`. This permanently removes a bucket from Google Cloud Storage.
@@ -715,12 +727,15 @@ impl Bucket {
     pub fn get_iam_policy(&self) -> Result<IamPolicy, Error> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
         let client = reqwest::blocking::Client::new();
-        let response: GoogleResponse<IamPolicy> = client
+        let result: GoogleResponse<IamPolicy> = client
             .get(&url)
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(response?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Updates the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
@@ -756,13 +771,16 @@ impl Bucket {
     pub fn set_iam_policy(&self, iam: &IamPolicy) -> Result<IamPolicy, Error> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
         let client = reqwest::blocking::Client::new();
-        let response: GoogleResponse<IamPolicy> = client
+        let result: GoogleResponse<IamPolicy> = client
             .put(&url)
             .headers(crate::get_headers()?)
             .json(iam)
             .send()?
             .json()?;
-        Ok(response?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Checks whether the user provided in the service account has this permission.
@@ -784,13 +802,16 @@ impl Bucket {
         }
         let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, self.name);
         let client = reqwest::blocking::Client::new();
-        let response: GoogleResponse<TestIamPermission> = client
+        let result: GoogleResponse<TestIamPermission> = client
             .get(&url)
             .headers(crate::get_headers()?)
             .query(&[("permissions", permission)])
             .send()?
             .json()?;
-        Ok(response?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     fn _lock_retention_policy() {

@@ -62,7 +62,6 @@
 //! let object = Object::read("mybucket", "myfile").unwrap();
 //! object.delete();
 //! ```
-#![feature(try_trait)]
 #![forbid(unsafe_code, missing_docs)]
 
 /// Contains objects as represented by Google, to be used for serialization and deserialization.

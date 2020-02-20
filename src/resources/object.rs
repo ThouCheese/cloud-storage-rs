@@ -255,14 +255,33 @@ impl Object {
     /// # }
     /// ```
     pub fn list(bucket: &str) -> Result<Vec<Self>, Error> {
+        Self::list_from(bucket, None)
+    }
+
+    fn list_from(bucket: &str, page_token: Option<&str>) -> Result<Vec<Self>, Error> {
         let url = format!("{}/b/{}/o", crate::BASE_URL, bucket);
         let client = reqwest::blocking::Client::new();
+        let query = if let Some(page_token) = page_token {
+            vec![("pageToken", page_token)]
+        } else {
+            vec![]
+        };
+
         let result: GoogleResponse<ListResponse<Self>> = client
             .get(&url)
+            .query(&query)
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?.items)
+        match result {
+            GoogleResponse::Success(mut s) => {
+                if let Some(page_token) = s.next_page_token {
+                    s.items.extend(Self::list_from(bucket, Some(&page_token))?.into_iter());
+                }
+                Ok(s.items)
+            },
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -283,7 +302,10 @@ impl Object {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -307,7 +329,10 @@ impl Object {
             .json(&self)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -379,7 +404,10 @@ impl Object {
             .json(req)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Copy this object to the target bucket and path
@@ -408,8 +436,11 @@ impl Object {
         let client = reqwest::blocking::Client::new();
         let mut headers = crate::get_headers()?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let response: GoogleResponse<Self> = client.post(&url).headers(headers).send()?.json()?;
-        Ok(response?)
+        let result: GoogleResponse<Self> = client.post(&url).headers(headers).send()?.json()?;
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Moves a file from the current location to the target bucket and path.
@@ -445,9 +476,12 @@ impl Object {
         let client = reqwest::blocking::Client::new();
         let mut headers = crate::get_headers()?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let response: GoogleResponse<RewriteResponse> =
+        let result: GoogleResponse<RewriteResponse> =
             client.post(&url).headers(headers).send()?.json()?;
-        Ok(response?.resource)
+        match result {
+            GoogleResponse::Success(s) => Ok(s.resource),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
@@ -708,7 +742,7 @@ mod tests {
             "asdf&&+1?=3,,-_()*&^%$#@!`~{}[]\\|:;\"'<>,.?/äöüëß",
             "https://www.google.com",
             "परिक्षण फाईल",
-            "測試文件",
+            "测试很重要",
         ];
         for name in &complicated_names {
             let obj = Object::create(&bucket.name, &[0, 1], name, "text/plain")?;

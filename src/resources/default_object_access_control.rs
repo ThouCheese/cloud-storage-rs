@@ -101,15 +101,19 @@ impl DefaultObjectAccessControl {
     ) -> Result<Self, crate::Error> {
         let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
         let client = reqwest::blocking::Client::new();
-        let response: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = client
             .post(&url)
             .headers(crate::get_headers()?)
             .json(new_acl)
             .send()?
             .json()?;
-        let mut result = response?;
-        result.bucket = bucket.to_string();
-        Ok(result)
+        match result {
+            GoogleResponse::Success(mut s) => {
+                s.bucket = bucket.to_string();
+                Ok(s)
+            },
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Retrieves default object ACL entries on the specified bucket.
@@ -129,20 +133,23 @@ impl DefaultObjectAccessControl {
     pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
         let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
         let client = reqwest::blocking::Client::new();
-        let response: GoogleResponse<ListResponse<Self>> = client
+        let result: GoogleResponse<ListResponse<Self>> = client
             .get(&url)
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        let result = response?
-            .items
-            .into_iter()
-            .map(|item| DefaultObjectAccessControl {
-                bucket: bucket.to_string(),
-                ..item
-            })
-            .collect();
-        Ok(result)
+        match result {
+            GoogleResponse::Success(s) => {
+                Ok(s.items
+                    .into_iter()
+                    .map(|item| DefaultObjectAccessControl {
+                        bucket: bucket.to_string(),
+                        ..item
+                    })
+                    .collect())
+            },
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Read a single `DefaultObjectAccessControl`.
@@ -171,14 +178,18 @@ impl DefaultObjectAccessControl {
             entity
         ));
         let client = reqwest::blocking::Client::new();
-        let response: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = client
             .get(&url)
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        let mut result = response?;
-        result.bucket = bucket.to_string();
-        Ok(result)
+        match result {
+            GoogleResponse::Success(mut s) => {
+                s.bucket = bucket.to_string();
+                Ok(s)
+            },
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Update the current `DefaultObjectAccessControl`.
@@ -205,15 +216,19 @@ impl DefaultObjectAccessControl {
             self.entity
         );
         let client = reqwest::blocking::Client::new();
-        let response: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = client
             .put(&url)
             .headers(crate::get_headers()?)
             .json(self)
             .send()?
             .json()?;
-        let mut result = response?;
-        result.bucket = self.bucket.clone();
-        Ok(result)
+        match result {
+            GoogleResponse::Success(mut s) => {
+                s.bucket = self.bucket.to_string();
+                Ok(s)
+            },
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Delete this 'DefaultObjectAccessControl`.

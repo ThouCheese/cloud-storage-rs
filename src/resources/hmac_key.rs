@@ -109,7 +109,10 @@ impl HmacKey {
             .query(&query)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Retrieves a list of HMAC keys matching the criteria. Since the HmacKey is secret, this does
@@ -142,7 +145,10 @@ impl HmacKey {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?.items)
+        match result {
+            GoogleResponse::Success(s) => Ok(s.items),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Retrieves an HMAC key's metadata. Since the HmacKey is secret, this does not return a
@@ -170,12 +176,15 @@ impl HmacKey {
             access_id
         ));
         let client = reqwest::blocking::Client::new();
-        let result: HmacMeta = client
+        let result: GoogleResponse<HmacMeta> = client
             .get(&url)
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
@@ -210,7 +219,10 @@ impl HmacKey {
             .json(&UpdateMeta { state })
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Deletes an HMAC key. Note that a key must be set to `Inactive` first.

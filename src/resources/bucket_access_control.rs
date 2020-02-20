@@ -122,7 +122,10 @@ impl BucketAccessControl {
             .json(new_bucket_access_control)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Returns all `BucketAccessControl`s related to this bucket.
@@ -148,7 +151,10 @@ impl BucketAccessControl {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?.items)
+        match result {
+            GoogleResponse::Success(s) => Ok(s.items),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Returns the ACL entry for the specified entity on the specified bucket.
@@ -174,7 +180,10 @@ impl BucketAccessControl {
             .headers(crate::get_headers()?)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Update this `BucketAccessControl`.
@@ -202,7 +211,10 @@ impl BucketAccessControl {
             .json(self)
             .send()?
             .json()?;
-        Ok(result?)
+        match result {
+            GoogleResponse::Success(s) => Ok(s),
+            GoogleResponse::Error(e) => Err(e.into()),
+        }
     }
 
     /// Permanently deletes the ACL entry for the specified entity on the specified bucket.

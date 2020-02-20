@@ -59,8 +59,10 @@ pub enum Role {
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ListResponse<T> {
     pub items: Vec<T>,
+    pub next_page_token: Option<String>,
 }
 
 /// An entity is used to represent a user or group of users that often have some kind of permission.
