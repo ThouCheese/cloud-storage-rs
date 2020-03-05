@@ -361,7 +361,7 @@ impl Object {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::object::{Object, ComposeRequest, SourceObject};
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
     /// let obj2 = Object::read("my_bucket", "file2")?;
@@ -381,7 +381,7 @@ impl Object {
     ///     ],
     ///     destination: None,
     /// };
-    /// let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file")?;
+    /// let obj3 = Object::compose("my_bucket", &compose_request, "test-concatted-file")?;
     /// // obj3 is now a file with the content of obj1 and obj2 concatted together.
     /// # Ok(())
     /// # }
@@ -417,7 +417,7 @@ impl Object {
     /// use cloud_storage::object::{Object, ComposeRequest};
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
-    /// let obj2 = Object::copy("my_other_bucket", "file2")?;
+    /// let obj2 = obj1.copy("my_other_bucket", "file2")?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
@@ -457,7 +457,7 @@ impl Object {
     /// use cloud_storage::object::Object;
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
-    /// let obj2 = Object::rewrite("my_other_bucket", "file2")?;
+    /// let obj2 = obj1.rewrite("my_other_bucket", "file2")?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
@@ -493,7 +493,7 @@ impl Object {
     /// use cloud_storage::object::{Object, ComposeRequest};
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
-    /// let url = obj1.download_url(50)?
+    /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
     /// // for 50 seconds.
     /// # Ok(())
