@@ -295,7 +295,8 @@ impl Object {
     /// # }
     /// ```
     pub fn read(bucket: &str, file_name: &str) -> Result<Self, Error> {
-        let url = format!("{}/b/{}/o/{}", crate::BASE_URL, bucket, file_name);
+        let file_name_encoded = percent_encode(file_name);
+        let url = format!("{}/b/{}/o/{}", crate::BASE_URL, bucket, file_name_encoded);
         let client = reqwest::blocking::Client::new();
         let result: GoogleResponse<Self> = client
             .get(&url)
@@ -665,6 +666,14 @@ mod tests {
         let bucket = crate::read_test_bucket();
         Object::create(&bucket.name, &[0, 1], "test-read", "text/plain")?;
         Object::read(&bucket.name, "test-read")?;
+        Ok(())
+    }
+
+    #[test]
+    fn read_subdirs() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket();
+        Object::create(&bucket.name, &[0, 1], "test/read", "text/plain")?;
+        Object::read(&bucket.name, "test/read")?;
         Ok(())
     }
 
