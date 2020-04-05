@@ -258,6 +258,16 @@ impl Object {
         Self::list_from(bucket, None, None)
     }
 
+    /// Obtain a list of objects by prefix within this Bucket .
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Object;
+    ///
+    /// let all_objects = Object::list_prefix("my_bucket", "prefix/")?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list_prefix(bucket: &str, prefix: &str) -> Result<Vec<Self>, Error> {
         Self::list_from(bucket, Some(prefix), None)
     }
