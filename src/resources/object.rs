@@ -255,16 +255,23 @@ impl Object {
     /// # }
     /// ```
     pub fn list(bucket: &str) -> Result<Vec<Self>, Error> {
-        Self::list_from(bucket, None)
+        Self::list_from(bucket, None, None)
     }
 
-    fn list_from(bucket: &str, page_token: Option<&str>) -> Result<Vec<Self>, Error> {
+    pub fn list_prefix(bucket: &str, prefix: &str) -> Result<Vec<Self>, Error> {
+        Self::list_from(bucket, Some(prefix), None)
+    }
+
+    fn list_from(bucket: &str,  prefix: Option<&str>, page_token: Option<&str>) -> Result<Vec<Self>, Error> {
         let url = format!("{}/b/{}/o", crate::BASE_URL, bucket);
         let client = reqwest::blocking::Client::new();
-        let query = if let Some(page_token) = page_token {
+        let mut query = if let Some(page_token) = page_token {
             vec![("pageToken", page_token)]
         } else {
             vec![]
+        };
+        if let Some(prefix) = prefix {
+            query.push(("prefix", prefix));
         };
 
         let result: GoogleResponse<ListResponse<Self>> = client
@@ -276,7 +283,7 @@ impl Object {
         match result {
             GoogleResponse::Success(mut s) => {
                 if let Some(page_token) = s.next_page_token {
-                    s.items.extend(Self::list_from(bucket, Some(&page_token))?.into_iter());
+                    s.items.extend(Self::list_from(bucket, prefix, Some(&page_token))?.into_iter());
                 }
                 Ok(s.items)
             },
@@ -659,6 +666,29 @@ mod tests {
         Object::list(&test_bucket.name)?;
         Ok(())
     }
+
+    #[test]
+    fn list_prefix() -> Result<(), Box<dyn std::error::Error>> {
+        let test_bucket = crate::read_test_bucket();
+
+        let prefix_names = [
+            "test-list-prefix/1",
+            "test-list-prefix/2",
+            "test-list-prefix/sub/1",
+            "test-list-prefix/sub/2",
+        ];
+
+        for name in &prefix_names {
+            Object::create(&test_bucket.name, &[0, 1], name, "text/plain")?;
+        }
+
+        let list = Object::list_prefix(&test_bucket.name, "test-list-prefix/")?;
+        assert_eq!(list.len(), 4);
+        let list = Object::list_prefix(&test_bucket.name, "test-list-prefix/sub")?;
+        assert_eq!(list.len(), 2);
+        Ok(())
+    }
+
 
     #[test]
     fn read() -> Result<(), Box<dyn std::error::Error>> {
