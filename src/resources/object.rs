@@ -2,6 +2,7 @@ use crate::error::{Error, GoogleResponse};
 pub use crate::resources::bucket::Owner;
 use crate::resources::object_access_control::ObjectAccessControl;
 use crate::resources::common::ListResponse;
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 
 /// A resource representing a file in Google Cloud Storage.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -181,7 +182,11 @@ impl Object {
         // has its own url for some reason
         const BASE_URL: &str = "https://www.googleapis.com/upload/storage/v1/b";
         let client = reqwest::blocking::Client::new();
-        let url = &format!("{}/{}/o?uploadType=media&name={}", BASE_URL, bucket, filename);
+        let url = &format!("{}/{}/o?uploadType=media&name={}",
+            BASE_URL,
+            percent_encode(&bucket),
+            percent_encode(&filename),
+        );
         let mut headers = crate::get_headers()?;
         headers.insert(CONTENT_TYPE, mime_type.to_string().parse()?);
         headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
@@ -226,7 +231,9 @@ impl Object {
         let client = reqwest::blocking::Client::new();
         let url = &format!(
             "{}/{}/o?uploadType=media&name={}",
-            BASE_URL, bucket, filename
+            BASE_URL,
+            percent_encode(&bucket),
+            percent_encode(&filename),
         );
         let mut headers = crate::get_headers()?;
         headers.insert(CONTENT_TYPE, mime_type.to_string().parse()?);
@@ -259,7 +266,7 @@ impl Object {
     }
 
     fn list_from(bucket: &str, page_token: Option<&str>) -> Result<Vec<Self>, Error> {
-        let url = format!("{}/b/{}/o", crate::BASE_URL, bucket);
+        let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
         let client = reqwest::blocking::Client::new();
         let query = if let Some(page_token) = page_token {
             vec![("pageToken", page_token)]
@@ -295,7 +302,12 @@ impl Object {
     /// # }
     /// ```
     pub fn read(bucket: &str, file_name: &str) -> Result<Self, Error> {
-        let url = format!("{}/b/{}/o/{}", crate::BASE_URL, bucket, file_name);
+        let url = format!(
+            "{}/b/{}/o/{}",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(file_name),
+        );
         let client = reqwest::blocking::Client::new();
         let result: GoogleResponse<Self> = client
             .get(&url)
@@ -321,7 +333,11 @@ impl Object {
     /// # }
     /// ```
     pub fn update(&self) -> Result<Self, Error> {
-        let url = format!("{}/b/{}/o/{}", crate::BASE_URL, self.bucket, self.name);
+        let url = format!("{}/b/{}/o/{}",
+            crate::BASE_URL,
+            percent_encode(&self.bucket),
+            percent_encode(&self.name),
+        );
         let client = reqwest::blocking::Client::new();
         let result: GoogleResponse<Self> = client
             .put(&url)
@@ -347,7 +363,11 @@ impl Object {
     /// # }
     /// ```
     pub fn delete(self) -> Result<(), Error> {
-        let url = format!("{}/b/{}/o/{}", crate::BASE_URL, self.bucket, self.name);
+        let url = format!("{}/b/{}/o/{}",
+            crate::BASE_URL,
+            percent_encode(&self.bucket),
+            percent_encode(&self.name),
+        );
         let client = reqwest::blocking::Client::new();
         let response = client.delete(&url).headers(crate::get_headers()?).send()?;
         if response.status().is_success() {
@@ -394,8 +414,8 @@ impl Object {
         let url = format!(
             "{}/b/{}/o/{}/compose",
             crate::BASE_URL,
-            bucket,
-            destination_object
+            percent_encode(&bucket),
+            percent_encode(&destination_object)
         );
         let client = reqwest::blocking::Client::new();
         let result: GoogleResponse<Self> = client
@@ -427,11 +447,11 @@ impl Object {
 
         let url = format!(
             "{base}/b/{sBucket}/o/{sObject}/copyTo/b/{dBucket}/o/{dObject}",
-            base = crate::BASE_URL,
-            sBucket = self.bucket,
-            sObject = self.name,
-            dBucket = destination_bucket,
-            dObject = path
+            base=crate::BASE_URL,
+            sBucket=percent_encode(&self.bucket),
+            sObject=percent_encode(&self.name),
+            dBucket=percent_encode(&destination_bucket),
+            dObject=percent_encode(&path),
         );
         let client = reqwest::blocking::Client::new();
         let mut headers = crate::get_headers()?;
@@ -467,11 +487,11 @@ impl Object {
 
         let url = format!(
             "{base}/b/{sBucket}/o/{sObject}/rewriteTo/b/{dBucket}/o/{dObject}",
-            base = crate::BASE_URL,
-            sBucket = self.bucket,
-            sObject = self.name,
-            dBucket = destination_bucket,
-            dObject = path,
+            base=crate::BASE_URL,
+            sBucket=percent_encode(&self.bucket),
+            sObject=percent_encode(&self.name),
+            dBucket=percent_encode(destination_bucket),
+            dObject=percent_encode(path),
         );
         let client = reqwest::blocking::Client::new();
         let mut headers = crate::get_headers()?;
@@ -514,7 +534,12 @@ impl Object {
     fn sign(&self, file_path: &str, duration: u32, http_verb: &str) -> Result<String, Error> {
         use openssl::sha;
 
-        // 1 construct the canonical request
+        if duration > 604800 {
+            let msg = format!("duration may not be greater than 604800, but was {}", duration);
+            return Err(Error::Other(msg));
+        }
+
+        // 1 construct the canonical reques
         let issue_date = chrono::Utc::now();
         let file_path = self.path_to_resource(file_path);
         let query_string = Self::get_canonical_query_string(&issue_date, duration);
@@ -530,10 +555,10 @@ impl Object {
             {current_datetime}\n\
             {credential_scope}\n\
             {hashed_canonical_request}",
-            signing_algorithm = "GOOG4-RSA-SHA256",
-            current_datetime = issue_date.format("%Y%m%dT%H%M%SZ"),
-            credential_scope = Self::get_credential_scope(&issue_date),
-            hashed_canonical_request = hex_hash,
+            signing_algorithm="GOOG4-RSA-SHA256",
+            current_datetime=issue_date.format("%Y%m%dT%H%M%SZ"),
+            credential_scope=Self::get_credential_scope(&issue_date),
+            hashed_canonical_request=hex_hash,
         );
 
         // 4 sign the string to sign with RSA - SHA256
@@ -545,9 +570,9 @@ impl Object {
             "https://storage.googleapis.com{path_to_resource}?\
             {query_string}&\
             X-Goog-Signature={request_signature}",
-            path_to_resource = file_path,
-            query_string = query_string,
-            request_signature = signature,
+            path_to_resource=file_path,
+            query_string=query_string,
+            request_signature=signature,
         ))
     }
 
@@ -561,12 +586,12 @@ impl Object {
             \n\
             {signed_headers}\n\
             {payload}",
-            http_verb = http_verb,
-            path_to_resource = path,
-            canonical_query_string = query_string,
-            canonical_headers = "host:storage.googleapis.com",
-            signed_headers = "host",
-            payload = "UNSIGNED-PAYLOAD",
+            http_verb=http_verb,
+            path_to_resource=path,
+            canonical_query_string=query_string,
+            canonical_headers="host:storage.googleapis.com",
+            signed_headers="host",
+            payload="UNSIGNED-PAYLOAD",
         )
     }
 
@@ -574,8 +599,8 @@ impl Object {
     fn get_canonical_query_string(date: &chrono::DateTime<chrono::Utc>, exp: u32) -> String {
         let credential = format!(
             "{authorizer}/{scope}",
-            authorizer = crate::SERVICE_ACCOUNT.client_email,
-            scope = Self::get_credential_scope(date),
+            authorizer=crate::SERVICE_ACCOUNT.client_email,
+            scope=Self::get_credential_scope(date),
         );
         format!(
             "X-Goog-Algorithm={algo}&\
@@ -583,11 +608,11 @@ impl Object {
             X-Goog-Date={date}&\
             X-Goog-Expires={exp}&\
             X-Goog-SignedHeaders={signed}",
-            algo = "GOOG4-RSA-SHA256",
-            cred = dbg!(percent_encode(&credential).replace("@", "%40")),
-            date = date.format("%Y%m%dT%H%M%SZ"),
-            exp = exp,
-            signed = "host",
+            algo="GOOG4-RSA-SHA256",
+            cred=percent_encode(&credential),
+            date=date.format("%Y%m%dT%H%M%SZ"),
+            exp=exp,
+            signed="host",
         )
     }
 
@@ -595,8 +620,8 @@ impl Object {
     fn path_to_resource(&self, path: &str) -> String {
         format!(
             "/{bucket}/{file_path}",
-            bucket = self.bucket,
-            file_path = dbg!(percent_encode_noslash(path)),
+            bucket=self.bucket,
+            file_path=percent_encode_noslash(path),
         )
     }
 
@@ -616,22 +641,18 @@ impl Object {
     }
 }
 
+const ENCODE_SET: &AsciiSet = &NON_ALPHANUMERIC.remove(b'*').remove(b'-').remove(b'.').remove(b'_');
+
+const NOSLASH_ENCODE_SET: &AsciiSet = &ENCODE_SET.remove(b'/').remove(b'~');
+
 // We need to be able to percent encode stuff, but without touching the slashes in filenames. To
 // this end we create an implementation that does this, without touching the slashes.
 fn percent_encode_noslash(input: &str) -> String {
-    percent_encode(input).replace("%2F", "/")
+    utf8_percent_encode(input, NOSLASH_ENCODE_SET).to_string()
 }
 
 fn percent_encode(input: &str) -> String {
-    // use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-
-    // utf8_percent_encode(input, NON_ALPHANUMERIC).to_string()
-
-    use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
-
-    utf8_percent_encode(input, PATH_SEGMENT_ENCODE_SET)
-        .to_string()
-        .replace("&", "%26")
+    utf8_percent_encode(input, ENCODE_SET).to_string()
 }
 
 #[cfg(test)]
@@ -726,7 +747,7 @@ mod tests {
         let bucket = crate::read_test_bucket();
         let obj = Object::create(&bucket.name, &[0, 1], "test-rewrite", "text/plain")?;
         let obj = obj.rewrite(&bucket.name, "test-rewritten")?;
-        let url = dbg!(obj.download_url(100)?);
+        let url = obj.download_url(100)?;
         let client = reqwest::blocking::Client::new();
         let download = client.head(&url).send()?;
         assert_eq!(download.status().as_u16(), 200);
@@ -745,7 +766,8 @@ mod tests {
             "测试很重要",
         ];
         for name in &complicated_names {
-            let obj = Object::create(&bucket.name, &[0, 1], name, "text/plain")?;
+            let _obj = Object::create(&bucket.name, &[0, 1], name, "text/plain")?;
+            let obj = Object::read(&bucket.name, &name).unwrap();
             let url = obj.download_url(100)?;
             let client = reqwest::blocking::Client::new();
             let download = client.head(&url).send()?;
