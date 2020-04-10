@@ -283,7 +283,7 @@ mod tests {
             role: Role::Reader,
         };
         BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
-        let mut acl = dbg!(BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?);
+        let mut acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
         acl.entity = Entity::AllAuthenticatedUsers;
         acl.update()?;
         bucket.delete()?;
