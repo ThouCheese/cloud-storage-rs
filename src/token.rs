@@ -1,5 +1,4 @@
 use crate::error::Error;
-use openssl::{pkey::PKey, rsa::Rsa};
 use serde::{Deserialize, Serialize};
 
 /// This struct contains contains a token, an expiry, and an access scope.
@@ -63,10 +62,9 @@ impl Token {
         };
         let mut header = jsonwebtoken::Header::default();
         header.alg = jsonwebtoken::Algorithm::RS256;
-        let rsa = Rsa::private_key_from_pem(crate::SERVICE_ACCOUNT.private_key.as_bytes())?;
-        let private_key = PKey::from_rsa(rsa)?;
-        let private_key = &private_key.private_key_to_der().unwrap();
-        let jwt = jsonwebtoken::encode(&header, &claims, private_key)?;
+        let private_key_bytes = crate::SERVICE_ACCOUNT.private_key.as_bytes();
+        let private_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key_bytes)?;
+        let jwt = jsonwebtoken::encode(&header, &claims, &private_key)?;
         let body = [
             ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
             ("assertion", &jwt),
