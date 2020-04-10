@@ -126,7 +126,7 @@ impl<'de> serde::de::Visitor<'de> for EntityVisitor {
     where
         E: serde::de::Error,
     {
-        let parts: Vec<&str> = dbg!(value).split('-').collect();
+        let parts: Vec<&str> = value.split('-').collect();
         let result = match &parts[..] {
             ["user", rest @ ..] if is_email(rest) => UserEmail(rest.join("-")),
             ["user", rest @ ..] => UserId(rest.join("-")),

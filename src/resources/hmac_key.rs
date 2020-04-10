@@ -169,12 +169,12 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     pub fn read(access_id: &str) -> Result<HmacMeta, crate::Error> {
-        let url = dbg!(format!(
+        let url = format!(
             "{}/projects/{}/hmacKeys/{}",
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id,
             access_id
-        ));
+        );
         let client = reqwest::blocking::Client::new();
         let result: GoogleResponse<HmacMeta> = client
             .get(&url)
@@ -205,14 +205,14 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     pub fn update(access_id: &str, state: HmacState) -> Result<HmacMeta, crate::Error> {
-        let url = dbg!(format!(
+        let url = format!(
             "{}/projects/{}/hmacKeys/{}",
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id,
             access_id
-        ));
+        );
         let client = reqwest::blocking::Client::new();
-        dbg!(serde_json::to_string(&UpdateMeta { state })?);
+        serde_json::to_string(&UpdateMeta { state })?;
         let result: GoogleResponse<HmacMeta> = client
             .put(&url)
             .headers(crate::get_headers()?)
@@ -265,7 +265,7 @@ mod tests {
     fn get_test_hmac() -> HmacMeta {
         match HmacKey::create() {
             Ok(key) => key.metadata,
-            Err(_) => dbg!(HmacKey::list()).unwrap().pop().unwrap(),
+            Err(_) => HmacKey::list().unwrap().pop().unwrap(),
         }
     }
 

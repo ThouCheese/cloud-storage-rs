@@ -164,8 +164,8 @@ fn create_test_bucket(name: &str) -> Bucket {
         name,
         ..Default::default()
     };
-    match dbg!(Bucket::create(&new_bucket)) {
+    match Bucket::create(&new_bucket) {
         Ok(bucket) => bucket,
-        Err(_alread_exists) => dbg!(Bucket::read(&new_bucket.name)).unwrap(),
+        Err(_alread_exists) => Bucket::read(&new_bucket.name).unwrap(),
     }
 }

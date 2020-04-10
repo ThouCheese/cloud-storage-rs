@@ -17,7 +17,7 @@ let new_bucket = NewBucket { name: "mybucket", ..Default::default() }
 let bucket = Bucket::create(new_bucket).unwrap();
 // upload a file to our new bucket
 bucket.upload(b"Your file is now on google cloud storage!", "folder/filename.txt", "application/text").unwrap();
-let mut object = Object::create("mybucket", b"Your file is now on google cloud storage!", "folder/filename.txt", ""application/text").unwrap();
+let mut object = Object::create("mybucket", b"Your file is now on google cloud storage!", "folder/filename.txt", "application/text").unwrap();
 // let's rename the file
 object.name = "otherfolder/filename.txt";
 object.update().unwrap();

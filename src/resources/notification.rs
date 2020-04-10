@@ -103,7 +103,7 @@ impl Notification {
 
     /// Retrieves a list of notification subscriptions for a given bucket.}
     pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
-        let url = dbg!(format!("{}/v1/b/{}/notificationConfigs", crate::BASE_URL, bucket));
+        let url = format!("{}/v1/b/{}/notificationConfigs", crate::BASE_URL, bucket);
         let client = reqwest::blocking::Client::new();
         let result: GoogleResponse<ListResponse<Self>> = client
             .get(&url)
