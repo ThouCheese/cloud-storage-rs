@@ -14,17 +14,17 @@ cloud-storage = "0.3"
 ```rust
 // create a new Bucket
 let new_bucket = NewBucket { name: "mybucket", ..Default::default() }
-let bucket = Bucket::create(new_bucket).unwrap();
+let bucket = Bucket::create(new_bucket)?;
 // upload a file to our new bucket
-bucket.upload(b"Your file is now on google cloud storage!", "folder/filename.txt", "application/text").unwrap();
-let mut object = Object::create("mybucket", b"Your file is now on google cloud storage!", "folder/filename.txt", "application/text").unwrap();
-// let's rename the file
-object.name = "otherfolder/filename.txt";
-object.update().unwrap();
+let content = b"Your file is now on google cloud storage!";
+bucket.upload(content, "folder/filename.txt", "application/text")?;
+let mut object = Object::create("mybucket", content, "folder/filename.txt", "application/text")?;
+// let's copy the file
+object.copy("mybucket2: electric boogaloo", "otherfolder/filename.txt")?;
 // print a link to the file
 println!("{}", object.download_url("new filename.txt", 1000)); // download link for 1000 seconds
 // remove the file from the bucket
-object.delete().unwrap();
+object.delete()?;
 ```
 
 Authorization can be granted using the `SERVICE_ACCOUNT` environment variable, which should contain path to the `service-account-*******.json` file that contains the Google credentials. The service account requires the permission `devstorage.full_control`. This is not strictly necessary, so if you need this fixed, let me know! 
