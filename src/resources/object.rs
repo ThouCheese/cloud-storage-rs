@@ -368,22 +368,21 @@ impl Object {
         }
     }
 
-    /// Obtains a single object with the specified name in the specified bucket.
+    /// Deletes a single object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
     /// use cloud_storage::Object;
     ///
-    /// let mut object = Object::read("my_bucket", "path/to/my/file.png")?;
-    /// object.delete();
+    /// Object::delete("my_bucket", "path/to/my/file.png")?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn delete(self) -> Result<(), Error> {
+    pub fn delete(bucket: &str, file_name: &str) -> Result<(), Error> {
         let url = format!("{}/b/{}/o/{}",
             crate::BASE_URL,
-            percent_encode(&self.bucket),
-            percent_encode(&self.name),
+            percent_encode(bucket),
+            percent_encode(file_name),
         );
         let client = reqwest::blocking::Client::new();
         let response = client.delete(&url).headers(crate::get_headers()?).send()?;
@@ -741,8 +740,13 @@ mod tests {
     #[test]
     fn delete() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
-        let obj = Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
-        obj.delete()?;
+        Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
+
+        Object::delete(&bucket.name, "test-delete")?;
+
+        let list = Object::list_prefix(&bucket.name, "test-delete")?;
+        assert!(list.is_empty());
+
         Ok(())
     }
 
@@ -750,17 +754,13 @@ mod tests {
     fn delete_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
 
-        let obj = Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
-        let nonexistent_obj = Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
-        obj.delete()?;
+        let nonexistent_object = "test-delete-nonexistent";
 
-        // Call delete again, which should fail because the object no longer exists
-
-        let delete_result = nonexistent_obj.delete();
+        let delete_result = Object::delete(&bucket.name, nonexistent_object);
 
         if let Err(Error::Google(google_error_response)) = delete_result {
             assert!(google_error_response.to_string().contains(
-                &format!("No such object: {}/{}", bucket.name, "test-delete")));
+                &format!("No such object: {}/{}", bucket.name, nonexistent_object)));
         } else {
             panic!("Expected a Google error, instead got {:?}", delete_result);
         }
