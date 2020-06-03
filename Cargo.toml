@@ -24,3 +24,4 @@ dotenv =           { version = "0.15", default-features = false }
 openssl =          { version = "0.10", default-features = false }
 chrono =           { version = "0.4",  default-features = false, features = ["serde"] }
 hex =              { version = "0.4",  default-features = false }
+bytes =            { version = "0.5" }
