@@ -747,6 +747,28 @@ mod tests {
     }
 
     #[test]
+    fn delete_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket();
+
+        let obj = Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
+        let nonexistent_obj = Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
+        obj.delete()?;
+
+        // Call delete again, which should fail because the object no longer exists
+
+        let delete_result = nonexistent_obj.delete();
+
+        if let Err(Error::Google(google_error_response)) = delete_result {
+            assert!(google_error_response.to_string().contains(
+                &format!("No such object: {}/{}", bucket.name, "test-delete")));
+        } else {
+            panic!("Expected a Google error, instead got {:?}", delete_result);
+        }
+
+        Ok(())
+    }
+
+    #[test]
     fn compose() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket();
         let obj1 = Object::create(&bucket.name, &[0, 1], "test-compose-1", "text/plain")?;
