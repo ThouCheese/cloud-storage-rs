@@ -337,6 +337,31 @@ impl Object {
         }
     }
 
+    /// Download the content of the object with the specified name in the specified bucket.
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Object;
+    ///
+    /// let bytes = Object::download("my_bucket", "path/to/my/file.png")?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn download(bucket: &str, file_name: &str) -> Result<Vec<u8>, Error> {
+        let url = format!(
+            "{}/b/{}/o/{}?alt=media",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(file_name),
+        );
+        let client = reqwest::blocking::Client::new();
+        Ok(client
+            .get(&url)
+            .headers(crate::get_headers()?)
+            .send()?
+            .bytes()?.to_vec())
+    }
+
     /// Obtains a single object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
@@ -725,6 +750,18 @@ mod tests {
         let bucket = crate::read_test_bucket();
         Object::create(&bucket.name, &[0, 1], "test-read", "text/plain")?;
         Object::read(&bucket.name, "test-read")?;
+        Ok(())
+    }
+
+    #[test]
+    fn download() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket();
+        let content = b"hello world";
+        Object::create(&bucket.name, content, "test-download", "application/octet-stream")?;
+
+        let data = Object::download(&bucket.name, "test-download")?;
+        assert_eq!(data, content);
+
         Ok(())
     }
 
