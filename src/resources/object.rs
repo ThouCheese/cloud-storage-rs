@@ -347,7 +347,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn download(bucket: &str, file_name: &str) -> Result<bytes::Bytes, Error> {
+    pub fn download(bucket: &str, file_name: &str) -> Result<Vec<u8>, Error> {
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
             crate::BASE_URL,
@@ -359,7 +359,7 @@ impl Object {
             .get(&url)
             .headers(crate::get_headers()?)
             .send()?
-            .bytes()?)
+            .bytes()?.to_vec())
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -761,7 +761,7 @@ mod tests {
         Object::create(&bucket.name, content, "test-download", "application/octet-stream")?;
 
         let data = Object::download(&bucket.name, "test-download")?;
-        assert_eq!(data.as_ref(), content);
+        assert_eq!(data, content);
 
         Ok(())
     }
