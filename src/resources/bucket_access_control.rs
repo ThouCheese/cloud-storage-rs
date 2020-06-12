@@ -276,6 +276,7 @@ mod tests {
 
     #[test]
     fn update() -> Result<(), Box<dyn std::error::Error>> {
+        let client = crate::sync::Client::new();
         // use a seperate bucket to prevent synchronization issues
         let bucket = crate::create_test_bucket("test-update-bucket-access-controls");
         let new_bucket_access_control = NewBucketAccessControl {
@@ -286,12 +287,13 @@ mod tests {
         let mut acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
         acl.entity = Entity::AllAuthenticatedUsers;
         acl.update()?;
-        bucket.delete()?;
+        client.delete_bucket(bucket)?;
         Ok(())
     }
 
     #[test]
     fn delete() -> Result<(), Box<dyn std::error::Error>> {
+        let client = crate::sync::Client::new();
         // use a seperate bucket to prevent synchronization issues
         let bucket = crate::create_test_bucket("test-delete-bucket-access-controls");
         let new_bucket_access_control = NewBucketAccessControl {
@@ -301,7 +303,7 @@ mod tests {
         BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
         let acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
         acl.delete()?;
-        bucket.delete()?;
+        client.delete_bucket(bucket)?;
         Ok(())
     }
 }

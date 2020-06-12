@@ -24,19 +24,24 @@
 //! file systems, and [Objects](object/struct.Object.html), which represent files.
 //!
 //! ## Examples:
+//!
+//! TODO: example of creating a client; discussion of sync vs async
+//!
 //! Creating a new Bucket in Google Cloud Storage:
 //! ```rust
-//! # use cloud_storage::{Bucket, NewBucket};
-//! let bucket = Bucket::create(&NewBucket {
+//! # use cloud_storage::NewBucket;
+//! let client = cloud_storage::sync::Client::new();
+//! let bucket = client.create_bucket(&NewBucket {
 //!     name: "doctest-bucket".to_string(),
 //!     ..Default::default()
 //! }).unwrap();
-//! # bucket.delete();
+//! # client.delete_bucket(bucket);
 //! ```
 //! Connecting to an existing Bucket in Google Cloud Storage:
 //! ```no_run
 //! # use cloud_storage::Bucket;
-//! let bucket = Bucket::read("mybucket").unwrap();
+//! let client = cloud_storage::sync::Client::new();
+//! let bucket = client.read_bucket("mybucket").unwrap();
 //! ```
 //! Read a file from disk and store it on googles server:
 //! ```rust,no_run
@@ -66,6 +71,8 @@
 /// Contains objects as represented by Google, to be used for serialization and deserialization.
 mod error;
 mod resources;
+/// TODO
+pub mod sync;
 mod token;
 
 pub use crate::error::*;
@@ -142,9 +149,10 @@ where
 fn read_test_bucket() -> Bucket {
     dotenv::dotenv().ok();
     let name = std::env::var("TEST_BUCKET").unwrap();
-    match Bucket::read(&name) {
+    let client = sync::Client::new();
+    match client.read_bucket(&name) {
         Ok(bucket) => bucket,
-        Err(_not_found) => Bucket::create(&NewBucket {
+        Err(_not_found) => client.create_bucket(&NewBucket {
             name,
             ..Default::default()
         })
@@ -159,12 +167,13 @@ fn create_test_bucket(name: &str) -> Bucket {
     dotenv::dotenv().ok();
     let base_name = std::env::var("TEST_BUCKET").unwrap();
     let name = format!("{}-{}", base_name, name);
+    let client = sync::Client::new();
     let new_bucket = NewBucket {
         name,
         ..Default::default()
     };
-    match Bucket::create(&new_bucket) {
+    match client.create_bucket(&new_bucket) {
         Ok(bucket) => bucket,
-        Err(_alread_exists) => Bucket::read(&new_bucket.name).unwrap(),
+        Err(_alread_exists) => client.read_bucket(&new_bucket.name).unwrap(),
     }
 }

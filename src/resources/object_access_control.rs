@@ -294,6 +294,7 @@ mod tests {
 
     #[test]
     fn update() {
+        let client = crate::sync::Client::new();
         // use a seperate bucket to prevent synchronization issues
         let bucket = crate::create_test_bucket(
             "test-object-access-controls-update"
@@ -324,11 +325,12 @@ mod tests {
         acl.entity = Entity::AllAuthenticatedUsers;
         acl.update().unwrap();
         Object::delete(&bucket.name, "test-update").unwrap();
-        bucket.delete().unwrap();
+        client.delete_bucket(bucket).unwrap();
     }
 
     #[test]
     fn delete() {
+        let client = crate::sync::Client::new();
         // use a seperate bucket to prevent synchronization issues
         let bucket = crate::create_test_bucket("test-object-access-controls-delete");
         let new_bucket_access_control = NewObjectAccessControl {
@@ -342,6 +344,6 @@ mod tests {
             ObjectAccessControl::read(&bucket.name, "test-delete", &Entity::AllUsers).unwrap();
         acl.delete().unwrap();
         Object::delete(&bucket.name, "test-delete").unwrap();
-        bucket.delete().unwrap();
+        client.delete_bucket(bucket).unwrap();
     }
 }
