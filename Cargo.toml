@@ -24,3 +24,6 @@ dotenv =           { version = "0.15", default-features = false }
 openssl =          { version = "0.10", default-features = false }
 chrono =           { version = "0.4",  default-features = false, features = ["serde"] }
 hex =              { version = "0.4",  default-features = false }
+
+[dev-dependencies]
+tokio =            { version = "0.2",  default-features = false, features = ["macros"] }
