@@ -563,21 +563,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn create(new_bucket: &NewBucket) -> Result<Self, Error> {
-        let url = format!("{}/b/", crate::BASE_URL);
-        let project = crate::SERVICE_ACCOUNT.project_id.clone();
-        let query = [("project", project)];
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
-            .post(&url)
-            .headers(crate::get_headers()?)
-            .query(&query)
-            .json(new_bucket)
-            .send()?
-            .json()?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            Bucket::create_async(new_bucket).await
+        })
     }
 
     /// TODO
@@ -613,20 +605,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn list() -> Result<Vec<Self>, Error> {
-        let url = format!("{}/b/", crate::BASE_URL);
-        let project = crate::SERVICE_ACCOUNT.project_id.clone();
-        let query = [("project", project)];
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<ListResponse<Self>> = client
-            .get(&url)
-            .headers(crate::get_headers()?)
-            .query(&query)
-            .send()?
-            .json()?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s.items),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            Bucket::list_async().await
+        })
     }
 
     /// TODO
@@ -668,17 +653,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn read(name: &str) -> Result<Self, Error> {
-        let url = format!("{}/b/{}", crate::BASE_URL, name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
-            .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            Bucket::read_async(name).await
+        })
     }
 
     /// TODO
@@ -724,18 +705,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn update(&self) -> Result<Self, Error> {
-        let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
-            .put(&url)
-            .headers(crate::get_headers()?)
-            .json(self)
-            .send()?
-            .json()?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            self.update_async().await
+        })
     }
 
     /// TODO
@@ -777,14 +753,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn delete(self) -> Result<(), Error> {
-        let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let response = client.delete(&url).headers(crate::get_headers()?).send()?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(Error::Google(response.json()?))
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            self.delete_async().await
+        })
     }
 
     /// TODO
@@ -819,17 +794,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn get_iam_policy(&self) -> Result<IamPolicy, Error> {
-        let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<IamPolicy> = client
-            .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            self.get_iam_policy_async().await
+        })
     }
 
     /// TODO
@@ -881,18 +852,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn set_iam_policy(&self, iam: &IamPolicy) -> Result<IamPolicy, Error> {
-        let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<IamPolicy> = client
-            .put(&url)
-            .headers(crate::get_headers()?)
-            .json(iam)
-            .send()?
-            .json()?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            self.set_iam_policy_async(iam).await
+        })
     }
 
     /// TODO
@@ -926,23 +892,13 @@ impl Bucket {
     /// ```
     #[cfg(feature = "sync")]
     pub fn test_iam_permission(&self, permission: &str) -> Result<TestIamPermission, Error> {
-        if permission == "storage.buckets.list" || permission == "storage.buckets.create" {
-            return Err(Error::new(
-                "tested permission must not be `storage.buckets.list` or `storage.buckets.create`",
-            ));
-        }
-        let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<TestIamPermission> = client
-            .get(&url)
-            .headers(crate::get_headers()?)
-            .query(&[("permissions", permission)])
-            .send()?
-            .json()?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        use tokio::runtime::Runtime;
+
+        let mut rt = Runtime::new().unwrap();
+
+        rt.block_on(async {
+            self.test_iam_permission_async(permission).await
+        })
     }
 
     /// TODO
