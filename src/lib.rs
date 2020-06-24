@@ -170,6 +170,8 @@ fn read_test_bucket() -> Bucket {
 #[cfg(test)]
 #[cfg(feature = "sync")]
 fn create_test_bucket(name: &str) -> Bucket {
+    std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
+
     dotenv::dotenv().ok();
     let base_name = std::env::var("TEST_BUCKET").unwrap();
     let name = format!("{}-{}", base_name, name);
