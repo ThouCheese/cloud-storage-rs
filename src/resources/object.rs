@@ -73,7 +73,7 @@ pub struct Object {
     pub acl: Option<Vec<ObjectAccessControl>>,
     /// The owner of the object. This will always be the uploader of the object. If
     /// `iamConfiguration.uniformBucketLevelAccess.enabled` is set to true, this field does not
-    /// apply, and is omitted in responses.   
+    /// apply, and is omitted in responses.
     pub owner: Option<Owner>,
     /// CRC32c checksum, as described in RFC 4960, Appendix B; encoded using base64 in big-endian
     /// byte order. For more information about using the CRC32c checksum, see Hashes and ETags: Best
@@ -171,6 +171,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn create(
         bucket: &str,
         file: &[u8],
@@ -217,6 +218,7 @@ impl Object {
     /// Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn create_streamed<R: std::io::Read + Send + 'static>(
         bucket: &str,
         file: R,
@@ -254,13 +256,14 @@ impl Object {
     /// Obtain a list of objects within this Bucket.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
     /// let all_objects = Object::list("my_bucket")?;
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn list(bucket: &str) -> Result<Vec<Self>, Error> {
         Self::list_from(bucket, None, None)
     }
@@ -275,10 +278,12 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn list_prefix(bucket: &str, prefix: &str) -> Result<Vec<Self>, Error> {
         Self::list_from(bucket, Some(prefix), None)
     }
 
+    #[cfg(feature = "sync")]
     fn list_from(bucket: &str,  prefix: Option<&str>, page_token: Option<&str>) -> Result<Vec<Self>, Error> {
         let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
         let client = reqwest::blocking::Client::new();
@@ -311,13 +316,14 @@ impl Object {
     /// Obtains a single object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
     /// let object = Object::read("my_bucket", "path/to/my/file.png")?;
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn read(bucket: &str, file_name: &str) -> Result<Self, Error> {
         let url = format!(
             "{}/b/{}/o/{}",
@@ -347,6 +353,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn download(bucket: &str, file_name: &str) -> Result<Vec<u8>, Error> {
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
@@ -365,7 +372,7 @@ impl Object {
     /// Obtains a single object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
     /// let mut object = Object::read("my_bucket", "path/to/my/file.png")?;
@@ -374,6 +381,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn update(&self) -> Result<Self, Error> {
         let url = format!("{}/b/{}/o/{}",
             crate::BASE_URL,
@@ -396,13 +404,14 @@ impl Object {
     /// Deletes a single object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
     /// Object::delete("my_bucket", "path/to/my/file.png")?;
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn delete(bucket: &str, file_name: &str) -> Result<(), Error> {
         let url = format!("{}/b/{}/o/{}",
             crate::BASE_URL,
@@ -421,7 +430,7 @@ impl Object {
     /// Obtains a single object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::{Object, ComposeRequest, SourceObject};
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
@@ -447,6 +456,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn compose(
         bucket: &str,
         req: &ComposeRequest,
@@ -474,7 +484,7 @@ impl Object {
     /// Copy this object to the target bucket and path
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::{Object, ComposeRequest};
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
@@ -483,6 +493,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn copy(&self, destination_bucket: &str, path: &str) -> Result<Self, Error> {
         use reqwest::header::CONTENT_LENGTH;
 
@@ -514,7 +525,7 @@ impl Object {
     /// These limitations mean that for now, the rewrite and the copy methods do the same thing.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::Object;
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
@@ -523,6 +534,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn rewrite(&self, destination_bucket: &str, path: &str) -> Result<Self, Error> {
         use reqwest::header::CONTENT_LENGTH;
 
@@ -550,7 +562,7 @@ impl Object {
     /// without any authentication.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> { 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::{Object, ComposeRequest};
     ///
     /// let obj1 = Object::read("my_bucket", "file1")?;
@@ -700,178 +712,183 @@ fn percent_encode(input: &str) -> String {
 mod tests {
     use super::*;
 
-    #[test]
-    fn create() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        Object::create(&bucket.name, &[0, 1], "test-create", "text/plain")?;
-        Ok(())
-    }
+    #[cfg(feature = "sync")]
+    mod sync {
+        use super::*;
 
-    #[test]
-    fn create_streamed() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let cursor = std::io::Cursor::new([0, 1]);
-        Object::create_streamed(&bucket.name, cursor, 2, "test-create-streamed", "text/plain")?;
-        Ok(())
-    }
-
-    #[test]
-    fn list() -> Result<(), Box<dyn std::error::Error>> {
-        let test_bucket = crate::read_test_bucket();
-        Object::list(&test_bucket.name)?;
-        Ok(())
-    }
-
-    #[test]
-    fn list_prefix() -> Result<(), Box<dyn std::error::Error>> {
-        let test_bucket = crate::read_test_bucket();
-
-        let prefix_names = [
-            "test-list-prefix/1",
-            "test-list-prefix/2",
-            "test-list-prefix/sub/1",
-            "test-list-prefix/sub/2",
-        ];
-
-        for name in &prefix_names {
-            Object::create(&test_bucket.name, &[0, 1], name, "text/plain")?;
+        #[test]
+        fn create() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            Object::create(&bucket.name, &[0, 1], "test-create", "text/plain")?;
+            Ok(())
         }
 
-        let list = Object::list_prefix(&test_bucket.name, "test-list-prefix/")?;
-        assert_eq!(list.len(), 4);
-        let list = Object::list_prefix(&test_bucket.name, "test-list-prefix/sub")?;
-        assert_eq!(list.len(), 2);
-        Ok(())
-    }
-
-
-    #[test]
-    fn read() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        Object::create(&bucket.name, &[0, 1], "test-read", "text/plain")?;
-        Object::read(&bucket.name, "test-read")?;
-        Ok(())
-    }
-
-    #[test]
-    fn download() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let content = b"hello world";
-        Object::create(&bucket.name, content, "test-download", "application/octet-stream")?;
-
-        let data = Object::download(&bucket.name, "test-download")?;
-        assert_eq!(data, content);
-
-        Ok(())
-    }
-
-    #[test]
-    fn update() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let mut obj = Object::create(&bucket.name, &[0, 1], "test-update", "text/plain")?;
-        obj.content_type = Some("application/xml".to_string());
-        obj.update()?;
-        Ok(())
-    }
-
-    #[test]
-    fn delete() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
-
-        Object::delete(&bucket.name, "test-delete")?;
-
-        let list = Object::list_prefix(&bucket.name, "test-delete")?;
-        assert!(list.is_empty());
-
-        Ok(())
-    }
-
-    #[test]
-    fn delete_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-
-        let nonexistent_object = "test-delete-nonexistent";
-
-        let delete_result = Object::delete(&bucket.name, nonexistent_object);
-
-        if let Err(Error::Google(google_error_response)) = delete_result {
-            assert!(google_error_response.to_string().contains(
-                &format!("No such object: {}/{}", bucket.name, nonexistent_object)));
-        } else {
-            panic!("Expected a Google error, instead got {:?}", delete_result);
+        #[test]
+        fn create_streamed() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let cursor = std::io::Cursor::new([0, 1]);
+            Object::create_streamed(&bucket.name, cursor, 2, "test-create-streamed", "text/plain")?;
+            Ok(())
         }
 
-        Ok(())
-    }
+        #[test]
+        fn list() -> Result<(), Box<dyn std::error::Error>> {
+            let test_bucket = crate::read_test_bucket();
+            Object::list(&test_bucket.name)?;
+            Ok(())
+        }
 
-    #[test]
-    fn compose() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let obj1 = Object::create(&bucket.name, &[0, 1], "test-compose-1", "text/plain")?;
-        let obj2 = Object::create(&bucket.name, &[2, 3], "test-compose-2", "text/plain")?;
-        let compose_request = ComposeRequest {
-            kind: "storage#composeRequest".to_string(),
-            source_objects: vec![
-                SourceObject {
-                    name: obj1.name.clone(),
-                    generation: None,
-                    object_preconditions: None,
-                },
-                SourceObject {
-                    name: obj2.name.clone(),
-                    generation: None,
-                    object_preconditions: None,
-                },
-            ],
-            destination: None,
-        };
-        let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file")?;
-        let url = obj3.download_url(100)?;
-        let content = reqwest::blocking::get(&url)?.text()?;
-        assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
-        Ok(())
-    }
+        #[test]
+        fn list_prefix() -> Result<(), Box<dyn std::error::Error>> {
+            let test_bucket = crate::read_test_bucket();
 
-    #[test]
-    fn copy() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let original = Object::create(&bucket.name, &[2, 3], "test-copy", "text/plain")?;
-        original.copy(&bucket.name, "test-copy - copy")?;
-        Ok(())
-    }
+            let prefix_names = [
+                "test-list-prefix/1",
+                "test-list-prefix/2",
+                "test-list-prefix/sub/1",
+                "test-list-prefix/sub/2",
+            ];
 
-    #[test]
-    fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let obj = Object::create(&bucket.name, &[0, 1], "test-rewrite", "text/plain")?;
-        let obj = obj.rewrite(&bucket.name, "test-rewritten")?;
-        let url = obj.download_url(100)?;
-        let client = reqwest::blocking::Client::new();
-        let download = client.head(&url).send()?;
-        assert_eq!(download.status().as_u16(), 200);
-        Ok(())
-    }
+            for name in &prefix_names {
+                Object::create(&test_bucket.name, &[0, 1], name, "text/plain")?;
+            }
 
-    #[test]
-    fn test_url_encoding() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let complicated_names = [
-            "asdf",
-            "asdf+1",
-            "asdf&&+1?=3,,-_()*&^%$#@!`~{}[]\\|:;\"'<>,.?/äöüëß",
-            "https://www.google.com",
-            "परिक्षण फाईल",
-            "测试很重要",
-        ];
-        for name in &complicated_names {
-            let _obj = Object::create(&bucket.name, &[0, 1], name, "text/plain")?;
-            let obj = Object::read(&bucket.name, &name).unwrap();
+            let list = Object::list_prefix(&test_bucket.name, "test-list-prefix/")?;
+            assert_eq!(list.len(), 4);
+            let list = Object::list_prefix(&test_bucket.name, "test-list-prefix/sub")?;
+            assert_eq!(list.len(), 2);
+            Ok(())
+        }
+
+
+        #[test]
+        fn read() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            Object::create(&bucket.name, &[0, 1], "test-read", "text/plain")?;
+            Object::read(&bucket.name, "test-read")?;
+            Ok(())
+        }
+
+        #[test]
+        fn download() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let content = b"hello world";
+            Object::create(&bucket.name, content, "test-download", "application/octet-stream")?;
+
+            let data = Object::download(&bucket.name, "test-download")?;
+            assert_eq!(data, content);
+
+            Ok(())
+        }
+
+        #[test]
+        fn update() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let mut obj = Object::create(&bucket.name, &[0, 1], "test-update", "text/plain")?;
+            obj.content_type = Some("application/xml".to_string());
+            obj.update()?;
+            Ok(())
+        }
+
+        #[test]
+        fn delete() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
+
+            Object::delete(&bucket.name, "test-delete")?;
+
+            let list = Object::list_prefix(&bucket.name, "test-delete")?;
+            assert!(list.is_empty());
+
+            Ok(())
+        }
+
+        #[test]
+        fn delete_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+
+            let nonexistent_object = "test-delete-nonexistent";
+
+            let delete_result = Object::delete(&bucket.name, nonexistent_object);
+
+            if let Err(Error::Google(google_error_response)) = delete_result {
+                assert!(google_error_response.to_string().contains(
+                    &format!("No such object: {}/{}", bucket.name, nonexistent_object)));
+            } else {
+                panic!("Expected a Google error, instead got {:?}", delete_result);
+            }
+
+            Ok(())
+        }
+
+        #[test]
+        fn compose() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let obj1 = Object::create(&bucket.name, &[0, 1], "test-compose-1", "text/plain")?;
+            let obj2 = Object::create(&bucket.name, &[2, 3], "test-compose-2", "text/plain")?;
+            let compose_request = ComposeRequest {
+                kind: "storage#composeRequest".to_string(),
+                source_objects: vec![
+                    SourceObject {
+                        name: obj1.name.clone(),
+                        generation: None,
+                        object_preconditions: None,
+                    },
+                    SourceObject {
+                        name: obj2.name.clone(),
+                        generation: None,
+                        object_preconditions: None,
+                    },
+                ],
+                destination: None,
+            };
+            let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file")?;
+            let url = obj3.download_url(100)?;
+            let content = reqwest::blocking::get(&url)?.text()?;
+            assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
+            Ok(())
+        }
+
+        #[test]
+        fn copy() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let original = Object::create(&bucket.name, &[2, 3], "test-copy", "text/plain")?;
+            original.copy(&bucket.name, "test-copy - copy")?;
+            Ok(())
+        }
+
+        #[test]
+        fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let obj = Object::create(&bucket.name, &[0, 1], "test-rewrite", "text/plain")?;
+            let obj = obj.rewrite(&bucket.name, "test-rewritten")?;
             let url = obj.download_url(100)?;
             let client = reqwest::blocking::Client::new();
             let download = client.head(&url).send()?;
             assert_eq!(download.status().as_u16(), 200);
+            Ok(())
         }
-        Ok(())
+
+        #[test]
+        fn test_url_encoding() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let complicated_names = [
+                "asdf",
+                "asdf+1",
+                "asdf&&+1?=3,,-_()*&^%$#@!`~{}[]\\|:;\"'<>,.?/äöüëß",
+                "https://www.google.com",
+                "परिक्षण फाईल",
+                "测试很重要",
+            ];
+            for name in &complicated_names {
+                let _obj = Object::create(&bucket.name, &[0, 1], name, "text/plain")?;
+                let obj = Object::read(&bucket.name, &name).unwrap();
+                let url = obj.download_url(100)?;
+                let client = reqwest::blocking::Client::new();
+                let download = client.head(&url).send()?;
+                assert_eq!(download.status().as_u16(), 200);
+            }
+            Ok(())
+        }
     }
 }

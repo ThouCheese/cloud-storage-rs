@@ -110,6 +110,7 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn create(
         bucket: &str,
         new_bucket_access_control: &NewBucketAccessControl,
@@ -143,6 +144,7 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
         let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
         let client = reqwest::blocking::Client::new();
@@ -172,6 +174,7 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn read(bucket: &str, entity: &Entity) -> Result<Self, crate::Error> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, bucket, entity);
         let client = reqwest::blocking::Client::new();
@@ -202,6 +205,7 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn update(&self) -> Result<Self, crate::Error> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
         let client = reqwest::blocking::Client::new();
@@ -233,6 +237,7 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn delete(self) -> Result<(), crate::Error> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
         let client = reqwest::blocking::Client::new();
@@ -249,59 +254,64 @@ impl BucketAccessControl {
 mod tests {
     use super::*;
 
-    #[test]
-    fn create() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let new_bucket_access_control = NewBucketAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
-        Ok(())
-    }
+    #[cfg(feature = "sync")]
+    mod sync {
+        use super::*;
 
-    #[test]
-    fn list() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        BucketAccessControl::list(&bucket.name)?;
-        Ok(())
-    }
+        #[test]
+        fn create() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let new_bucket_access_control = NewBucketAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
+            Ok(())
+        }
 
-    #[test]
-    fn read() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
-        Ok(())
-    }
+        #[test]
+        fn list() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            BucketAccessControl::list(&bucket.name)?;
+            Ok(())
+        }
 
-    #[test]
-    fn update() -> Result<(), Box<dyn std::error::Error>> {
-        // use a seperate bucket to prevent synchronization issues
-        let bucket = crate::create_test_bucket("test-update-bucket-access-controls");
-        let new_bucket_access_control = NewBucketAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
-        let mut acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
-        acl.entity = Entity::AllAuthenticatedUsers;
-        acl.update()?;
-        bucket.delete()?;
-        Ok(())
-    }
+        #[test]
+        fn read() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            Ok(())
+        }
 
-    #[test]
-    fn delete() -> Result<(), Box<dyn std::error::Error>> {
-        // use a seperate bucket to prevent synchronization issues
-        let bucket = crate::create_test_bucket("test-delete-bucket-access-controls");
-        let new_bucket_access_control = NewBucketAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
-        let acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
-        acl.delete()?;
-        bucket.delete()?;
-        Ok(())
+        #[test]
+        fn update() -> Result<(), Box<dyn std::error::Error>> {
+            // use a seperate bucket to prevent synchronization issues
+            let bucket = crate::create_test_bucket("test-update-bucket-access-controls");
+            let new_bucket_access_control = NewBucketAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
+            let mut acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            acl.entity = Entity::AllAuthenticatedUsers;
+            acl.update()?;
+            bucket.delete()?;
+            Ok(())
+        }
+
+        #[test]
+        fn delete() -> Result<(), Box<dyn std::error::Error>> {
+            // use a seperate bucket to prevent synchronization issues
+            let bucket = crate::create_test_bucket("test-delete-bucket-access-controls");
+            let new_bucket_access_control = NewBucketAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
+            let acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            acl.delete()?;
+            bucket.delete()?;
+            Ok(())
+        }
     }
 }

@@ -108,6 +108,7 @@ impl ObjectAccessControl {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
+    #[cfg(feature = "sync")]
     pub fn create(
         bucket: &str,
         object: &str,
@@ -133,6 +134,7 @@ impl ObjectAccessControl {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
+    #[cfg(feature = "sync")]
     pub fn list(bucket: &str, object: &str) -> Result<Vec<Self>, crate::Error> {
         let url = format!("{}/b/{}/o/{}/acl", crate::BASE_URL, bucket, object);
         let client = reqwest::blocking::Client::new();
@@ -153,6 +155,7 @@ impl ObjectAccessControl {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
+    #[cfg(feature = "sync")]
     pub fn read(bucket: &str, object: &str, entity: &Entity) -> Result<Self, crate::Error> {
         let url = format!(
             "{}/b/{}/o/{}/acl/{}",
@@ -179,6 +182,7 @@ impl ObjectAccessControl {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
+    #[cfg(feature = "sync")]
     pub fn update(&self) -> Result<Self, crate::Error> {
         let url = format!(
             "{}/b/{}/o/{}/acl/{}",
@@ -206,6 +210,7 @@ impl ObjectAccessControl {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
+    #[cfg(feature = "sync")]
     pub fn delete(self) -> Result<(), crate::Error> {
         let url = format!(
             "{}/b/{}/o/{}/acl/{}",
@@ -227,121 +232,126 @@ impl ObjectAccessControl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Object;
 
-    #[test]
-    fn create() {
-        let bucket = crate::read_test_bucket();
-        Object::create(
-            &bucket.name,
-            &[0, 1],
-            "test-object-access-controls-create",
-            "text/plain",
-        )
-        .unwrap();
-        let new_bucket_access_control = NewObjectAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        ObjectAccessControl::create(
-            &bucket.name,
-            "test-object-access-controls-create",
-            &new_bucket_access_control,
-        )
-        .unwrap();
-    }
+    #[cfg(feature = "sync")]
+    mod sync {
+        use super::*;
+        use crate::Object;
 
-    #[test]
-    fn list() {
-        let bucket = crate::read_test_bucket();
-        Object::create(
-            &bucket.name,
-            &[0, 1],
-            "test-object-access-controls-list",
-            "text/plain",
-        )
-        .unwrap();
-        ObjectAccessControl::list(&bucket.name, "test-object-access-controls-list").unwrap();
-    }
-
-    #[test]
-    fn read() {
-        let bucket = crate::read_test_bucket();
-        Object::create(
-            &bucket.name,
-            &[0, 1],
-            "test-object-access-controls-read",
-            "text/plain",
-        )
-        .unwrap();
-        let new_bucket_access_control = NewObjectAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        ObjectAccessControl::create(
-            &bucket.name,
-            "test-object-access-controls-read",
-            &new_bucket_access_control,
-        )
-        .unwrap();
-        ObjectAccessControl::read(
-            &bucket.name,
-            "test-object-access-controls-read",
-            &Entity::AllUsers,
-        )
-        .unwrap();
-    }
-
-    #[test]
-    fn update() {
-        // use a seperate bucket to prevent synchronization issues
-        let bucket = crate::create_test_bucket(
-            "test-object-access-controls-update"
-        );
-        let new_bucket_access_control = NewObjectAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        Object::create(
-            &bucket.name,
-            &[0, 1],
-            "test-update",
-            "text/plain"
-        )
-        .unwrap();
-        ObjectAccessControl::create(
-            &bucket.name,
-            "test-update",
-            &new_bucket_access_control
-        )
-        .unwrap();
-        let mut acl = ObjectAccessControl::read(
-            &bucket.name,
-            "test-update",
-            &Entity::AllUsers
-        )
-        .unwrap();
-        acl.entity = Entity::AllAuthenticatedUsers;
-        acl.update().unwrap();
-        Object::delete(&bucket.name, "test-update").unwrap();
-        bucket.delete().unwrap();
-    }
-
-    #[test]
-    fn delete() {
-        // use a seperate bucket to prevent synchronization issues
-        let bucket = crate::create_test_bucket("test-object-access-controls-delete");
-        let new_bucket_access_control = NewObjectAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain").unwrap();
-        ObjectAccessControl::create(&bucket.name, "test-delete", &new_bucket_access_control)
+        #[test]
+        fn create() {
+            let bucket = crate::read_test_bucket();
+            Object::create(
+                &bucket.name,
+                &[0, 1],
+                "test-object-access-controls-create",
+                "text/plain",
+            )
             .unwrap();
-        let acl =
-            ObjectAccessControl::read(&bucket.name, "test-delete", &Entity::AllUsers).unwrap();
-        acl.delete().unwrap();
-        Object::delete(&bucket.name, "test-delete").unwrap();
-        bucket.delete().unwrap();
+            let new_bucket_access_control = NewObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            ObjectAccessControl::create(
+                &bucket.name,
+                "test-object-access-controls-create",
+                &new_bucket_access_control,
+            )
+            .unwrap();
+        }
+
+        #[test]
+        fn list() {
+            let bucket = crate::read_test_bucket();
+            Object::create(
+                &bucket.name,
+                &[0, 1],
+                "test-object-access-controls-list",
+                "text/plain",
+            )
+            .unwrap();
+            ObjectAccessControl::list(&bucket.name, "test-object-access-controls-list").unwrap();
+        }
+
+        #[test]
+        fn read() {
+            let bucket = crate::read_test_bucket();
+            Object::create(
+                &bucket.name,
+                &[0, 1],
+                "test-object-access-controls-read",
+                "text/plain",
+            )
+            .unwrap();
+            let new_bucket_access_control = NewObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            ObjectAccessControl::create(
+                &bucket.name,
+                "test-object-access-controls-read",
+                &new_bucket_access_control,
+            )
+            .unwrap();
+            ObjectAccessControl::read(
+                &bucket.name,
+                "test-object-access-controls-read",
+                &Entity::AllUsers,
+            )
+            .unwrap();
+        }
+
+        #[test]
+        fn update() {
+            // use a seperate bucket to prevent synchronization issues
+            let bucket = crate::create_test_bucket(
+                "test-object-access-controls-update"
+            );
+            let new_bucket_access_control = NewObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            Object::create(
+                &bucket.name,
+                &[0, 1],
+                "test-update",
+                "text/plain"
+            )
+            .unwrap();
+            ObjectAccessControl::create(
+                &bucket.name,
+                "test-update",
+                &new_bucket_access_control
+            )
+            .unwrap();
+            let mut acl = ObjectAccessControl::read(
+                &bucket.name,
+                "test-update",
+                &Entity::AllUsers
+            )
+            .unwrap();
+            acl.entity = Entity::AllAuthenticatedUsers;
+            acl.update().unwrap();
+            Object::delete(&bucket.name, "test-update").unwrap();
+            bucket.delete().unwrap();
+        }
+
+        #[test]
+        fn delete() {
+            // use a seperate bucket to prevent synchronization issues
+            let bucket = crate::create_test_bucket("test-object-access-controls-delete");
+            let new_bucket_access_control = NewObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain").unwrap();
+            ObjectAccessControl::create(&bucket.name, "test-delete", &new_bucket_access_control)
+                .unwrap();
+            let acl =
+                ObjectAccessControl::read(&bucket.name, "test-delete", &Entity::AllUsers).unwrap();
+            acl.delete().unwrap();
+            Object::delete(&bucket.name, "test-delete").unwrap();
+            bucket.delete().unwrap();
+        }
     }
 }

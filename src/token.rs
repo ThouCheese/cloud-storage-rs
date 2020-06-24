@@ -34,6 +34,7 @@ impl Token {
         }
     }
 
+    #[cfg(feature = "sync")]
     pub fn get<'a>(&'a mut self) -> Result<String, Error> {
         match self.token {
             Some((ref token, exp)) if exp > now() => Ok(token.clone()),
@@ -41,6 +42,14 @@ impl Token {
         }
     }
 
+    pub async fn get_async<'a>(&'a mut self) -> Result<String, Error> {
+        match self.token {
+            Some((ref token, exp)) if exp > now() => Ok(token.clone()),
+            _ => self.retrieve_async().await,
+        }
+    }
+
+    #[cfg(feature = "sync")]
     fn retrieve(&mut self) -> Result<String, Error> {
         self.token = Some(Self::get_token(&self.access_scope)?);
         match self.token {
@@ -49,6 +58,15 @@ impl Token {
         }
     }
 
+    async fn retrieve_async(&mut self) -> Result<String, Error> {
+        self.token = Some(Self::get_token_async(&self.access_scope).await?);
+        match self.token {
+            Some(ref token) => Ok(token.0.clone()),
+            None => unreachable!(),
+        }
+    }
+
+    #[cfg(feature = "sync")]
     fn get_token(scope: &str) -> Result<(String, u64), Error> {
         let now = now();
         let exp = now + 3600;
@@ -75,6 +93,37 @@ impl Token {
             .form(&body)
             .send()?
             .json()?;
+        Ok((response.access_token, exp))
+    }
+
+    async fn get_token_async(scope: &str) -> Result<(String, u64), Error> {
+        let now = now();
+        let exp = now + 3600;
+
+        let claims = Claims {
+            iss: crate::SERVICE_ACCOUNT.client_email.clone(),
+            scope: scope.into(),
+            aud: "https://www.googleapis.com/oauth2/v4/token".to_string(),
+            exp,
+            iat: now,
+        };
+        let mut header = jsonwebtoken::Header::default();
+        header.alg = jsonwebtoken::Algorithm::RS256;
+        let private_key_bytes = crate::SERVICE_ACCOUNT.private_key.as_bytes();
+        let private_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key_bytes)?;
+        let jwt = jsonwebtoken::encode(&header, &claims, &private_key)?;
+        let body = [
+            ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
+            ("assertion", &jwt),
+        ];
+        let client = reqwest::Client::new();
+        let response: TokenResponse = client
+            .post("https://www.googleapis.com/oauth2/v4/token")
+            .form(&body)
+            .send()
+            .await?
+            .json()
+            .await?;
         Ok((response.access_token, exp))
     }
 }
