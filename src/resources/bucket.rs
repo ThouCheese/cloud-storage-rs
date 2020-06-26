@@ -562,14 +562,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn create(new_bucket: &NewBucket) -> Result<Self, Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            Bucket::create_async(new_bucket).await
-        })
+    #[tokio::main]
+    pub async fn create(new_bucket: &NewBucket) -> Result<Self, Error> {
+        Bucket::create_async(new_bucket).await
     }
 
     /// TODO
@@ -604,14 +599,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn list() -> Result<Vec<Self>, Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            Bucket::list_async().await
-        })
+    #[tokio::main]
+    pub async fn list() -> Result<Vec<Self>, Error> {
+        Bucket::list_async().await
     }
 
     /// TODO
@@ -652,14 +642,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn read(name: &str) -> Result<Self, Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            Bucket::read_async(name).await
-        })
+    #[tokio::main]
+    pub async fn read(name: &str) -> Result<Self, Error> {
+        Bucket::read_async(name).await
     }
 
     /// TODO
@@ -704,14 +689,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn update(&self) -> Result<Self, Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            self.update_async().await
-        })
+    #[tokio::main]
+    pub async fn update(&self) -> Result<Self, Error> {
+        self.update_async().await
     }
 
     /// TODO
@@ -752,14 +732,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn delete(self) -> Result<(), Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            self.delete_async().await
-        })
+    #[tokio::main]
+    pub async fn delete(self) -> Result<(), Error> {
+        self.delete_async().await
     }
 
     /// TODO
@@ -793,14 +768,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn get_iam_policy(&self) -> Result<IamPolicy, Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            self.get_iam_policy_async().await
-        })
+    #[tokio::main]
+    pub async fn get_iam_policy(&self) -> Result<IamPolicy, Error> {
+        self.get_iam_policy_async().await
     }
 
     /// TODO
@@ -851,14 +821,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn set_iam_policy(&self, iam: &IamPolicy) -> Result<IamPolicy, Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            self.set_iam_policy_async(iam).await
-        })
+    #[tokio::main]
+    pub async fn set_iam_policy(&self, iam: &IamPolicy) -> Result<IamPolicy, Error> {
+        self.set_iam_policy_async(iam).await
     }
 
     /// TODO
@@ -891,14 +856,9 @@ impl Bucket {
     /// # }
     /// ```
     #[cfg(feature = "sync")]
-    pub fn test_iam_permission(&self, permission: &str) -> Result<TestIamPermission, Error> {
-        use tokio::runtime::Runtime;
-
-        let mut rt = Runtime::new().unwrap();
-
-        rt.block_on(async {
-            self.test_iam_permission_async(permission).await
-        })
+    #[tokio::main]
+    pub async fn test_iam_permission(&self, permission: &str) -> Result<TestIamPermission, Error> {
+        self.test_iam_permission_async(permission).await
     }
 
     /// TODO
