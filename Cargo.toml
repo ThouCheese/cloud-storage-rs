@@ -18,7 +18,7 @@ default = []
 sync = ["reqwest/blocking"]
 
 [dependencies]
-reqwest =          { version = "0.10", default-features = false, features = ["json", "default-tls"] }
+reqwest =          { version = "0.10", default-features = false, features = ["json", "default-tls", "stream"] }
 percent-encoding = { version = "2",    default-features = false }
 jsonwebtoken =     { version = "7",    default-features = false }
 serde =            { version = "1",    default-features = false, features = ["derive"] }
@@ -30,3 +30,5 @@ openssl =          { version = "0.10", default-features = false }
 chrono =           { version = "0.4",  default-features = false, features = ["serde"] }
 hex =              { version = "0.4",  default-features = false }
 tokio =            { version = "0.2",  default-features = false, features = ["macros", "rt-threaded"] }
+futures =          { version = "0.3",  default_features = false }
+bytes =            { version = "0.5",  default_features = false }

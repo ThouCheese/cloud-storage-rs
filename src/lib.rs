@@ -165,6 +165,21 @@ fn read_test_bucket() -> Bucket {
     }
 }
 
+#[cfg(test)]
+async fn read_test_bucket_async() -> Bucket {
+    dotenv::dotenv().ok();
+    let name = std::env::var("TEST_BUCKET").unwrap();
+    match Bucket::read_async(&name).await {
+        Ok(bucket) => bucket,
+        Err(_not_found) => Bucket::create_async(&NewBucket {
+            name,
+            ..Default::default()
+        })
+        .await
+        .unwrap(),
+    }
+}
+
 // since all tests run in parallel, we need to make sure we do not create multiple buckets with
 // the same name in each test.
 #[cfg(test)]

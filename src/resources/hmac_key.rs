@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 use crate::error::GoogleResponse;
 
 /// The `HmacKey` resource represents an HMAC key within Cloud Storage. The resource consists of a
