@@ -67,33 +67,9 @@ impl Token {
     }
 
     #[cfg(feature = "sync")]
-    fn get_token(scope: &str) -> Result<(String, u64), Error> {
-        let now = now();
-        let exp = now + 3600;
-
-        let claims = Claims {
-            iss: crate::SERVICE_ACCOUNT.client_email.clone(),
-            scope: scope.into(),
-            aud: "https://www.googleapis.com/oauth2/v4/token".to_string(),
-            exp,
-            iat: now,
-        };
-        let mut header = jsonwebtoken::Header::default();
-        header.alg = jsonwebtoken::Algorithm::RS256;
-        let private_key_bytes = crate::SERVICE_ACCOUNT.private_key.as_bytes();
-        let private_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key_bytes)?;
-        let jwt = jsonwebtoken::encode(&header, &claims, &private_key)?;
-        let body = [
-            ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
-            ("assertion", &jwt),
-        ];
-        let client = reqwest::blocking::Client::new();
-        let response: TokenResponse = client
-            .post("https://www.googleapis.com/oauth2/v4/token")
-            .form(&body)
-            .send()?
-            .json()?;
-        Ok((response.access_token, exp))
+    #[tokio::main]
+    async fn get_token(scope: &str) -> Result<(String, u64), Error> {
+        Self::get_token_async(scope).await
     }
 
     async fn get_token_async(scope: &str) -> Result<(String, u64), Error> {
