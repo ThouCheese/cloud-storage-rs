@@ -566,7 +566,7 @@ impl Bucket {
         let url = format!("{}/b/", crate::BASE_URL);
         let project = crate::SERVICE_ACCOUNT.project_id.clone();
         let query = [("project", project)];
-        let result: GoogleResponse<Self> = reqwest::Client::new()
+        let result: GoogleResponse<Self> = crate::CLIENT
             .post(&url)
             .headers(crate::get_headers().await?)
             .query(&query)
@@ -606,7 +606,7 @@ impl Bucket {
         let url = format!("{}/b/", crate::BASE_URL);
         let project = crate::SERVICE_ACCOUNT.project_id.clone();
         let query = [("project", project)];
-        let result: GoogleResponse<ListResponse<Self>> = reqwest::Client::new()
+        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .query(&query)
@@ -650,7 +650,7 @@ impl Bucket {
     /// ```
     pub async fn read(name: &str) -> crate::Result<Self> {
         let url = format!("{}/b/{}", crate::BASE_URL, name);
-        let result: GoogleResponse<Self> = reqwest::Client::new()
+        let result: GoogleResponse<Self> = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -700,7 +700,7 @@ impl Bucket {
     /// ```
     pub async fn update(&self) -> crate::Result<Self> {
         let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let result: GoogleResponse<Self> = reqwest::Client::new()
+        let result: GoogleResponse<Self> = crate::CLIENT
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(self)
@@ -746,7 +746,7 @@ impl Bucket {
     /// ```
     pub async fn delete(self) -> crate::Result<()> {
         let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let response = reqwest::Client::new()
+        let response = crate::CLIENT
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -789,7 +789,7 @@ impl Bucket {
     /// ```
     pub async fn get_iam_policy(&self) -> crate::Result<IamPolicy> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let result: GoogleResponse<IamPolicy> = reqwest::Client::new()
+        let result: GoogleResponse<IamPolicy> = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -845,7 +845,7 @@ impl Bucket {
     /// ```
     pub async fn set_iam_policy(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let result: GoogleResponse<IamPolicy> = reqwest::Client::new()
+        let result: GoogleResponse<IamPolicy> = crate::CLIENT
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(iam)
@@ -888,7 +888,7 @@ impl Bucket {
             ));
         }
         let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, self.name);
-        let result: GoogleResponse<TestIamPermission> = reqwest::Client::new()
+        let result: GoogleResponse<TestIamPermission> = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .query(&[("permissions", permission)])

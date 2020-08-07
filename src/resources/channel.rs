@@ -1,5 +1,3 @@
-
-
 pub struct Channel {
     pub id: String,
     pub resourceId: String,
@@ -18,10 +16,11 @@ impl Channel {
 
     pub async fn stop_async(&self) -> Result<(), crate::Error> {
         let url = format!("{}/channels/stop", crate::BASE_URL);
-        let response = reqwest::Client::new()
+        let response = create::CLIENT
             .post(&url)
             .headers(crate::get_headers().await?)
-            .send().await?;
+            .send()
+            .await?;
         if response.status().is_success() {
             Ok(())
         } else {
