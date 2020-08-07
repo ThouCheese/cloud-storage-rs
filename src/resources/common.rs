@@ -26,9 +26,9 @@ pub enum Team {
 impl std::fmt::Display for Team {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Team::Editors => write!(f, "{}", "editors"),
-            Team::Owners => write!(f, "{}", "owners"),
-            Team::Viewers => write!(f, "{}", "viewers"),
+            Team::Editors => write!(f, "editors"),
+            Team::Owners => write!(f, "owners"),
+            Team::Viewers => write!(f, "viewers"),
         }
     }
 }
@@ -134,7 +134,9 @@ impl<'de> serde::de::Visitor<'de> for EntityVisitor {
             ["group", rest @ ..] if is_email(rest) => GroupEmail(rest.join("-")),
             ["group", rest @ ..] => GroupId(rest.join("-")),
             ["domain", rest @ ..] => Domain(rest.join("-")),
-            ["project", team, project_id] => Project(Team::from_str(team).unwrap(), project_id.to_string()),
+            ["project", team, project_id] => {
+                Project(Team::from_str(team).unwrap(), project_id.to_string())
+            }
             ["allUsers"] => AllUsers,
             ["allAuthenticatedUsers"] => AllAuthenticatedUsers,
             _ => return Err(E::custom(format!("Unexpected `Entity`: {}", value))),

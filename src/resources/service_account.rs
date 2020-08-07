@@ -29,7 +29,9 @@ impl ServiceAccount {
         dotenv::dotenv().ok();
         let path = std::env::var("SERVICE_ACCOUNT")
             .or_else(|_| std::env::var("GOOGLE_APPLICATION_CREDENTIALS"))
-            .expect("SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS environment parameter required");
+            .expect(
+                "SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS environment parameter required",
+            );
         let file = std::fs::read_to_string(path).expect("SERVICE_ACCOUNT file not found");
         let account: Self = serde_json::from_str(&file).expect("serivce account file not valid");
         if account.r#type != "service_account" {

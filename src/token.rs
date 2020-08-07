@@ -34,22 +34,22 @@ impl Token {
         }
     }
 
-    pub fn get<'a>(&'a mut self) -> Result<String, Error> {
+    pub async fn get(&mut self) -> crate::Result<String> {
         match self.token {
             Some((ref token, exp)) if exp > now() => Ok(token.clone()),
-            _ => self.retrieve(),
+            _ => self.retrieve().await,
         }
     }
 
-    fn retrieve(&mut self) -> Result<String, Error> {
-        self.token = Some(Self::get_token(&self.access_scope)?);
+    async fn retrieve(&mut self) -> crate::Result<String> {
+        self.token = Some(Self::get_token(&self.access_scope).await?);
         match self.token {
             Some(ref token) => Ok(token.0.clone()),
             None => unreachable!(),
         }
     }
 
-    fn get_token(scope: &str) -> Result<(String, u64), Error> {
+    async fn get_token(scope: &str) -> Result<(String, u64), Error> {
         let now = now();
         let exp = now + 3600;
 
@@ -69,12 +69,13 @@ impl Token {
             ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
             ("assertion", &jwt),
         ];
-        let client = reqwest::blocking::Client::new();
-        let response: TokenResponse = client
+        let response: TokenResponse = reqwest::Client::new()
             .post("https://www.googleapis.com/oauth2/v4/token")
             .form(&body)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         Ok((response.access_token, exp))
     }
 }

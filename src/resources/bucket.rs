@@ -12,7 +12,7 @@ pub use crate::resources::location::*;
 /// is a single global namespace shared by all buckets. For more information, see
 /// [Bucket Name Requirements](https://cloud.google.com/storage/docs/naming#requirements).
 ///
-/// Buckets contain objects which can be accessed by their own methods. In addition to the 
+/// Buckets contain objects which can be accessed by their own methods. In addition to the
 /// [ACL property](https://cloud.google.com/storage/docs/access-control/lists), buckets contain
 /// `BucketAccessControls`, for use in fine-grained manipulation of an existing bucket's access
 /// controls.
@@ -547,7 +547,8 @@ impl Bucket {
     /// if that bucket name is already taken.
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::bucket::{Bucket, NewBucket};
     /// use cloud_storage::bucket::{Location, MultiRegion};
     ///
@@ -556,124 +557,171 @@ impl Bucket {
     ///    location: Location::Multi(MultiRegion::Eu),
     ///    ..Default::default()
     /// };
-    /// let bucket = Bucket::create(&new_bucket)?;
-    /// # bucket.delete();
+    /// let bucket = Bucket::create(&new_bucket).await?;
+    /// # bucket.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn create(new_bucket: &NewBucket) -> Result<Self, Error> {
+    pub async fn create(new_bucket: &NewBucket) -> crate::Result<Self> {
         let url = format!("{}/b/", crate::BASE_URL);
         let project = crate::SERVICE_ACCOUNT.project_id.clone();
         let query = [("project", project)];
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .query(&query)
             .json(new_bucket)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
     }
 
+    /// The synchronous equivalent of `Bucket::create`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn create_sync(new_bucket: &NewBucket) -> crate::Result<Self> {
+        Self::create(new_bucket).await
+    }
+
     /// Returns all `Bucket`s within this project.
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Bucket;
     ///
-    /// let buckets = Bucket::list()?;
+    /// let buckets = Bucket::list().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list() -> Result<Vec<Self>, Error> {
+    pub async fn list() -> Result<Vec<Self>, Error> {
         let url = format!("{}/b/", crate::BASE_URL);
         let project = crate::SERVICE_ACCOUNT.project_id.clone();
         let query = [("project", project)];
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<ListResponse<Self>> = client
+        let result: GoogleResponse<ListResponse<Self>> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .query(&query)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s.items),
             GoogleResponse::Error(e) => Err(e.into()),
         }
     }
 
+    /// The synchronous equivalent of `Bucket::list`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn list_sync() -> Result<Vec<Self>, Error> {
+        Self::list().await
+    }
+
     /// Returns a single `Bucket` by its name. If the Bucket does not exist, an error is returned.
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Bucket;
     /// # use cloud_storage::bucket::NewBucket;
     /// # let new_bucket = NewBucket {
     /// #   name: "cloud-storage-rs-doc-2".to_string(),
     /// #    ..Default::default()
     /// # };
-    /// # let _ = Bucket::create(&new_bucket)?;
+    /// # let _ = Bucket::create(&new_bucket).await?;
     ///
-    /// let bucket = Bucket::read("cloud-storage-rs-doc-2")?;
-    /// # bucket.delete()?;
+    /// let bucket = Bucket::read("cloud-storage-rs-doc-2").await?;
+    /// # bucket.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn read(name: &str) -> Result<Self, Error> {
+    pub async fn read(name: &str) -> crate::Result<Self> {
         let url = format!("{}/b/{}", crate::BASE_URL, name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
     }
 
+    /// The synchronous equivalent of `Bucket::read`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn read_sync(name: &str) -> crate::Result<Self> {
+        Self::read(name).await
+    }
+
     /// Update an existing `Bucket`. If you declare you bucket as mutable, you can edit its fields.
     /// You can then flush your changes to Google Cloud Storage using this method.
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::bucket::{Bucket, RetentionPolicy};
     /// # use cloud_storage::bucket::NewBucket;
     /// # let new_bucket = NewBucket {
     /// #   name: "cloud-storage-rs-doc-3".to_string(),
     /// #    ..Default::default()
     /// # };
-    /// # let _ = Bucket::create(&new_bucket)?;
+    /// # let _ = Bucket::create(&new_bucket).await?;
     ///
-    /// let mut bucket = Bucket::read("cloud-storage-rs-doc-3")?;
+    /// let mut bucket = Bucket::read("cloud-storage-rs-doc-3").await?;
     /// bucket.retention_policy = Some(RetentionPolicy {
     ///     retention_period: 50,
     ///     effective_time: chrono::Utc::now() + chrono::Duration::seconds(50),
     ///     is_locked: Some(false),
     /// });
-    /// bucket.update()?;
-    /// # bucket.delete()?;
+    /// bucket.update().await?;
+    /// # bucket.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn update(&self) -> Result<Self, Error> {
+    pub async fn update(&self) -> crate::Result<Self> {
         let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .put(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .json(self)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `Bucket::update`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn update_sync(&self) -> crate::Result<Self> {
+        self.update().await
     }
 
     /// Delete an existing `Bucket`. This permanently removes a bucket from Google Cloud Storage.
@@ -681,67 +729,94 @@ impl Bucket {
     /// `retention_policy` prevents you from deleting your Bucket.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Bucket;
     /// # use cloud_storage::bucket::NewBucket;
     /// # let new_bucket = NewBucket {
     /// #   name: "unnecessary-bucket".to_string(),
     /// #    ..Default::default()
     /// # };
-    /// # let _ = Bucket::create(&new_bucket)?;
+    /// # let _ = Bucket::create(&new_bucket).await?;
     ///
-    /// let bucket = Bucket::read("unnecessary-bucket")?;
-    /// bucket.delete()?;
+    /// let bucket = Bucket::read("unnecessary-bucket").await?;
+    /// bucket.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn delete(self) -> Result<(), Error> {
+    pub async fn delete(self) -> crate::Result<()> {
         let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let response = client.delete(&url).headers(crate::get_headers()?).send()?;
+        let response = reqwest::Client::new()
+            .delete(&url)
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?;
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(Error::Google(response.json()?))
+            Err(Error::Google(response.json().await?))
         }
+    }
+
+    /// The synchronous equivalent of `Bucket::delete`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn delete_sync(self) -> crate::Result<()> {
+        self.delete().await
     }
 
     /// Returns the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Bucket;
     /// # use cloud_storage::bucket::NewBucket;
     /// # let new_bucket = NewBucket {
     /// #   name: "cloud-storage-rs-doc-4".to_string(),
     /// #    ..Default::default()
     /// # };
-    /// # let _ = Bucket::create(&new_bucket)?;
+    /// # let _ = Bucket::create(&new_bucket).await?;
     ///
-    /// let bucket = Bucket::read("cloud-storage-rs-doc-4")?;
-    /// let policy = bucket.get_iam_policy()?;
-    /// # bucket.delete()?;
+    /// let bucket = Bucket::read("cloud-storage-rs-doc-4").await?;
+    /// let policy = bucket.get_iam_policy().await?;
+    /// # bucket.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_iam_policy(&self) -> Result<IamPolicy, Error> {
+    pub async fn get_iam_policy(&self) -> crate::Result<IamPolicy> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<IamPolicy> = client
+        let result: GoogleResponse<IamPolicy> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
     }
 
+    /// The synchronous equivalent of `Bucket::get_iam_policy`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn get_iam_policy_sync(&self) -> crate::Result<IamPolicy> {
+        self.get_iam_policy().await
+    }
+
     /// Updates the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Bucket;
     /// use cloud_storage::bucket::{IamPolicy, Binding, IamRole, StandardIamRole, Entity};
     /// # use cloud_storage::bucket::NewBucket;
@@ -749,9 +824,9 @@ impl Bucket {
     /// #   name: "cloud-storage-rs-doc-5".to_string(),
     /// #    ..Default::default()
     /// # };
-    /// # let _ = Bucket::create(&new_bucket)?;
+    /// # let _ = Bucket::create(&new_bucket).await?;
     ///
-    /// let bucket = Bucket::read("cloud-storage-rs-doc-5")?;
+    /// let bucket = Bucket::read("cloud-storage-rs-doc-5").await?;
     /// let iam_policy = IamPolicy {
     ///     version: 1,
     ///     bindings: vec![
@@ -763,55 +838,81 @@ impl Bucket {
     ///     ],
     ///     ..Default::default()
     /// };
-    /// let policy = bucket.set_iam_policy(&iam_policy)?;
-    /// # bucket.delete()?;
+    /// let policy = bucket.set_iam_policy(&iam_policy).await?;
+    /// # bucket.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn set_iam_policy(&self, iam: &IamPolicy) -> Result<IamPolicy, Error> {
+    pub async fn set_iam_policy(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<IamPolicy> = client
+        let result: GoogleResponse<IamPolicy> = reqwest::Client::new()
             .put(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .json(iam)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
     }
 
+    /// The synchronous equivalent of `Bucket::set_iam_policy`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn set_iam_policy_sync(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
+        self.set_iam_policy(iam).await
+    }
+
     /// Checks whether the user provided in the service account has this permission.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Bucket;
     ///
-    /// let bucket = Bucket::read("my-bucket")?;
-    /// bucket.test_iam_permission("storage.buckets.get")?;
+    /// let bucket = Bucket::read("my-bucket").await?;
+    /// bucket.test_iam_permission("storage.buckets.get").await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn test_iam_permission(&self, permission: &str) -> Result<TestIamPermission, Error> {
+    pub async fn test_iam_permission(&self, permission: &str) -> crate::Result<TestIamPermission> {
         if permission == "storage.buckets.list" || permission == "storage.buckets.create" {
             return Err(Error::new(
                 "tested permission must not be `storage.buckets.list` or `storage.buckets.create`",
             ));
         }
         let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, self.name);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<TestIamPermission> = client
+        let result: GoogleResponse<TestIamPermission> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .query(&[("permissions", permission)])
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `Bucket::test_iam_policy`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn test_iam_permission_sync(
+        &self,
+        permission: &str,
+    ) -> crate::Result<TestIamPermission> {
+        self.test_iam_permission(permission).await
     }
 
     fn _lock_retention_policy() {
@@ -824,8 +925,8 @@ mod tests {
     use super::*;
     use crate::resources::common::Role;
 
-    #[test]
-    fn create() -> Result<(), Box<dyn std::error::Error>> {
+    #[tokio::test]
+    async fn create() -> Result<(), Box<dyn std::error::Error>> {
         dotenv::dotenv().ok();
         let base_name = std::env::var("TEST_BUCKET")?;
         // use a more complex bucket in this test.
@@ -848,63 +949,63 @@ mod tests {
             }),
             ..Default::default()
         };
-        let bucket = Bucket::create(&new_bucket)?;
-        bucket.delete()?;
+        let bucket = Bucket::create(&new_bucket).await?;
+        bucket.delete().await?;
         Ok(())
     }
 
-    #[test]
-    fn list() -> Result<(), Box<dyn std::error::Error>> {
-        Bucket::list()?;
+    #[tokio::test]
+    async fn list() -> Result<(), Box<dyn std::error::Error>> {
+        Bucket::list().await?;
         Ok(())
     }
 
-    #[test]
-    fn read() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::create_test_bucket("test-read");
-        let also_bucket = Bucket::read(&bucket.name)?;
+    #[tokio::test]
+    async fn read() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::create_test_bucket("test-read").await;
+        let also_bucket = Bucket::read(&bucket.name).await?;
         assert_eq!(bucket, also_bucket);
-        bucket.delete()?;
-        assert!(also_bucket.delete().is_err());
+        bucket.delete().await?;
+        assert!(also_bucket.delete().await.is_err());
         Ok(())
     }
 
-    #[test]
-    fn update() -> Result<(), Box<dyn std::error::Error>> {
-        let mut bucket = crate::create_test_bucket("test-update");
+    #[tokio::test]
+    async fn update() -> Result<(), Box<dyn std::error::Error>> {
+        let mut bucket = crate::create_test_bucket("test-update").await;
         bucket.retention_policy = Some(RetentionPolicy {
             retention_period: 50,
             effective_time: chrono::Utc::now() + chrono::Duration::seconds(50),
             is_locked: Some(false),
         });
-        bucket.update()?;
-        let updated = Bucket::read(&bucket.name)?;
+        bucket.update().await?;
+        let updated = Bucket::read(&bucket.name).await?;
         assert_eq!(updated.retention_policy.unwrap().retention_period, 50);
-        bucket.delete()?;
+        bucket.delete().await?;
         Ok(())
     }
 
     // used a lot throughout the other tests, but included for completeness
-    #[test]
-    fn delete() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::create_test_bucket("test-delete");
-        bucket.delete()?;
+    #[tokio::test]
+    async fn delete() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::create_test_bucket("test-delete").await;
+        bucket.delete().await?;
         Ok(())
     }
 
-    #[test]
-    fn get_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::create_test_bucket("test-get-iam-policy");
-        bucket.get_iam_policy()?;
-        bucket.delete()?;
+    #[tokio::test]
+    async fn get_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::create_test_bucket("test-get-iam-policy").await;
+        bucket.get_iam_policy().await?;
+        bucket.delete().await?;
         Ok(())
     }
 
-    #[test]
-    fn set_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
+    #[tokio::test]
+    async fn set_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
         // use crate::resources::iam_policy::{Binding, IamRole, StandardIamRole};
 
-        let bucket = crate::create_test_bucket("test-set-iam-policy");
+        let bucket = crate::create_test_bucket("test-set-iam-policy").await;
         let iam_policy = IamPolicy {
             bindings: vec![Binding {
                 role: IamRole::Standard(StandardIamRole::ObjectViewer),
@@ -913,20 +1014,126 @@ mod tests {
             }],
             ..Default::default()
         };
-        bucket.set_iam_policy(&iam_policy)?;
-        assert_eq!(
-            bucket.get_iam_policy()?.bindings,
-            iam_policy.bindings
-        );
-        bucket.delete()?;
+        bucket.set_iam_policy(&iam_policy).await?;
+        assert_eq!(bucket.get_iam_policy().await?.bindings, iam_policy.bindings);
+        bucket.delete().await?;
         Ok(())
     }
 
-    #[test]
-    fn test_iam_permission() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::create_test_bucket("test-test-ia-permission");
-        bucket.test_iam_permission("storage.buckets.get")?;
-        bucket.delete()?;
+    #[tokio::test]
+    async fn test_iam_permission() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::create_test_bucket("test-test-ia-permission").await;
+        bucket.test_iam_permission("storage.buckets.get").await?;
+        bucket.delete().await?;
         Ok(())
+    }
+
+    #[cfg(feature = "sync")]
+    mod sync {
+        use super::*;
+        use crate::resources::common::Role;
+
+        #[test]
+        fn create() -> Result<(), Box<dyn std::error::Error>> {
+            dotenv::dotenv().ok();
+            let base_name = std::env::var("TEST_BUCKET")?;
+            // use a more complex bucket in this test.
+            let new_bucket = NewBucket {
+                name: format!("{}-test-create", base_name),
+                default_event_based_hold: Some(true),
+                acl: Some(vec![NewBucketAccessControl {
+                    entity: Entity::AllUsers,
+                    role: Role::Reader,
+                }]),
+                default_object_acl: Some(vec![NewDefaultObjectAccessControl {
+                    entity: Entity::AllUsers,
+                    role: Role::Reader,
+                }]),
+                iam_configuration: Some(IamConfiguration {
+                    uniform_bucket_level_access: UniformBucketLevelAccess {
+                        enabled: false,
+                        locked_time: None,
+                    },
+                }),
+                ..Default::default()
+            };
+            let bucket = Bucket::create_sync(&new_bucket)?;
+            bucket.delete_sync()?;
+            Ok(())
+        }
+
+        #[test]
+        fn list() -> Result<(), Box<dyn std::error::Error>> {
+            Bucket::list_sync()?;
+            Ok(())
+        }
+
+        #[test]
+        fn read() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::create_test_bucket_sync("test-read");
+            let also_bucket = Bucket::read_sync(&bucket.name)?;
+            assert_eq!(bucket, also_bucket);
+            bucket.delete_sync()?;
+            assert!(also_bucket.delete_sync().is_err());
+            Ok(())
+        }
+
+        #[test]
+        fn update() -> Result<(), Box<dyn std::error::Error>> {
+            let mut bucket = crate::create_test_bucket_sync("test-update");
+            bucket.retention_policy = Some(RetentionPolicy {
+                retention_period: 50,
+                effective_time: chrono::Utc::now() + chrono::Duration::seconds(50),
+                is_locked: Some(false),
+            });
+            bucket.update_sync()?;
+            let updated = Bucket::read_sync(&bucket.name)?;
+            assert_eq!(updated.retention_policy.unwrap().retention_period, 50);
+            bucket.delete_sync()?;
+            Ok(())
+        }
+
+        // used a lot throughout the other tests, but included for completeness
+        #[test]
+        fn delete() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::create_test_bucket_sync("test-delete");
+            bucket.delete_sync()?;
+            Ok(())
+        }
+
+        #[test]
+        fn get_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::create_test_bucket_sync("test-get-iam-policy");
+            bucket.get_iam_policy_sync()?;
+            bucket.delete_sync()?;
+            Ok(())
+        }
+
+        #[test]
+        fn set_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
+            // use crate::resources::iam_policy::{Binding, IamRole, StandardIamRole};
+
+            let bucket = crate::create_test_bucket_sync("test-set-iam-policy");
+            let iam_policy = IamPolicy {
+                bindings: vec![Binding {
+                    role: IamRole::Standard(StandardIamRole::ObjectViewer),
+                    members: vec!["allUsers".to_string()],
+                    condition: None,
+                }],
+                ..Default::default()
+            };
+            bucket.set_iam_policy_sync(&iam_policy)?;
+            assert_eq!(bucket.get_iam_policy_sync()?.bindings, iam_policy.bindings);
+            bucket.delete_sync()?;
+            Ok(())
+        }
+
+        #[test]
+        fn test_iam_permission() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::create_test_bucket_sync("test-test-ia-permission");
+            bucket.test_iam_permission_sync("storage.buckets.get")?;
+            bucket.delete_sync()?;
+            Ok(())
+        }
     }
 }
