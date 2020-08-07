@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use crate::error::GoogleResponse;
 use crate::resources::common::ListResponse;
 pub use crate::resources::common::{Entity, ProjectTeam, Role};
@@ -95,6 +97,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn create(
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
@@ -130,6 +133,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
         let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
         let client = reqwest::blocking::Client::new();
@@ -170,6 +174,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn read(bucket: &str, entity: &Entity) -> Result<Self, crate::Error> {
         let url = dbg!(format!(
             "{}/b/{}/defaultObjectAcl/{}",
@@ -208,6 +213,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn update(&self) -> Result<Self, crate::Error> {
         let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
@@ -246,6 +252,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn delete(self) -> Result<(), crate::Error> {
         let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
@@ -267,54 +274,59 @@ impl DefaultObjectAccessControl {
 mod tests {
     use super::*;
 
-    #[test]
-    fn create() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let new_acl = NewDefaultObjectAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        DefaultObjectAccessControl::create(&bucket.name, &new_acl)?;
-        Ok(())
-    }
+    #[cfg(feature = "sync")]
+    mod sync {
+        use super::*;
 
-    #[test]
-    fn read() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        NewDefaultObjectAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        DefaultObjectAccessControl::read(&bucket.name, &Entity::AllUsers)?;
-        Ok(())
-    }
+        #[test]
+        fn create() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let new_acl = NewDefaultObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            DefaultObjectAccessControl::create(&bucket.name, &new_acl)?;
+            Ok(())
+        }
 
-    #[test]
-    fn list() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        DefaultObjectAccessControl::list(&bucket.name)?;
-        Ok(())
-    }
+        #[test]
+        fn read() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            NewDefaultObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            DefaultObjectAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            Ok(())
+        }
 
-    #[test]
-    fn update() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let new_acl = NewDefaultObjectAccessControl {
-            entity: Entity::AllUsers,
-            role: Role::Reader,
-        };
-        let mut default_acl = DefaultObjectAccessControl::create(&bucket.name, &new_acl)?;
-        default_acl.entity = Entity::AllAuthenticatedUsers;
-        default_acl.update()?;
-        Ok(())
-    }
+        #[test]
+        fn list() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            DefaultObjectAccessControl::list(&bucket.name)?;
+            Ok(())
+        }
 
-    #[test]
-    fn delete() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        let default_acl =
-            DefaultObjectAccessControl::read(&bucket.name, &Entity::AllAuthenticatedUsers)?;
-        default_acl.delete()?;
-        Ok(())
+        #[test]
+        fn update() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let new_acl = NewDefaultObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            let mut default_acl = DefaultObjectAccessControl::create(&bucket.name, &new_acl)?;
+            default_acl.entity = Entity::AllAuthenticatedUsers;
+            default_acl.update()?;
+            Ok(())
+        }
+
+        #[test]
+        fn delete() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let default_acl =
+                DefaultObjectAccessControl::read(&bucket.name, &Entity::AllAuthenticatedUsers)?;
+            default_acl.delete()?;
+            Ok(())
+        }
     }
 }

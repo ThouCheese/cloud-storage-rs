@@ -96,6 +96,18 @@ lazy_static::lazy_static! {
 
 const BASE_URL: &'static str = "https://www.googleapis.com/storage/v1";
 
+async fn get_headers_async() -> Result<reqwest::header::HeaderMap, Error> {
+    let mut result = reqwest::header::HeaderMap::new();
+    let mut guard = TOKEN_CACHE.lock().unwrap();
+    let token = guard.get_async().await?;
+    result.insert(
+        reqwest::header::AUTHORIZATION,
+        format!("Bearer {}", token).parse().unwrap(),
+    );
+    Ok(result)
+}
+
+#[cfg(feature = "sync")]
 fn get_headers() -> Result<reqwest::header::HeaderMap, Error> {
     let mut result = reqwest::header::HeaderMap::new();
     let mut guard = TOKEN_CACHE.lock().unwrap();
@@ -139,6 +151,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "sync")]
 fn read_test_bucket() -> Bucket {
     dotenv::dotenv().ok();
     let name = std::env::var("TEST_BUCKET").unwrap();
@@ -152,10 +165,28 @@ fn read_test_bucket() -> Bucket {
     }
 }
 
+#[cfg(test)]
+async fn read_test_bucket_async() -> Bucket {
+    dotenv::dotenv().ok();
+    let name = std::env::var("TEST_BUCKET").unwrap();
+    match Bucket::read_async(&name).await {
+        Ok(bucket) => bucket,
+        Err(_not_found) => Bucket::create_async(&NewBucket {
+            name,
+            ..Default::default()
+        })
+        .await
+        .unwrap(),
+    }
+}
+
 // since all tests run in parallel, we need to make sure we do not create multiple buckets with
 // the same name in each test.
 #[cfg(test)]
+#[cfg(feature = "sync")]
 fn create_test_bucket(name: &str) -> Bucket {
+    std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
+
     dotenv::dotenv().ok();
     let base_name = std::env::var("TEST_BUCKET").unwrap();
     let name = format!("{}-{}", base_name, name);
@@ -166,5 +197,22 @@ fn create_test_bucket(name: &str) -> Bucket {
     match Bucket::create(&new_bucket) {
         Ok(bucket) => bucket,
         Err(_alread_exists) => Bucket::read(&new_bucket.name).unwrap(),
+    }
+}
+
+// since all tests run in parallel, we need to make sure we do not create multiple buckets with
+// the same name in each test.
+#[cfg(test)]
+async fn create_test_bucket_async(name: &str) -> Bucket {
+    dotenv::dotenv().ok();
+    let base_name = std::env::var("TEST_BUCKET").unwrap();
+    let name = format!("{}-{}", base_name, name);
+    let new_bucket = NewBucket {
+        name,
+        ..Default::default()
+    };
+    match Bucket::create_async(&new_bucket).await {
+        Ok(bucket) => bucket,
+        Err(_alread_exists) => Bucket::read_async(&new_bucket.name).await.unwrap(),
     }
 }

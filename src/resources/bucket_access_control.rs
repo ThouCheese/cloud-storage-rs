@@ -110,18 +110,30 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn create(
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn create(
+        bucket: &str,
+        new_bucket_access_control: &NewBucketAccessControl,
+    ) -> Result<Self, crate::Error> {
+        Self::create_async(bucket, new_bucket_access_control).await
+    }
+
+    /// TODO
+    pub async fn create_async(
         bucket: &str,
         new_bucket_access_control: &NewBucketAccessControl,
     ) -> Result<Self, crate::Error> {
         let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::Client::new();
         let result: GoogleResponse<Self> = client
             .post(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers_async().await?)
             .json(new_bucket_access_control)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
@@ -143,14 +155,23 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
+        Self::list_async(bucket).await
+    }
+
+    /// TODO
+    pub async fn list_async(bucket: &str) -> Result<Vec<Self>, crate::Error> {
         let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::Client::new();
         let result: GoogleResponse<ListResponse<Self>> = client
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers_async().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s.items),
             GoogleResponse::Error(e) => Err(e.into()),
@@ -172,14 +193,23 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn read(bucket: &str, entity: &Entity) -> Result<Self, crate::Error> {
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn read(bucket: &str, entity: &Entity) -> Result<Self, crate::Error> {
+        Self::read_async(bucket, entity).await
+    }
+
+    /// TODO
+    pub async fn read_async(bucket: &str, entity: &Entity) -> Result<Self, crate::Error> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, bucket, entity);
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::Client::new();
         let result: GoogleResponse<Self> = client
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers_async().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
@@ -202,15 +232,24 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn update(&self) -> Result<Self, crate::Error> {
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn update(&self) -> Result<Self, crate::Error> {
+        self.update_async().await
+    }
+
+    /// TODO
+    pub async fn update_async(&self) -> Result<Self, crate::Error> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::Client::new();
         let result: GoogleResponse<Self> = client
             .put(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers_async().await?)
             .json(self)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
@@ -233,14 +272,25 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn delete(self) -> Result<(), crate::Error> {
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn delete(self) -> Result<(), crate::Error> {
+        self.delete_async().await
+    }
+
+    /// TODO
+    pub async fn delete_async(self) -> Result<(), crate::Error> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
-        let client = reqwest::blocking::Client::new();
-        let response = client.delete(&url).headers(crate::get_headers()?).send()?;
+        let client = reqwest::Client::new();
+        let response = client
+            .delete(&url)
+            .headers(crate::get_headers_async().await?)
+            .send()
+            .await?;
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(crate::Error::Google(response.json()?))
+            Err(crate::Error::Google(response.json().await?))
         }
     }
 }
@@ -249,59 +299,120 @@ impl BucketAccessControl {
 mod tests {
     use super::*;
 
-    #[test]
-    fn create() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
+    #[tokio::test]
+    async fn create() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket_async().await;
         let new_bucket_access_control = NewBucketAccessControl {
             entity: Entity::AllUsers,
             role: Role::Reader,
         };
-        BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
+        BucketAccessControl::create_async(&bucket.name, &new_bucket_access_control).await?;
         Ok(())
     }
 
-    #[test]
-    fn list() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        BucketAccessControl::list(&bucket.name)?;
+    #[tokio::test]
+    async fn list() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket_async().await;
+        BucketAccessControl::list_async(&bucket.name).await?;
         Ok(())
     }
 
-    #[test]
-    fn read() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::read_test_bucket();
-        BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+    #[tokio::test]
+    async fn read() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket_async().await;
+        BucketAccessControl::read_async(&bucket.name, &Entity::AllUsers).await?;
         Ok(())
     }
 
-    #[test]
-    fn update() -> Result<(), Box<dyn std::error::Error>> {
+    #[tokio::test]
+    async fn update() -> Result<(), Box<dyn std::error::Error>> {
         // use a seperate bucket to prevent synchronization issues
-        let bucket = crate::create_test_bucket("test-update-bucket-access-controls");
+        let bucket = crate::create_test_bucket_async("test-update-bucket-access-controls").await;
         let new_bucket_access_control = NewBucketAccessControl {
             entity: Entity::AllUsers,
             role: Role::Reader,
         };
-        BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
-        let mut acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+        BucketAccessControl::create_async(&bucket.name, &new_bucket_access_control).await?;
+        let mut acl = BucketAccessControl::read_async(&bucket.name, &Entity::AllUsers).await?;
         acl.entity = Entity::AllAuthenticatedUsers;
-        acl.update()?;
-        bucket.delete()?;
+        acl.update_async().await?;
+        bucket.delete_async().await?;
         Ok(())
     }
 
-    #[test]
-    fn delete() -> Result<(), Box<dyn std::error::Error>> {
+    #[tokio::test]
+    async fn delete() -> Result<(), Box<dyn std::error::Error>> {
         // use a seperate bucket to prevent synchronization issues
-        let bucket = crate::create_test_bucket("test-delete-bucket-access-controls");
+        let bucket = crate::create_test_bucket_async("test-delete-bucket-access-controls").await;
         let new_bucket_access_control = NewBucketAccessControl {
             entity: Entity::AllUsers,
             role: Role::Reader,
         };
-        BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
-        let acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
-        acl.delete()?;
-        bucket.delete()?;
+        BucketAccessControl::create_async(&bucket.name, &new_bucket_access_control).await?;
+        let acl = BucketAccessControl::read_async(&bucket.name, &Entity::AllUsers).await?;
+        acl.delete_async().await?;
+        bucket.delete_async().await?;
         Ok(())
+    }
+
+    #[cfg(feature = "sync")]
+    mod sync {
+        use super::*;
+
+        #[test]
+        fn create() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            let new_bucket_access_control = NewBucketAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
+            Ok(())
+        }
+
+        #[test]
+        fn list() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            BucketAccessControl::list(&bucket.name)?;
+            Ok(())
+        }
+
+        #[test]
+        fn read() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket();
+            BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            Ok(())
+        }
+
+        #[test]
+        fn update() -> Result<(), Box<dyn std::error::Error>> {
+            // use a seperate bucket to prevent synchronization issues
+            let bucket = crate::create_test_bucket("test-update-bucket-access-controls");
+            let new_bucket_access_control = NewBucketAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
+            let mut acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            acl.entity = Entity::AllAuthenticatedUsers;
+            acl.update()?;
+            bucket.delete()?;
+            Ok(())
+        }
+
+        #[test]
+        fn delete() -> Result<(), Box<dyn std::error::Error>> {
+            // use a seperate bucket to prevent synchronization issues
+            let bucket = crate::create_test_bucket("test-delete-bucket-access-controls");
+            let new_bucket_access_control = NewBucketAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            BucketAccessControl::create(&bucket.name, &new_bucket_access_control)?;
+            let acl = BucketAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            acl.delete()?;
+            bucket.delete()?;
+            Ok(())
+        }
     }
 }

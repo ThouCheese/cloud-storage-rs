@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 use crate::error::GoogleResponse;
 
 /// The `HmacKey` resource represents an HMAC key within Cloud Storage. The resource consists of a
@@ -73,10 +76,10 @@ struct UpdateMeta {
 
 impl HmacKey {
     /// Creates a new HMAC key for the specified service account.
-    /// 
+    ///
     /// The authenticated user must have `storage.hmacKeys.create` permission for the project in
     /// which the key will be created.
-    /// 
+    ///
     /// For general information about HMAC keys in Cloud Storage, see
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
@@ -91,6 +94,7 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn create() -> Result<Self, crate::Error> {
         use reqwest::header::CONTENT_LENGTH;
 
@@ -118,21 +122,22 @@ impl HmacKey {
     /// Retrieves a list of HMAC keys matching the criteria. Since the HmacKey is secret, this does
     /// not return a `HmacKey`, but a `HmacMeta`. This is a redacted version of a `HmacKey`, but
     /// with the secret data omitted.
-    /// 
+    ///
     /// The authenticated user must have `storage.hmacKeys.list` permission for the project in which
     /// the key exists.
-    /// 
+    ///
     /// For general information about HMAC keys in Cloud Storage, see
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::HmacKey;
-    /// 
+    ///
     /// let all_hmac_keys = HmacKey::list()?;
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "sync")]
     pub fn list() -> Result<Vec<HmacMeta>, crate::Error> {
         let url = format!(
             "{}/projects/{}/hmacKeys",
@@ -154,20 +159,21 @@ impl HmacKey {
     /// Retrieves an HMAC key's metadata. Since the HmacKey is secret, this does not return a
     /// `HmacKey`, but a `HmacMeta`. This is a redacted version of a `HmacKey`, but with the secret
     /// data omitted.
-    /// 
+    ///
     /// The authenticated user must have `storage.hmacKeys.get` permission for the project in which
     /// the key exists.
-    /// 
+    ///
     /// For general information about HMAC keys in Cloud Storage, see
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::HmacKey;
-    /// 
+    ///
     /// let key = HmacKey::read("some identifier")?;
     /// # Ok(())
     /// # }
+    #[cfg(feature = "sync")]
     pub fn read(access_id: &str) -> Result<HmacMeta, crate::Error> {
         let url = format!(
             "{}/projects/{}/hmacKeys/{}",
@@ -190,20 +196,21 @@ impl HmacKey {
     /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
     /// Since the HmacKey is secret, this does not return a `HmacKey`, but a `HmacMeta`. This is a
     /// redacted version of a `HmacKey`, but with the secret data omitted.
-    /// 
+    ///
     /// The authenticated user must have `storage.hmacKeys.update` permission for the project in
     /// which the key exists.
-    /// 
+    ///
     /// For general information about HMAC keys in Cloud Storage, see
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::{HmacKey, HmacState};
-    /// 
+    ///
     /// let key = HmacKey::update("your key", HmacState::Active)?;
     /// # Ok(())
     /// # }
+    #[cfg(feature = "sync")]
     pub fn update(access_id: &str, state: HmacState) -> Result<HmacMeta, crate::Error> {
         let url = format!(
             "{}/projects/{}/hmacKeys/{}",
@@ -236,11 +243,12 @@ impl HmacKey {
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::{HmacKey, HmacState};
-    /// 
+    ///
     /// let key = HmacKey::update("your key", HmacState::Inactive)?; // this is required.
     /// HmacKey::delete(&key.access_id)?;
     /// # Ok(())
     /// # }
+    #[cfg(feature = "sync")]
     pub fn delete(access_id: &str) -> Result<(), crate::Error> {
         let url = format!(
             "{}/projects/{}/hmacKeys/{}",
@@ -262,53 +270,58 @@ impl HmacKey {
 mod tests {
     use super::*;
 
-    fn get_test_hmac() -> HmacMeta {
-        match HmacKey::create() {
-            Ok(key) => key.metadata,
-            Err(_) => HmacKey::list().unwrap().pop().unwrap(),
+    #[cfg(feature = "sync")]
+    mod sync {
+        use super::*;
+
+        fn get_test_hmac() -> HmacMeta {
+            match HmacKey::create() {
+                Ok(key) => key.metadata,
+                Err(_) => HmacKey::list().unwrap().pop().unwrap(),
+            }
         }
-    }
 
-    fn remove_test_hmac(access_id: &str) {
-        HmacKey::update(access_id, HmacState::Inactive).unwrap();
-        HmacKey::delete(access_id).unwrap();
-    }
+        fn remove_test_hmac(access_id: &str) {
+            HmacKey::update(access_id, HmacState::Inactive).unwrap();
+            HmacKey::delete(access_id).unwrap();
+        }
 
-    #[test]
-    fn create() -> Result<(), Box<dyn std::error::Error>> {
-        let key = HmacKey::create()?;
-        remove_test_hmac(&key.metadata.access_id);
-        Ok(())
-    }
+        #[test]
+        fn create() -> Result<(), Box<dyn std::error::Error>> {
+            let key = HmacKey::create()?;
+            remove_test_hmac(&key.metadata.access_id);
+            Ok(())
+        }
 
-    #[test]
-    fn list() -> Result<(), Box<dyn std::error::Error>> {
-        HmacKey::list()?;
-        Ok(())
-    }
+        #[test]
+        fn list() -> Result<(), Box<dyn std::error::Error>> {
+            HmacKey::list()?;
+            Ok(())
+        }
 
-    #[test]
-    fn read() -> Result<(), Box<dyn std::error::Error>> {
-        let key = get_test_hmac();
-        HmacKey::read(&key.access_id)?;
-        remove_test_hmac(&key.access_id);
-        Ok(())
-    }
+        #[test]
+        fn read() -> Result<(), Box<dyn std::error::Error>> {
+            let key = get_test_hmac();
+            HmacKey::read(&key.access_id)?;
+            remove_test_hmac(&key.access_id);
+            Ok(())
+        }
 
-    #[test]
-    fn update() -> Result<(), Box<dyn std::error::Error>> {
-        let key = get_test_hmac();
-        HmacKey::update(&key.access_id, HmacState::Inactive)?;
-        HmacKey::delete(&key.access_id)?;
-        Ok(())
-    }
+        #[test]
+        fn update() -> Result<(), Box<dyn std::error::Error>> {
+            let key = get_test_hmac();
+            HmacKey::update(&key.access_id, HmacState::Inactive)?;
+            HmacKey::delete(&key.access_id)?;
+            Ok(())
+        }
 
 
-    #[test]
-    fn delete() -> Result<(), Box<dyn std::error::Error>> {
-        let key = get_test_hmac();
-        HmacKey::update(&key.access_id, HmacState::Inactive)?;
-        HmacKey::delete(&key.access_id)?;
-        Ok(())
+        #[test]
+        fn delete() -> Result<(), Box<dyn std::error::Error>> {
+            let key = get_test_hmac();
+            HmacKey::update(&key.access_id, HmacState::Inactive)?;
+            HmacKey::delete(&key.access_id)?;
+            Ok(())
+        }
     }
 }

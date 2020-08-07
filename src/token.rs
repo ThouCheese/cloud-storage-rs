@@ -34,6 +34,7 @@ impl Token {
         }
     }
 
+    #[cfg(feature = "sync")]
     pub fn get<'a>(&'a mut self) -> Result<String, Error> {
         match self.token {
             Some((ref token, exp)) if exp > now() => Ok(token.clone()),
@@ -41,6 +42,14 @@ impl Token {
         }
     }
 
+    pub async fn get_async<'a>(&'a mut self) -> Result<String, Error> {
+        match self.token {
+            Some((ref token, exp)) if exp > now() => Ok(token.clone()),
+            _ => self.retrieve_async().await,
+        }
+    }
+
+    #[cfg(feature = "sync")]
     fn retrieve(&mut self) -> Result<String, Error> {
         self.token = Some(Self::get_token(&self.access_scope)?);
         match self.token {
@@ -49,7 +58,21 @@ impl Token {
         }
     }
 
-    fn get_token(scope: &str) -> Result<(String, u64), Error> {
+    async fn retrieve_async(&mut self) -> Result<String, Error> {
+        self.token = Some(Self::get_token_async(&self.access_scope).await?);
+        match self.token {
+            Some(ref token) => Ok(token.0.clone()),
+            None => unreachable!(),
+        }
+    }
+
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    async fn get_token(scope: &str) -> Result<(String, u64), Error> {
+        Self::get_token_async(scope).await
+    }
+
+    async fn get_token_async(scope: &str) -> Result<(String, u64), Error> {
         let now = now();
         let exp = now + 3600;
 
@@ -69,12 +92,14 @@ impl Token {
             ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
             ("assertion", &jwt),
         ];
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::Client::new();
         let response: TokenResponse = client
             .post("https://www.googleapis.com/oauth2/v4/token")
             .form(&body)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         Ok((response.access_token, exp))
     }
 }
