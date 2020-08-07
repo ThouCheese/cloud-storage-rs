@@ -18,7 +18,7 @@
 //! Add the following line to your `Cargo.toml`
 //! ```toml
 //! [dependencies]
-//! cloud-storage = "0.4"
+//! cloud-storage = "0.5"
 //! ```
 //! The two most important concepts are [Buckets](bucket/struct.Bucket.html), which represent
 //! file systems, and [Objects](object/struct.Object.html), which represent files.
