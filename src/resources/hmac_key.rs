@@ -84,18 +84,18 @@ impl HmacKey {
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::HmacKey;
     ///
-    /// let hmac_key = HmacKey::create()?;
+    /// let hmac_key = HmacKey::create().await?;
     /// # use cloud_storage::hmac_key::HmacState;
-    /// # HmacKey::update(&hmac_key.metadata.access_id, HmacState::Inactive)?;
-    /// # HmacKey::delete(&hmac_key.metadata.access_id)?;
+    /// # HmacKey::update(&hmac_key.metadata.access_id, HmacState::Inactive).await?;
+    /// # HmacKey::delete(&hmac_key.metadata.access_id).await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(feature = "sync")]
-    pub fn create() -> Result<Self, crate::Error> {
+    pub async fn create() -> crate::Result<Self> {
         use reqwest::header::CONTENT_LENGTH;
 
         let url = format!(
@@ -104,19 +104,30 @@ impl HmacKey {
             crate::SERVICE_ACCOUNT.project_id
         );
         let query = [("serviceAccountEmail", &crate::SERVICE_ACCOUNT.client_email)];
-        let mut headers = crate::get_headers()?;
+        let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_LENGTH, 0.into());
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(headers)
             .query(&query)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `HmacKey::create`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn create_sync() -> crate::Result<Self> {
+        Self::create().await
     }
 
     /// Retrieves a list of HMAC keys matching the criteria. Since the HmacKey is secret, this does
@@ -130,30 +141,41 @@ impl HmacKey {
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::HmacKey;
     ///
-    /// let all_hmac_keys = HmacKey::list()?;
+    /// let all_hmac_keys = HmacKey::list().await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(feature = "sync")]
-    pub fn list() -> Result<Vec<HmacMeta>, crate::Error> {
+    pub async fn list() -> crate::Result<Vec<HmacMeta>> {
         let url = format!(
             "{}/projects/{}/hmacKeys",
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id
         );
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<ListResponse> = client
+        let result: GoogleResponse<ListResponse> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s.items),
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The async equivalent of `HmacKey::list`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn list_sync() -> crate::Result<Vec<HmacMeta>> {
+        Self::list().await
     }
 
     /// Retrieves an HMAC key's metadata. Since the HmacKey is secret, this does not return a
@@ -167,30 +189,41 @@ impl HmacKey {
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::HmacKey;
     ///
-    /// let key = HmacKey::read("some identifier")?;
+    /// let key = HmacKey::read("some identifier").await?;
     /// # Ok(())
     /// # }
-    #[cfg(feature = "sync")]
-    pub fn read(access_id: &str) -> Result<HmacMeta, crate::Error> {
+    pub async fn read(access_id: &str) -> crate::Result<HmacMeta> {
         let url = format!(
             "{}/projects/{}/hmacKeys/{}",
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id,
             access_id
         );
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<HmacMeta> = client
+        let result: GoogleResponse<HmacMeta> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `HmacKey::read`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn read_sync(access_id: &str) -> crate::Result<HmacMeta> {
+        Self::read(access_id).await
     }
 
     /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
@@ -204,32 +237,43 @@ impl HmacKey {
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::{HmacKey, HmacState};
     ///
-    /// let key = HmacKey::update("your key", HmacState::Active)?;
+    /// let key = HmacKey::update("your key", HmacState::Active).await?;
     /// # Ok(())
     /// # }
-    #[cfg(feature = "sync")]
-    pub fn update(access_id: &str, state: HmacState) -> Result<HmacMeta, crate::Error> {
+    pub async fn update(access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
         let url = format!(
             "{}/projects/{}/hmacKeys/{}",
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id,
             access_id
         );
-        let client = reqwest::blocking::Client::new();
         serde_json::to_string(&UpdateMeta { state })?;
-        let result: GoogleResponse<HmacMeta> = client
+        let result: GoogleResponse<HmacMeta> = reqwest::Client::new()
             .put(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .json(&UpdateMeta { state })
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(s) => Ok(s),
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `HmacKey::update`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn update_sync(access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
+        Self::update(access_id, state).await
     }
 
     /// Deletes an HMAC key. Note that a key must be set to `Inactive` first.
@@ -241,28 +285,38 @@ impl HmacKey {
     /// [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys).
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::hmac_key::{HmacKey, HmacState};
     ///
-    /// let key = HmacKey::update("your key", HmacState::Inactive)?; // this is required.
-    /// HmacKey::delete(&key.access_id)?;
+    /// let key = HmacKey::update("your key", HmacState::Inactive).await?; // this is required.
+    /// HmacKey::delete(&key.access_id).await?;
     /// # Ok(())
     /// # }
-    #[cfg(feature = "sync")]
-    pub fn delete(access_id: &str) -> Result<(), crate::Error> {
+    pub async fn delete(access_id: &str) -> crate::Result<()> {
         let url = format!(
             "{}/projects/{}/hmacKeys/{}",
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id,
             access_id
         );
-        let client = reqwest::blocking::Client::new();
-        let response = client.delete(&url).headers(crate::get_headers()?).send()?;
+        let response = reqwest::Client::new()
+            .delete(&url)
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?;
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(crate::Error::Google(response.json()?))
+            Err(crate::Error::Google(response.json().await?))
         }
+    }
+
+    /// The synchronous equivalent of `HmacKey::delete`.
+    #[tokio::main]
+    #[cfg(feature = "sync")]
+    pub async fn delete_sync(access_id: &str) -> crate::Result<()> {
+        Self::delete(access_id).await
     }
 }
 
@@ -270,39 +324,90 @@ impl HmacKey {
 mod tests {
     use super::*;
 
+    async fn get_test_hmac() -> HmacMeta {
+        match HmacKey::create().await {
+            Ok(key) => key.metadata,
+            Err(_) => HmacKey::list().await.unwrap().pop().unwrap(),
+        }
+    }
+
+    async fn remove_test_hmac(access_id: &str) {
+        HmacKey::update(access_id, HmacState::Inactive)
+            .await
+            .unwrap();
+        HmacKey::delete(access_id).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn create() -> Result<(), Box<dyn std::error::Error>> {
+        let key = HmacKey::create().await?;
+        remove_test_hmac(&key.metadata.access_id).await;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn list() -> Result<(), Box<dyn std::error::Error>> {
+        HmacKey::list().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn read() -> Result<(), Box<dyn std::error::Error>> {
+        let key = get_test_hmac().await;
+        HmacKey::read(&key.access_id).await?;
+        remove_test_hmac(&key.access_id).await;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update() -> Result<(), Box<dyn std::error::Error>> {
+        let key = get_test_hmac().await;
+        HmacKey::update(&key.access_id, HmacState::Inactive).await?;
+        HmacKey::delete(&key.access_id).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn delete() -> Result<(), Box<dyn std::error::Error>> {
+        let key = get_test_hmac().await;
+        HmacKey::update(&key.access_id, HmacState::Inactive).await?;
+        HmacKey::delete(&key.access_id).await?;
+        Ok(())
+    }
+
     #[cfg(feature = "sync")]
     mod sync {
         use super::*;
 
         fn get_test_hmac() -> HmacMeta {
-            match HmacKey::create() {
+            match HmacKey::create_sync() {
                 Ok(key) => key.metadata,
-                Err(_) => HmacKey::list().unwrap().pop().unwrap(),
+                Err(_) => HmacKey::list_sync().unwrap().pop().unwrap(),
             }
         }
 
         fn remove_test_hmac(access_id: &str) {
-            HmacKey::update(access_id, HmacState::Inactive).unwrap();
-            HmacKey::delete(access_id).unwrap();
+            HmacKey::update_sync(access_id, HmacState::Inactive).unwrap();
+            HmacKey::delete_sync(access_id).unwrap();
         }
 
         #[test]
         fn create() -> Result<(), Box<dyn std::error::Error>> {
-            let key = HmacKey::create()?;
+            let key = HmacKey::create_sync()?;
             remove_test_hmac(&key.metadata.access_id);
             Ok(())
         }
 
         #[test]
         fn list() -> Result<(), Box<dyn std::error::Error>> {
-            HmacKey::list()?;
+            HmacKey::list_sync()?;
             Ok(())
         }
 
         #[test]
         fn read() -> Result<(), Box<dyn std::error::Error>> {
             let key = get_test_hmac();
-            HmacKey::read(&key.access_id)?;
+            HmacKey::read_sync(&key.access_id)?;
             remove_test_hmac(&key.access_id);
             Ok(())
         }
@@ -310,17 +415,16 @@ mod tests {
         #[test]
         fn update() -> Result<(), Box<dyn std::error::Error>> {
             let key = get_test_hmac();
-            HmacKey::update(&key.access_id, HmacState::Inactive)?;
-            HmacKey::delete(&key.access_id)?;
+            HmacKey::update_sync(&key.access_id, HmacState::Inactive)?;
+            HmacKey::delete_sync(&key.access_id)?;
             Ok(())
         }
-
 
         #[test]
         fn delete() -> Result<(), Box<dyn std::error::Error>> {
             let key = get_test_hmac();
-            HmacKey::update(&key.access_id, HmacState::Inactive)?;
-            HmacKey::delete(&key.access_id)?;
+            HmacKey::update_sync(&key.access_id, HmacState::Inactive)?;
+            HmacKey::delete_sync(&key.access_id)?;
             Ok(())
         }
     }

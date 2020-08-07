@@ -83,7 +83,8 @@ impl DefaultObjectAccessControl {
     /// control access instead.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::default_object_access_control::{
     ///     DefaultObjectAccessControl, NewDefaultObjectAccessControl, Role, Entity,
     /// };
@@ -92,31 +93,44 @@ impl DefaultObjectAccessControl {
     ///     entity: Entity::AllAuthenticatedUsers,
     ///     role: Role::Reader,
     /// };
-    /// let default_acl = DefaultObjectAccessControl::create("mybucket", &new_acl)?;
-    /// # default_acl.delete()?;
+    /// let default_acl = DefaultObjectAccessControl::create("mybucket", &new_acl).await?;
+    /// # default_acl.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(feature = "sync")]
-    pub fn create(
+    pub async fn create(
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
-    ) -> Result<Self, crate::Error> {
+    ) -> crate::Result<Self> {
         let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .json(new_acl)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(mut s) => {
                 s.bucket = bucket.to_string();
                 Ok(s)
-            },
+            }
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `DefautObjectAccessControl::create`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn create_sync(
+        bucket: &str,
+        new_acl: &NewDefaultObjectAccessControl,
+    ) -> crate::Result<Self> {
+        Self::create(bucket, new_acl).await
     }
 
     /// Retrieves default object ACL entries on the specified bucket.
@@ -126,34 +140,44 @@ impl DefaultObjectAccessControl {
     /// control access instead.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::default_object_access_control::DefaultObjectAccessControl;
     ///
-    /// let default_acls = DefaultObjectAccessControl::list("mybucket")?;
+    /// let default_acls = DefaultObjectAccessControl::list("mybucket").await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(feature = "sync")]
-    pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
+    pub async fn list(bucket: &str) -> crate::Result<Vec<Self>> {
         let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<ListResponse<Self>> = client
+        let result: GoogleResponse<ListResponse<Self>> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
-            GoogleResponse::Success(s) => {
-                Ok(s.items
-                    .into_iter()
-                    .map(|item| DefaultObjectAccessControl {
-                        bucket: bucket.to_string(),
-                        ..item
-                    })
-                    .collect())
-            },
+            GoogleResponse::Success(s) => Ok(s
+                .items
+                .into_iter()
+                .map(|item| DefaultObjectAccessControl {
+                    bucket: bucket.to_string(),
+                    ..item
+                })
+                .collect()),
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `DefautObjectAccessControl::list`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn list_sync(bucket: &str) -> crate::Result<Vec<Self>> {
+        Self::list(bucket).await
     }
 
     /// Read a single `DefaultObjectAccessControl`.
@@ -167,34 +191,45 @@ impl DefaultObjectAccessControl {
     /// control access instead.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
     ///
-    /// let default_acl = DefaultObjectAccessControl::read("mybucket", &Entity::AllUsers)?;
+    /// let default_acl = DefaultObjectAccessControl::read("mybucket", &Entity::AllUsers).await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(feature = "sync")]
-    pub fn read(bucket: &str, entity: &Entity) -> Result<Self, crate::Error> {
-        let url = dbg!(format!(
+    pub async fn read(bucket: &str, entity: &Entity) -> crate::Result<Self> {
+        let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
             crate::BASE_URL,
             bucket,
             entity
-        ));
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
+        );
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .get(&url)
-            .headers(crate::get_headers()?)
-            .send()?
-            .json()?;
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(mut s) => {
                 s.bucket = bucket.to_string();
                 Ok(s)
-            },
+            }
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `DefautObjectAccessControl::read`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn read_sync(bucket: &str, entity: &Entity) -> crate::Result<Self> {
+        Self::read(bucket, entity).await
     }
 
     /// Update the current `DefaultObjectAccessControl`.
@@ -204,37 +239,48 @@ impl DefaultObjectAccessControl {
     /// control access instead.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
     ///
-    /// let mut default_acl = DefaultObjectAccessControl::read("my_bucket", &Entity::AllUsers)?;
+    /// let mut default_acl = DefaultObjectAccessControl::read("my_bucket", &Entity::AllUsers).await?;
     /// default_acl.entity = Entity::AllAuthenticatedUsers;
-    /// default_acl.update()?;
+    /// default_acl.update().await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(feature = "sync")]
-    pub fn update(&self) -> Result<Self, crate::Error> {
+    pub async fn update(&self) -> crate::Result<Self> {
         let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
             crate::BASE_URL,
             self.bucket,
             self.entity
         );
-        let client = reqwest::blocking::Client::new();
-        let result: GoogleResponse<Self> = client
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .put(&url)
-            .headers(crate::get_headers()?)
+            .headers(crate::get_headers().await?)
             .json(self)
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         match result {
             GoogleResponse::Success(mut s) => {
                 s.bucket = self.bucket.to_string();
                 Ok(s)
-            },
+            }
             GoogleResponse::Error(e) => Err(e.into()),
         }
+    }
+
+    /// The synchronous equivalent of `DefautObjectAccessControl::update`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn update_sync(&self) -> crate::Result<Self> {
+        self.update().await
     }
 
     /// Delete this 'DefaultObjectAccessControl`.
@@ -244,29 +290,42 @@ impl DefaultObjectAccessControl {
     /// control access instead.
     /// ### Example
     /// ```no_run
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
     ///
-    /// let mut default_acl = DefaultObjectAccessControl::read("my_bucket", &Entity::AllUsers)?;
-    /// default_acl.delete()?;
+    /// let mut default_acl = DefaultObjectAccessControl::read("my_bucket", &Entity::AllUsers).await?;
+    /// default_acl.delete().await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[cfg(feature = "sync")]
-    pub fn delete(self) -> Result<(), crate::Error> {
+    pub async fn delete(self) -> Result<(), crate::Error> {
         let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
             crate::BASE_URL,
             self.bucket,
             self.entity
         );
-        let client = reqwest::blocking::Client::new();
-        let response = client.delete(&url).headers(crate::get_headers()?).send()?;
+        let response = reqwest::Client::new()
+            .delete(&url)
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?;
         if response.status().is_success() {
             Ok(())
         } else {
-            Err(crate::Error::Google(response.json()?))
+            Err(crate::Error::Google(response.json().await?))
         }
+    }
+
+    /// The async equivalent of `DefautObjectAccessControl::delete`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    #[tokio::main]
+    pub async fn delete_sync(self) -> Result<(), crate::Error> {
+        self.delete().await
     }
 }
 
@@ -274,58 +333,113 @@ impl DefaultObjectAccessControl {
 mod tests {
     use super::*;
 
+    #[tokio::test]
+    async fn create() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let new_acl = NewDefaultObjectAccessControl {
+            entity: Entity::AllUsers,
+            role: Role::Reader,
+        };
+        DefaultObjectAccessControl::create(&bucket.name, &new_acl).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn read() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        NewDefaultObjectAccessControl {
+            entity: Entity::AllUsers,
+            role: Role::Reader,
+        };
+        DefaultObjectAccessControl::read(&bucket.name, &Entity::AllUsers).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn list() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        DefaultObjectAccessControl::list(&bucket.name).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let new_acl = NewDefaultObjectAccessControl {
+            entity: Entity::AllUsers,
+            role: Role::Reader,
+        };
+        let mut default_acl = DefaultObjectAccessControl::create(&bucket.name, &new_acl).await?;
+        default_acl.entity = Entity::AllAuthenticatedUsers;
+        default_acl.update().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn delete() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let default_acl =
+            DefaultObjectAccessControl::read(&bucket.name, &Entity::AllAuthenticatedUsers).await?;
+        default_acl.delete().await?;
+        Ok(())
+    }
+
     #[cfg(feature = "sync")]
     mod sync {
         use super::*;
 
         #[test]
         fn create() -> Result<(), Box<dyn std::error::Error>> {
-            let bucket = crate::read_test_bucket();
+            let bucket = crate::read_test_bucket_sync();
             let new_acl = NewDefaultObjectAccessControl {
                 entity: Entity::AllUsers,
                 role: Role::Reader,
             };
-            DefaultObjectAccessControl::create(&bucket.name, &new_acl)?;
+            DefaultObjectAccessControl::create_sync(&bucket.name, &new_acl)?;
             Ok(())
         }
 
         #[test]
         fn read() -> Result<(), Box<dyn std::error::Error>> {
-            let bucket = crate::read_test_bucket();
-            NewDefaultObjectAccessControl {
+            let bucket = crate::read_test_bucket_sync();
+            let new_acl = NewDefaultObjectAccessControl {
                 entity: Entity::AllUsers,
                 role: Role::Reader,
             };
-            DefaultObjectAccessControl::read(&bucket.name, &Entity::AllUsers)?;
+            DefaultObjectAccessControl::create_sync(&bucket.name, &new_acl)?;
+            DefaultObjectAccessControl::read_sync(&bucket.name, &Entity::AllUsers)?;
             Ok(())
         }
 
         #[test]
         fn list() -> Result<(), Box<dyn std::error::Error>> {
-            let bucket = crate::read_test_bucket();
-            DefaultObjectAccessControl::list(&bucket.name)?;
+            let bucket = crate::read_test_bucket_sync();
+            DefaultObjectAccessControl::list_sync(&bucket.name)?;
             Ok(())
         }
 
         #[test]
         fn update() -> Result<(), Box<dyn std::error::Error>> {
-            let bucket = crate::read_test_bucket();
+            let bucket = crate::read_test_bucket_sync();
             let new_acl = NewDefaultObjectAccessControl {
                 entity: Entity::AllUsers,
                 role: Role::Reader,
             };
-            let mut default_acl = DefaultObjectAccessControl::create(&bucket.name, &new_acl)?;
+            let mut default_acl = DefaultObjectAccessControl::create_sync(&bucket.name, &new_acl)?;
             default_acl.entity = Entity::AllAuthenticatedUsers;
-            default_acl.update()?;
+            default_acl.update_sync()?;
             Ok(())
         }
 
         #[test]
         fn delete() -> Result<(), Box<dyn std::error::Error>> {
-            let bucket = crate::read_test_bucket();
-            let default_acl =
-                DefaultObjectAccessControl::read(&bucket.name, &Entity::AllAuthenticatedUsers)?;
-            default_acl.delete()?;
+            let bucket = crate::read_test_bucket_sync();
+            let new_acl = NewDefaultObjectAccessControl {
+                entity: Entity::AllUsers,
+                role: Role::Reader,
+            };
+            let acl = DefaultObjectAccessControl::create_sync(&bucket.name, &new_acl)?;
+            acl.delete_sync()?;
             Ok(())
         }
     }

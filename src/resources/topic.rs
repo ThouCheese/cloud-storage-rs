@@ -1,4 +1,3 @@
-
 /// The topic of a notification
 #[derive(Debug, PartialEq)]
 pub struct Topic {
@@ -10,7 +9,11 @@ pub struct Topic {
 
 impl std::fmt::Display for Topic {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "//pubsub.googleapis.com/projects/{}/topics/{}", self.project_id, self.topic)
+        write!(
+            f,
+            "//pubsub.googleapis.com/projects/{}/topics/{}",
+            self.project_id, self.topic
+        )
     }
 }
 

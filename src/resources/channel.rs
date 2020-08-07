@@ -7,6 +7,9 @@ pub struct Channel {
 
 impl Channel {
     /// Stop receiving object change notifications through this channel.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
     #[tokio::main]
     pub async fn stop(&self) -> Result<(), crate::Error> {
@@ -15,10 +18,9 @@ impl Channel {
 
     pub async fn stop_async(&self) -> Result<(), crate::Error> {
         let url = format!("{}/channels/stop", crate::BASE_URL);
-        let client = reqwest::Client::new();
-        let response = client
+        let response = reqwest::Client::new()
             .post(&url)
-            .headers(crate::get_headers_async().await?)
+            .headers(crate::get_headers().await?)
             .send().await?;
         if response.status().is_success() {
             Ok(())
