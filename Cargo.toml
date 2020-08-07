@@ -18,7 +18,7 @@ default = []
 sync = ["reqwest/blocking"]
 
 [dependencies]
-reqwest =          { version = "0.10", default-features = false, features = ["json", "default-tls", "stream"] }
+reqwest =          { version = "0.10", default-features = false, features = ["json", "default-tls", "stream", "trust-dns"] }
 percent-encoding = { version = "2",    default-features = false }
 jsonwebtoken =     { version = "7",    default-features = false }
 serde =            { version = "1",    default-features = false, features = ["derive"] }
