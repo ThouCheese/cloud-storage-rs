@@ -32,3 +32,6 @@ hex =              { version = "0.4",  default-features = false }
 tokio =            { version = "0.2",  default-features = false, features = ["macros", "rt-threaded"] }
 futures =          { version = "0.3",  default_features = false }
 bytes =            { version = "0.5",  default_features = false }
+
+[package.metadata.docs.rs]
+features = ["sync"]

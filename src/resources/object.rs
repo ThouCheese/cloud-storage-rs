@@ -499,8 +499,42 @@ impl Object {
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
     #[tokio::main]
-    pub async fn download_sync(bucket: &str, file_name: &str) -> Result<Vec<u8>, Error> {
+    pub async fn download_sync(bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
         Self::download(bucket, file_name).await
+    }
+
+    /// Download the content of the object with the specified name in the specified bucket, without
+    /// allocating the whole file into a vector.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Object;
+    ///
+    /// let stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
+    /// for 
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn download_streamed(
+        bucket: &str,
+        file_name: &str,
+    ) -> crate::Result<impl Stream<Item = crate::Result<Vec<u8>>>> {
+        use futures::StreamExt;
+
+        let url = format!(
+            "{}/b/{}/o/{}?alt=media",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(file_name),
+        );
+        Ok(reqwest::Client::new()
+            .get(&url)
+            .headers(crate::get_headers().await?)
+            .send()
+            .await?
+            .bytes_stream()
+            .map(|res| Ok(res.map(|r| r.to_vec())?)))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -1010,6 +1044,30 @@ mod tests {
 
         let data = Object::download(&bucket.name, "test-download").await?;
         assert_eq!(data, content);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn download_streamed() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let content = b"hello world";
+        Object::create(
+            &bucket.name,
+            content,
+            "test-download",
+            "application/octet-stream",
+        )
+        .await?;
+
+        let mut result = Object::download_streamed(&bucket.name, "test-download").await?;
+        let mut data = Vec::new();
+        for part in result.next().await {
+            data.extend(part?);
+        }
+        // let data = data.next().await.flat_map(|part| part.into_iter()).collect();
+        assert_eq!(data, content);
+
 
         Ok(())
     }
