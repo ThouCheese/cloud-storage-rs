@@ -189,7 +189,7 @@ impl Object {
             percent_encode(&filename),
         );
         let mut headers = crate::get_headers().await?;
-        headers.insert(CONTENT_TYPE, mime_type.to_string().parse()?);
+        headers.insert(CONTENT_TYPE, mime_type.parse()?);
         headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
         let response = crate::CLIENT
             .post(url)
@@ -259,7 +259,7 @@ impl Object {
             percent_encode(&filename),
         );
         let mut headers = crate::get_headers().await?;
-        headers.insert(CONTENT_TYPE, mime_type.to_string().parse()?);
+        headers.insert(CONTENT_TYPE, mime_type.parse()?);
         headers.insert(CONTENT_LENGTH, length.to_string().parse()?);
 
         let body = reqwest::Body::wrap_stream(stream);
