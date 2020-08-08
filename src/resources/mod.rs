@@ -4,7 +4,7 @@ pub mod bucket;
 /// A Bucket Access Control object can be used to configure access on a bucket-wide level.
 pub mod bucket_access_control;
 /// Commonly used types.
-mod common;
+pub mod common;
 /// Default Object Access Control objects can be used the configure access that is used as a
 /// fallback in the abscence of more specific data.
 pub mod default_object_access_control;
