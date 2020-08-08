@@ -174,7 +174,7 @@ impl Object {
     /// ```
     pub async fn create(
         bucket: &str,
-        file: &[u8],
+        file: Vec<u8>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Self> {
@@ -194,7 +194,7 @@ impl Object {
         let response = crate::CLIENT
             .post(url)
             .headers(headers)
-            .body(file.to_owned())
+            .body(file)
             .send()
             .await?;
         if response.status() == 200 {
@@ -212,7 +212,7 @@ impl Object {
     #[tokio::main]
     pub async fn create_sync(
         bucket: &str,
-        file: &[u8],
+        file: Vec<u8>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Self> {
@@ -962,7 +962,7 @@ mod tests {
     #[tokio::test]
     async fn create() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        Object::create(&bucket.name, &[0, 1], "test-create", "text/plain").await?;
+        Object::create(&bucket.name, vec![0, 1], "test-create", "text/plain").await?;
         Ok(())
     }
 
@@ -1012,7 +1012,7 @@ mod tests {
         ];
 
         for name in &prefix_names {
-            Object::create(&test_bucket.name, &[0, 1], name, "text/plain").await?;
+            Object::create(&test_bucket.name, vec![0, 1], name, "text/plain").await?;
         }
 
         let list = flattened_list_prefix_stream(&test_bucket.name, "test-list-prefix/").await?;
@@ -1025,7 +1025,7 @@ mod tests {
     #[tokio::test]
     async fn read() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        Object::create(&bucket.name, &[0, 1], "test-read", "text/plain").await?;
+        Object::create(&bucket.name, vec![0, 1], "test-read", "text/plain").await?;
         Object::read(&bucket.name, "test-read").await?;
         Ok(())
     }
@@ -1036,7 +1036,7 @@ mod tests {
         let content = b"hello world";
         Object::create(
             &bucket.name,
-            content,
+            content.to_vec(),
             "test-download",
             "application/octet-stream",
         )
@@ -1054,7 +1054,7 @@ mod tests {
         let content = b"hello world";
         Object::create(
             &bucket.name,
-            content,
+            content.to_vec(),
             "test-download",
             "application/octet-stream",
         )
@@ -1074,7 +1074,7 @@ mod tests {
     #[tokio::test]
     async fn update() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let mut obj = Object::create(&bucket.name, &[0, 1], "test-update", "text/plain").await?;
+        let mut obj = Object::create(&bucket.name, vec![0, 1], "test-update", "text/plain").await?;
         obj.content_type = Some("application/xml".to_string());
         obj.update().await?;
         Ok(())
@@ -1083,7 +1083,7 @@ mod tests {
     #[tokio::test]
     async fn delete() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        Object::create(&bucket.name, &[0, 1], "test-delete", "text/plain").await?;
+        Object::create(&bucket.name, vec![0, 1], "test-delete", "text/plain").await?;
 
         Object::delete(&bucket.name, "test-delete").await?;
 
@@ -1116,8 +1116,8 @@ mod tests {
     #[tokio::test]
     async fn compose() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let obj1 = Object::create(&bucket.name, &[0, 1], "test-compose-1", "text/plain").await?;
-        let obj2 = Object::create(&bucket.name, &[2, 3], "test-compose-2", "text/plain").await?;
+        let obj1 = Object::create(&bucket.name, vec![0, 1], "test-compose-1", "text/plain").await?;
+        let obj2 = Object::create(&bucket.name, vec![2, 3], "test-compose-2", "text/plain").await?;
         let compose_request = ComposeRequest {
             kind: "storage#composeRequest".to_string(),
             source_objects: vec![
@@ -1137,14 +1137,14 @@ mod tests {
         let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file").await?;
         let url = obj3.download_url(100)?;
         let content = reqwest::get(&url).await?.text().await?;
-        assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
+        assert_eq!(content.as_bytes(), vec![0, 1, 2, 3]);
         Ok(())
     }
 
     #[tokio::test]
     async fn copy() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let original = Object::create(&bucket.name, &[2, 3], "test-copy", "text/plain").await?;
+        let original = Object::create(&bucket.name, vec![2, 3], "test-copy", "text/plain").await?;
         original.copy(&bucket.name, "test-copy - copy").await?;
         Ok(())
     }
@@ -1152,7 +1152,7 @@ mod tests {
     #[tokio::test]
     async fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let obj = Object::create(&bucket.name, &[0, 1], "test-rewrite", "text/plain").await?;
+        let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
         let obj = obj.rewrite(&bucket.name, "test-rewritten").await?;
         let url = obj.download_url(100)?;
         let download = crate::CLIENT.head(&url).send().await?;
@@ -1172,7 +1172,7 @@ mod tests {
             "测试很重要",
         ];
         for name in &complicated_names {
-            let _obj = Object::create(&bucket.name, &[0, 1], name, "text/plain").await?;
+            let _obj = Object::create(&bucket.name, vec![0, 1], name, "text/plain").await?;
             let obj = Object::read(&bucket.name, &name).await.unwrap();
             let url = obj.download_url(100)?;
             let download = crate::CLIENT.head(&url).send().await?;
@@ -1188,7 +1188,7 @@ mod tests {
         #[test]
         fn create() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            Object::create_sync(&bucket.name, &[0, 1], "test-create", "text/plain")?;
+            Object::create_sync(&bucket.name, vec![0, 1], "test-create", "text/plain")?;
             Ok(())
         }
 
@@ -1225,7 +1225,7 @@ mod tests {
             ];
 
             for name in &prefix_names {
-                Object::create_sync(&test_bucket.name, &[0, 1], name, "text/plain")?;
+                Object::create_sync(&test_bucket.name, vec![0, 1], name, "text/plain")?;
             }
 
             let list = Object::list_prefix_sync(&test_bucket.name, "test-list-prefix/")?;
@@ -1238,7 +1238,7 @@ mod tests {
         #[test]
         fn read() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            Object::create_sync(&bucket.name, &[0, 1], "test-read", "text/plain")?;
+            Object::create_sync(&bucket.name, vec![0, 1], "test-read", "text/plain")?;
             Object::read_sync(&bucket.name, "test-read")?;
             Ok(())
         }
@@ -1249,7 +1249,7 @@ mod tests {
             let content = b"hello world";
             Object::create_sync(
                 &bucket.name,
-                content,
+                content.to_vec(),
                 "test-download",
                 "application/octet-stream",
             )?;
@@ -1263,7 +1263,8 @@ mod tests {
         #[test]
         fn update() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            let mut obj = Object::create_sync(&bucket.name, &[0, 1], "test-update", "text/plain")?;
+            let mut obj =
+                Object::create_sync(&bucket.name, vec![0, 1], "test-update", "text/plain")?;
             obj.content_type = Some("application/xml".to_string());
             obj.update_sync()?;
             Ok(())
@@ -1272,7 +1273,7 @@ mod tests {
         #[test]
         fn delete() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            Object::create_sync(&bucket.name, &[0, 1], "test-delete", "text/plain")?;
+            Object::create_sync(&bucket.name, vec![0, 1], "test-delete", "text/plain")?;
 
             Object::delete_sync(&bucket.name, "test-delete")?;
 
@@ -1305,8 +1306,10 @@ mod tests {
         #[test]
         fn compose() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            let obj1 = Object::create_sync(&bucket.name, &[0, 1], "test-compose-1", "text/plain")?;
-            let obj2 = Object::create_sync(&bucket.name, &[2, 3], "test-compose-2", "text/plain")?;
+            let obj1 =
+                Object::create_sync(&bucket.name, vec![0, 1], "test-compose-1", "text/plain")?;
+            let obj2 =
+                Object::create_sync(&bucket.name, vec![2, 3], "test-compose-2", "text/plain")?;
             let compose_request = ComposeRequest {
                 kind: "storage#composeRequest".to_string(),
                 source_objects: vec![
@@ -1326,14 +1329,15 @@ mod tests {
             let obj3 = Object::compose_sync(&bucket.name, &compose_request, "test-concatted-file")?;
             let url = obj3.download_url(100)?;
             let content = reqwest::blocking::get(&url)?.text()?;
-            assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
+            assert_eq!(content.as_bytes(), vec![0, 1, 2, 3]);
             Ok(())
         }
 
         #[test]
         fn copy() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            let original = Object::create_sync(&bucket.name, &[2, 3], "test-copy", "text/plain")?;
+            let original =
+                Object::create_sync(&bucket.name, vec![2, 3], "test-copy", "text/plain")?;
             original.copy_sync(&bucket.name, "test-copy - copy")?;
             Ok(())
         }
@@ -1341,7 +1345,7 @@ mod tests {
         #[test]
         fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            let obj = Object::create_sync(&bucket.name, &[0, 1], "test-rewrite", "text/plain")?;
+            let obj = Object::create_sync(&bucket.name, vec![0, 1], "test-rewrite", "text/plain")?;
             let obj = obj.rewrite_sync(&bucket.name, "test-rewritten")?;
             let url = obj.download_url(100)?;
             let client = reqwest::blocking::Client::new();
@@ -1362,7 +1366,7 @@ mod tests {
                 "测试很重要",
             ];
             for name in &complicated_names {
-                let _obj = Object::create_sync(&bucket.name, &[0, 1], name, "text/plain")?;
+                let _obj = Object::create_sync(&bucket.name, vec![0, 1], name, "text/plain")?;
                 let obj = Object::read_sync(&bucket.name, &name).unwrap();
                 let url = obj.download_url(100)?;
                 let client = reqwest::blocking::Client::new();
