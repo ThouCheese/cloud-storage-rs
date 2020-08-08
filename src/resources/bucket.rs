@@ -564,7 +564,7 @@ impl Bucket {
     /// ```
     pub async fn create(new_bucket: &NewBucket) -> crate::Result<Self> {
         let url = format!("{}/b/", crate::BASE_URL);
-        let project = crate::SERVICE_ACCOUNT.project_id.clone();
+        let project = &crate::SERVICE_ACCOUNT.project_id;
         let query = [("project", project)];
         let result: GoogleResponse<Self> = crate::CLIENT
             .post(&url)
@@ -604,7 +604,7 @@ impl Bucket {
     /// ```
     pub async fn list() -> Result<Vec<Self>, Error> {
         let url = format!("{}/b/", crate::BASE_URL);
-        let project = crate::SERVICE_ACCOUNT.project_id.clone();
+        let project = &crate::SERVICE_ACCOUNT.project_id;
         let query = [("project", project)];
         let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
             .get(&url)
