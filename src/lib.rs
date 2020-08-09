@@ -112,8 +112,6 @@ lazy_static::lazy_static! {
     /// debugging of which service account is currently used. It is of the type
     /// [ServiceAccount](service_account/struct.ServiceAccount.html).
     pub static ref SERVICE_ACCOUNT: ServiceAccount = ServiceAccount::get();
-
-    static ref CLIENT: reqwest::Client = reqwest::Client::new();
 }
 
 /// A type alias where the error is set to be `cloud_storage::Error`.

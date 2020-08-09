@@ -106,7 +106,7 @@ impl HmacKey {
         let query = [("serviceAccountEmail", &crate::SERVICE_ACCOUNT.client_email)];
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_LENGTH, 0.into());
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(headers)
             .query(&query)
@@ -155,7 +155,7 @@ impl HmacKey {
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id
         );
-        let result: GoogleResponse<ListResponse> = crate::CLIENT
+        let result: GoogleResponse<ListResponse> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -203,7 +203,7 @@ impl HmacKey {
             crate::SERVICE_ACCOUNT.project_id,
             access_id
         );
-        let result: GoogleResponse<HmacMeta> = crate::CLIENT
+        let result: GoogleResponse<HmacMeta> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -252,7 +252,7 @@ impl HmacKey {
             access_id
         );
         serde_json::to_string(&UpdateMeta { state })?;
-        let result: GoogleResponse<HmacMeta> = crate::CLIENT
+        let result: GoogleResponse<HmacMeta> = reqwest::Client::new()
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(&UpdateMeta { state })
@@ -300,7 +300,7 @@ impl HmacKey {
             crate::SERVICE_ACCOUNT.project_id,
             access_id
         );
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()

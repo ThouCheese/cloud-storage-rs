@@ -191,7 +191,7 @@ impl Object {
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
         headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .post(url)
             .headers(headers)
             .body(file)
@@ -227,7 +227,7 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
-    /// let file = crate::CLIENT
+    /// let file = reqwest::Client::new()
     ///     .get("https://my_domain.rs/nice_cat_photo.png")
     ///     .send()
     ///     .await?
@@ -263,7 +263,7 @@ impl Object {
         headers.insert(CONTENT_LENGTH, length.to_string().parse()?);
 
         let body = reqwest::Body::wrap_stream(stream);
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .post(url)
             .headers(headers)
             .body(body)
@@ -389,7 +389,7 @@ impl Object {
                 query.push(("prefix", prefix.to_string()));
             };
 
-            let response = crate::CLIENT
+            let response = reqwest::Client::new()
                 .get(&url)
                 .query(&query)
                 .headers(headers)
@@ -442,7 +442,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -483,7 +483,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        Ok(crate::CLIENT
+        Ok(reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -512,7 +512,7 @@ impl Object {
     /// use cloud_storage::Object;
     ///
     /// let stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
-    /// for
+    /// for 
     /// # Ok(())
     /// # }
     /// ```
@@ -528,7 +528,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        Ok(crate::CLIENT
+        Ok(reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -557,7 +557,7 @@ impl Object {
             percent_encode(&self.bucket),
             percent_encode(&self.name),
         );
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(&self)
@@ -599,7 +599,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -662,7 +662,7 @@ impl Object {
             percent_encode(&bucket),
             percent_encode(&destination_object)
         );
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(crate::get_headers().await?)
             .json(req)
@@ -716,7 +716,7 @@ impl Object {
         );
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(headers)
             .send()
@@ -772,7 +772,7 @@ impl Object {
         );
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: GoogleResponse<RewriteResponse> = crate::CLIENT
+        let result: GoogleResponse<RewriteResponse> = reqwest::Client::new()
             .post(&url)
             .headers(headers)
             .send()
@@ -1068,6 +1068,7 @@ mod tests {
         // let data = data.next().await.flat_map(|part| part.into_iter()).collect();
         assert_eq!(data, content);
 
+
         Ok(())
     }
 
@@ -1155,7 +1156,7 @@ mod tests {
         let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
         let obj = obj.rewrite(&bucket.name, "test-rewritten").await?;
         let url = obj.download_url(100)?;
-        let download = crate::CLIENT.head(&url).send().await?;
+        let download = reqwest::Client::new().head(&url).send().await?;
         assert_eq!(download.status().as_u16(), 200);
         Ok(())
     }
@@ -1175,7 +1176,7 @@ mod tests {
             let _obj = Object::create(&bucket.name, vec![0, 1], name, "text/plain").await?;
             let obj = Object::read(&bucket.name, &name).await.unwrap();
             let url = obj.download_url(100)?;
-            let download = crate::CLIENT.head(&url).send().await?;
+            let download = reqwest::Client::new().head(&url).send().await?;
             assert_eq!(download.status().as_u16(), 200);
         }
         Ok(())
