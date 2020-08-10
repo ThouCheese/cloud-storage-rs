@@ -96,7 +96,7 @@ pub use crate::resources::{
     *,
 };
 use crate::token::Token;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 
 lazy_static::lazy_static! {
     /// Static `Token` struct that caches
@@ -123,7 +123,7 @@ const BASE_URL: &str = "https://www.googleapis.com/storage/v1";
 
 async fn get_headers() -> Result<reqwest::header::HeaderMap> {
     let mut result = reqwest::header::HeaderMap::new();
-    let mut guard = TOKEN_CACHE.lock().unwrap();
+    let mut guard = TOKEN_CACHE.lock().await;
     let token = guard.get().await?;
     result.insert(
         reqwest::header::AUTHORIZATION,
