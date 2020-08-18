@@ -58,7 +58,7 @@ pub enum HmacState {
     Deleted,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct ListResponse {
     items: Vec<HmacMeta>,
 }
@@ -155,16 +155,24 @@ impl HmacKey {
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id
         );
-        let result: GoogleResponse<ListResponse> = reqwest::Client::new()
+        let response = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
             .await?
-            .json()
+            .text()
             .await?;
+        let result: Result<GoogleResponse<ListResponse>, _> = serde_json::from_str(&response);
+
+        // This function rquires more complicated error handling because when there is only one
+        // entry, Google will return the response `{ "kind": "storage#hmacKeysMetadata" }` instead
+        // of a list with one element. This breaks the parser.
         match result {
-            GoogleResponse::Success(s) => Ok(s.items),
-            GoogleResponse::Error(e) => Err(e.into()),
+            Ok(parsed) => match parsed {
+                GoogleResponse::Success(s) => Ok(s.items),
+                GoogleResponse::Error(e) => Err(e.into()),
+            }
+            Err(_) =>  Ok(vec![]),
         }
     }
 
@@ -372,6 +380,18 @@ mod tests {
         let key = get_test_hmac().await;
         HmacKey::update(&key.access_id, HmacState::Inactive).await?;
         HmacKey::delete(&key.access_id).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn clear_keys() -> Result<(), Box<dyn std::error::Error>> {
+        let keys = HmacKey::list().await?;
+        for key in &keys {
+            if key.state != HmacState::Inactive {
+                HmacKey::update(&key.access_id, HmacState::Inactive).await?;
+            }
+            HmacKey::delete(&key.access_id).await?;
+        }
         Ok(())
     }
 

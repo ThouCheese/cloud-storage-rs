@@ -297,24 +297,23 @@ pub enum ActionType {
 pub struct Condition {
     /// Age of an object (in days). This condition is satisfied when an object reaches the specified
     /// age.
-    #[serde(deserialize_with = "crate::from_str")]
-    pub age: i32,
+    pub age: Option<i32>,
     /// A date in `RFC 3339` format with only the date part (for instance, "2013-01-15"). This
     /// condition is satisfied when an object is created before midnight of the specified date in
     /// UTC.
-    pub created_before: chrono::DateTime<chrono::Utc>,
+    pub created_before: Option<chrono::DateTime<chrono::Utc>>,
     /// Relevant only for versioned objects. If the value is true, this condition matches the live
     /// version of objects; if the value is `false`, it matches noncurrent versions of objects.
-    pub is_live: bool,
+    pub is_live: Option<bool>,
     /// Objects having any of the storage classes specified by this condition will be matched.
     /// Values include STANDARD, NEARLINE, COLDLINE, MULTI_REGIONAL, REGIONAL, and
     /// DURABLE_REDUCED_AVAILABILITY.
-    pub matches_storage_class: Vec<String>,
+    pub matches_storage_class: Option<Vec<String>>,
     /// Relevant only for versioned objects. If the value is N, this condition is satisfied when
     /// there are at least N versions (including the live version) newer than this version of the
     /// object.
-    #[serde(deserialize_with = "crate::from_str")]
-    pub num_newer_versions: i32,
+    #[serde(default, deserialize_with = "crate::from_str_opt")]
+    pub num_newer_versions: Option<i32>,
 }
 
 /// Contains information about the payment structure of this bucket

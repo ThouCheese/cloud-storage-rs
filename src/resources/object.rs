@@ -330,7 +330,7 @@ impl Object {
     /// Obtain a list of objects by prefix within this Bucket .
     /// ### Example
     /// ```no_run
-    /// #[tokio::main]
+    /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
@@ -509,10 +509,16 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
+    /// use cloud_storage::Object};
+    /// use futures::StreamExt;
+    /// use std::fs::File;
+    /// use std::io::Write;
     ///
-    /// let stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
-    /// for
+    /// let mut stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
+    /// let mut file = File::create("file.png").unwrap();
+    /// for part in stream.next().await {
+    ///     file.write_all(&part.unwrap()).unwrap();
+    /// }
     /// # Ok(())
     /// # }
     /// ```
@@ -1066,6 +1072,28 @@ mod tests {
             data.extend(part?);
         }
         // let data = data.next().await.flat_map(|part| part.into_iter()).collect();
+        assert_eq!(data, content);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn download_streamed_large() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let content = vec![5u8; 1_000_000];
+        Object::create(
+            &bucket.name,
+            content.to_vec(),
+            "test-download-large",
+            "application/octet-stream",
+        )
+        .await?;
+
+        let mut result = Object::download_streamed(&bucket.name, "test-download-large").await?;
+        let mut data: Vec<u8> = Vec::new();
+        while let Some(part) = result.next().await {
+            data.extend(part?);
+        }
         assert_eq!(data, content);
 
         Ok(())
