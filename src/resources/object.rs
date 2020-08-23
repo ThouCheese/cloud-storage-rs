@@ -1166,7 +1166,7 @@ mod tests {
         let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file").await?;
         let url = obj3.download_url(100)?;
         let content = reqwest::get(&url).await?.text().await?;
-        assert_eq!(content.as_bytes(), &vec![0, 1, 2, 3]);
+        assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
         Ok(())
     }
 
@@ -1358,7 +1358,7 @@ mod tests {
             let obj3 = Object::compose_sync(&bucket.name, &compose_request, "test-concatted-file")?;
             let url = obj3.download_url(100)?;
             let content = reqwest::blocking::get(&url)?.text()?;
-            assert_eq!(content.as_bytes(), &vec![0, 1, 2, 3]);
+            assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
             Ok(())
         }
 
