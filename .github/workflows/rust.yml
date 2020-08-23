@@ -27,3 +27,4 @@ jobs:
       run: cargo test --verbose --features sync -- --test-threads=1
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+        TEST_BUCKET: cloud-storage-rs-test-bucket
