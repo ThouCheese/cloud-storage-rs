@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Create Secret
-      run: 'echo "$GOOGLE_APPLICATION_CREDENTIALS" > auth.json'
+      run: 'echo "$SECRET_FILE" > auth.json'
       env:
         SECRET_FILE: ${{secrets.SECRET_FILE}}
     - name: Create Test File
