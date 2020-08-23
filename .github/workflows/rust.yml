@@ -25,3 +25,5 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose --features sync -- --test-threads=1
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
