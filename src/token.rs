@@ -69,13 +69,13 @@ impl Token {
             ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
             ("assertion", &jwt),
         ];
-        let response: TokenResponse = super::CLIENT
+        let response: TokenResponse = dbg!(super::CLIENT
             .post("https://www.googleapis.com/oauth2/v4/token")
             .form(&body)
             .send()
             .await?
             .json()
-            .await?;
+            .await?);
         Ok((response.access_token, exp))
     }
 }

@@ -591,6 +591,10 @@ impl Bucket {
     }
 
     /// Returns all `Bucket`s within this project.
+    ///
+    /// ### Note
+    /// When using incorrect permissions, this function fails silently and returns an empty list.
+    ///
     /// ### Example
     /// ```
     /// # #[tokio::main]
@@ -1002,8 +1006,6 @@ mod tests {
 
     #[tokio::test]
     async fn set_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
-        // use crate::resources::iam_policy::{Binding, IamRole, StandardIamRole};
-
         let bucket = crate::create_test_bucket("test-set-iam-policy").await;
         let iam_policy = IamPolicy {
             bindings: vec![Binding {

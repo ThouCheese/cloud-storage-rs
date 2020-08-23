@@ -78,21 +78,24 @@ pub(crate) enum GoogleResponse<T> {
     Error(GoogleErrorResponse),
 }
 
+// TODO comment this in when try_trait (#42327) get stabilized and enjoy the nicer handling of
+// errors
+//
 // impl<T> std::ops::Try for GoogleResponse<T> {
 //     type Ok = T;
 //     type Error = Error;
-
+//
 //     fn into_result(self) -> Result<Self::Ok, Error> {
 //         match self {
 //             GoogleResponse::Success(t) => Ok(t),
 //             GoogleResponse::Error(error) => Err(Error::Google(error)),
 //         }
 //     }
-
+//
 //     fn from_error(_a: Error) -> Self {
 //         unimplemented!()
 //     }
-
+//
 //     fn from_ok(t: T) -> Self {
 //         GoogleResponse::Success(t)
 //     }
