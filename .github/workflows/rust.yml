@@ -21,10 +21,12 @@ jobs:
       run: 'echo "$GOOGLE_APPLICATION_CREDENTIALS" > auth.json'
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+    - name: Create Test File
+      run: 'echo "Temporary test text to test the transfer." > myemma.txt'
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
     - name: Run tests
-      run: cargo test --verbose --features sync -- --test-threads=1
+      run: cargo test --features sync -- --test-threads=1
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
-        TEST_BUCKET: cloud-storage-rs-test-bucket
+        TEST_BUCKET: cloud-storage-rs-test-bucket 
