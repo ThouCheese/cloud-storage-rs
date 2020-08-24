@@ -57,7 +57,7 @@
 //! for byte in File::open("myfile.txt")?.bytes() {
 //!     bytes.push(byte?)
 //! }
-//! Object::create("mybucket", &bytes, "myfile.txt", "text/plain").await?;
+//! Object::create("mybucket", bytes, "myfile.txt", "text/plain").await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -189,8 +189,6 @@ async fn read_test_bucket() -> Bucket {
 #[cfg(feature = "sync")]
 #[tokio::main]
 async fn create_test_bucket_sync(name: &str) -> Bucket {
-    std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
-
     create_test_bucket(name).await
 }
 
@@ -198,6 +196,8 @@ async fn create_test_bucket_sync(name: &str) -> Bucket {
 // the same name in each test.
 #[cfg(test)]
 async fn create_test_bucket(name: &str) -> Bucket {
+    std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
+
     dotenv::dotenv().ok();
     let base_name = std::env::var("TEST_BUCKET").unwrap();
     let name = format!("{}-{}", base_name, name);

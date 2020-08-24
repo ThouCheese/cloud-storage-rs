@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  GOOGLE_APPLICATION_CREDENTIALS: /auth.json
 
 jobs:
   build:
@@ -18,10 +17,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Create Secret
-      run: 'echo "$GOOGLE_APPLICATION_CREDENTIALS" > auth.json'
+      run: 'echo "$SECRET_FILE" > auth.json'
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+        SECRET_FILE: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+    - name: Create Test File
+      run: 'echo "Temporary test text to test the transfer." > myemma.txt'
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
     - name: Run tests
-      run: cargo test --verbose --features sync -- --test-threads=1
+      run: cargo test --features sync -- --test-threads=1
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: auth.json
+        TEST_BUCKET: cloud-storage-rs-test-bucket 
