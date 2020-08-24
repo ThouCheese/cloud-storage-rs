@@ -171,8 +171,8 @@ async fn read_test_bucket_sync() -> Bucket {
 #[cfg(test)]
 async fn read_test_bucket() -> Bucket {
     dotenv::dotenv().ok();
-    let name = dbg!(std::env::var("TEST_BUCKET")).unwrap();
-    match dbg!(Bucket::read(&name).await) {
+    let name = std::env::var("TEST_BUCKET").unwrap();
+    match Bucket::read(&name).await {
         Ok(bucket) => bucket,
         Err(_not_found) => Bucket::create(&NewBucket {
             name,

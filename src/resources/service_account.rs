@@ -32,8 +32,8 @@ impl ServiceAccount {
             .expect(
                 "SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS environment parameter required",
             );
-        let file = std::fs::read_to_string(dbg!(path)).expect("SERVICE_ACCOUNT file not found");
-        let account: Self = serde_json::from_str(&dbg!(file)).expect("serivce account file not valid");
+        let file = std::fs::read_to_string(path).expect("SERVICE_ACCOUNT file not found");
+        let account: Self = serde_json::from_str(&file).expect("serivce account file not valid");
         if account.r#type != "service_account" {
             panic!("`type` paramter of `SERVICE_ACCOUNT` variable is not 'service_account'");
         }
