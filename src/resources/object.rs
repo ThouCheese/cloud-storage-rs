@@ -168,7 +168,7 @@ impl Object {
     /// use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
-    /// Object::create("cat-photos", &file, "recently read cat.png", "image/png").await?;
+    /// Object::create("cat-photos", file, "recently read cat.png", "image/png").await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -509,7 +509,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object};
+    /// use cloud_storage::Object;
     /// use futures::StreamExt;
     /// use std::fs::File;
     /// use std::io::Write;

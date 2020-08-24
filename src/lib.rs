@@ -57,7 +57,7 @@
 //! for byte in File::open("myfile.txt")?.bytes() {
 //!     bytes.push(byte?)
 //! }
-//! Object::create("mybucket", &bytes, "myfile.txt", "text/plain").await?;
+//! Object::create("mybucket", bytes, "myfile.txt", "text/plain").await?;
 //! # Ok(())
 //! # }
 //! ```
