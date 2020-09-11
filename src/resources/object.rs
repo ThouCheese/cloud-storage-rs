@@ -239,7 +239,7 @@ impl Object {
     pub async fn create_streamed<S>(
         bucket: &str,
         stream: S,
-        length: u64,
+        length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Self>
@@ -260,7 +260,9 @@ impl Object {
         );
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
-        headers.insert(CONTENT_LENGTH, length.to_string().parse()?);
+        if let Some(length) = length.into() {
+            headers.insert(CONTENT_LENGTH, length.into());
+        }
 
         let body = reqwest::Body::wrap_stream(stream);
         let response = reqwest::Client::new()
@@ -285,7 +287,7 @@ impl Object {
     pub async fn create_streamed_sync<R: std::io::Read + Send + 'static>(
         bucket: &str,
         mut file: R,
-        length: u64,
+        length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Self> {
