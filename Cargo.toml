@@ -18,9 +18,10 @@ default = ["native-tls"]
 sync = ["reqwest/blocking"]
 native-tls = ["reqwest/default-tls"]
 rustls-tls = ["reqwest/rustls-tls"]
+trust-dns = ["reqwest/trust-dns"]
 
 [dependencies]
-reqwest =          { version = "0.10", default-features = false, features = ["json", "stream", "trust-dns"] }
+reqwest =          { version = "0.10", default-features = false, features = ["json", "stream"] }
 percent-encoding = { version = "2",    default-features = false }
 jsonwebtoken =     { version = "7",    default-features = false }
 serde =            { version = "1",    default-features = false, features = ["derive"] }
