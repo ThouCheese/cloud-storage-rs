@@ -117,7 +117,7 @@ impl BucketAccessControl {
         new_bucket_access_control: &NewBucketAccessControl,
     ) -> crate::Result<Self> {
         let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(crate::get_headers().await?)
             .json(new_bucket_access_control)
@@ -162,7 +162,7 @@ impl BucketAccessControl {
     /// ```
     pub async fn list(bucket: &str) -> crate::Result<Vec<Self>> {
         let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
+        let result: GoogleResponse<ListResponse<Self>> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -203,7 +203,7 @@ impl BucketAccessControl {
     /// ```
     pub async fn read(bucket: &str, entity: &Entity) -> crate::Result<Self> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, bucket, entity);
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -246,7 +246,7 @@ impl BucketAccessControl {
     /// ```
     pub async fn update(&self) -> crate::Result<Self> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(self)
@@ -289,7 +289,7 @@ impl BucketAccessControl {
     /// ```
     pub async fn delete(self) -> crate::Result<()> {
         let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()

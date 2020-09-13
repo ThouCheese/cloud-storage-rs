@@ -1,0 +1,31 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Create Secret
+      run: 'echo "$SECRET_FILE" > auth.json'
+      env:
+        SECRET_FILE: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+    - name: Create Test File
+      run: 'echo "Temporary test text to test the transfer." > myemma.txt'
+    - name: Build
+      run: cargo build
+    - name: Run tests
+      run: cargo test --features sync -- --test-threads=1
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: auth.json
+        TEST_BUCKET: cloud-storage-rs-test-bucket 

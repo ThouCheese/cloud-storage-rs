@@ -297,24 +297,23 @@ pub enum ActionType {
 pub struct Condition {
     /// Age of an object (in days). This condition is satisfied when an object reaches the specified
     /// age.
-    #[serde(deserialize_with = "crate::from_str")]
-    pub age: i32,
+    pub age: Option<i32>,
     /// A date in `RFC 3339` format with only the date part (for instance, "2013-01-15"). This
     /// condition is satisfied when an object is created before midnight of the specified date in
     /// UTC.
-    pub created_before: chrono::DateTime<chrono::Utc>,
+    pub created_before: Option<chrono::DateTime<chrono::Utc>>,
     /// Relevant only for versioned objects. If the value is true, this condition matches the live
     /// version of objects; if the value is `false`, it matches noncurrent versions of objects.
-    pub is_live: bool,
+    pub is_live: Option<bool>,
     /// Objects having any of the storage classes specified by this condition will be matched.
     /// Values include STANDARD, NEARLINE, COLDLINE, MULTI_REGIONAL, REGIONAL, and
     /// DURABLE_REDUCED_AVAILABILITY.
-    pub matches_storage_class: Vec<String>,
+    pub matches_storage_class: Option<Vec<String>>,
     /// Relevant only for versioned objects. If the value is N, this condition is satisfied when
     /// there are at least N versions (including the live version) newer than this version of the
     /// object.
-    #[serde(deserialize_with = "crate::from_str")]
-    pub num_newer_versions: i32,
+    #[serde(default, deserialize_with = "crate::from_str_opt")]
+    pub num_newer_versions: Option<i32>,
 }
 
 /// Contains information about the payment structure of this bucket
@@ -566,7 +565,7 @@ impl Bucket {
         let url = format!("{}/b/", crate::BASE_URL);
         let project = &crate::SERVICE_ACCOUNT.project_id;
         let query = [("project", project)];
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(crate::get_headers().await?)
             .query(&query)
@@ -592,6 +591,10 @@ impl Bucket {
     }
 
     /// Returns all `Bucket`s within this project.
+    ///
+    /// ### Note
+    /// When using incorrect permissions, this function fails silently and returns an empty list.
+    ///
     /// ### Example
     /// ```
     /// # #[tokio::main]
@@ -606,7 +609,7 @@ impl Bucket {
         let url = format!("{}/b/", crate::BASE_URL);
         let project = &crate::SERVICE_ACCOUNT.project_id;
         let query = [("project", project)];
-        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
+        let result: GoogleResponse<ListResponse<Self>> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .query(&query)
@@ -650,7 +653,7 @@ impl Bucket {
     /// ```
     pub async fn read(name: &str) -> crate::Result<Self> {
         let url = format!("{}/b/{}", crate::BASE_URL, name);
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -700,7 +703,7 @@ impl Bucket {
     /// ```
     pub async fn update(&self) -> crate::Result<Self> {
         let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(self)
@@ -746,7 +749,7 @@ impl Bucket {
     /// ```
     pub async fn delete(self) -> crate::Result<()> {
         let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -789,7 +792,7 @@ impl Bucket {
     /// ```
     pub async fn get_iam_policy(&self) -> crate::Result<IamPolicy> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let result: GoogleResponse<IamPolicy> = crate::CLIENT
+        let result: GoogleResponse<IamPolicy> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -845,7 +848,7 @@ impl Bucket {
     /// ```
     pub async fn set_iam_policy(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
         let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let result: GoogleResponse<IamPolicy> = crate::CLIENT
+        let result: GoogleResponse<IamPolicy> = reqwest::Client::new()
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(iam)
@@ -888,7 +891,7 @@ impl Bucket {
             ));
         }
         let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, self.name);
-        let result: GoogleResponse<TestIamPermission> = crate::CLIENT
+        let result: GoogleResponse<TestIamPermission> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .query(&[("permissions", permission)])
@@ -1003,8 +1006,6 @@ mod tests {
 
     #[tokio::test]
     async fn set_iam_policy() -> Result<(), Box<dyn std::error::Error>> {
-        // use crate::resources::iam_policy::{Binding, IamRole, StandardIamRole};
-
         let bucket = crate::create_test_bucket("test-set-iam-policy").await;
         let iam_policy = IamPolicy {
             bindings: vec![Binding {

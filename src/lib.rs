@@ -57,7 +57,7 @@
 //! for byte in File::open("myfile.txt")?.bytes() {
 //!     bytes.push(byte?)
 //! }
-//! Object::create("mybucket", &bytes, "myfile.txt", "text/plain").await?;
+//! Object::create("mybucket", bytes, "myfile.txt", "text/plain").await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -96,7 +96,7 @@ pub use crate::resources::{
     *,
 };
 use crate::token::Token;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 
 lazy_static::lazy_static! {
     /// Static `Token` struct that caches
@@ -112,8 +112,6 @@ lazy_static::lazy_static! {
     /// debugging of which service account is currently used. It is of the type
     /// [ServiceAccount](service_account/struct.ServiceAccount.html).
     pub static ref SERVICE_ACCOUNT: ServiceAccount = ServiceAccount::get();
-
-    static ref CLIENT: reqwest::Client = reqwest::Client::new();
 }
 
 /// A type alias where the error is set to be `cloud_storage::Error`.
@@ -123,7 +121,7 @@ const BASE_URL: &str = "https://www.googleapis.com/storage/v1";
 
 async fn get_headers() -> Result<reqwest::header::HeaderMap> {
     let mut result = reqwest::header::HeaderMap::new();
-    let mut guard = TOKEN_CACHE.lock().unwrap();
+    let mut guard = TOKEN_CACHE.lock().await;
     let token = guard.get().await?;
     result.insert(
         reqwest::header::AUTHORIZATION,
@@ -191,8 +189,6 @@ async fn read_test_bucket() -> Bucket {
 #[cfg(feature = "sync")]
 #[tokio::main]
 async fn create_test_bucket_sync(name: &str) -> Bucket {
-    std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
-
     create_test_bucket(name).await
 }
 
@@ -200,6 +196,8 @@ async fn create_test_bucket_sync(name: &str) -> Bucket {
 // the same name in each test.
 #[cfg(test)]
 async fn create_test_bucket(name: &str) -> Bucket {
+    std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
+
     dotenv::dotenv().ok();
     let base_name = std::env::var("TEST_BUCKET").unwrap();
     let name = format!("{}-{}", base_name, name);

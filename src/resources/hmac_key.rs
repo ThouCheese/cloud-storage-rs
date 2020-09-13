@@ -58,7 +58,7 @@ pub enum HmacState {
     Deleted,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct ListResponse {
     items: Vec<HmacMeta>,
 }
@@ -106,7 +106,7 @@ impl HmacKey {
         let query = [("serviceAccountEmail", &crate::SERVICE_ACCOUNT.client_email)];
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_LENGTH, 0.into());
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(headers)
             .query(&query)
@@ -155,16 +155,24 @@ impl HmacKey {
             crate::BASE_URL,
             crate::SERVICE_ACCOUNT.project_id
         );
-        let result: GoogleResponse<ListResponse> = crate::CLIENT
+        let response = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
             .await?
-            .json()
+            .text()
             .await?;
+        let result: Result<GoogleResponse<ListResponse>, _> = serde_json::from_str(&response);
+
+        // This function rquires more complicated error handling because when there is only one
+        // entry, Google will return the response `{ "kind": "storage#hmacKeysMetadata" }` instead
+        // of a list with one element. This breaks the parser.
         match result {
-            GoogleResponse::Success(s) => Ok(s.items),
-            GoogleResponse::Error(e) => Err(e.into()),
+            Ok(parsed) => match parsed {
+                GoogleResponse::Success(s) => Ok(s.items),
+                GoogleResponse::Error(e) => Err(e.into()),
+            }
+            Err(_) =>  Ok(vec![]),
         }
     }
 
@@ -203,7 +211,7 @@ impl HmacKey {
             crate::SERVICE_ACCOUNT.project_id,
             access_id
         );
-        let result: GoogleResponse<HmacMeta> = crate::CLIENT
+        let result: GoogleResponse<HmacMeta> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -252,7 +260,7 @@ impl HmacKey {
             access_id
         );
         serde_json::to_string(&UpdateMeta { state })?;
-        let result: GoogleResponse<HmacMeta> = crate::CLIENT
+        let result: GoogleResponse<HmacMeta> = reqwest::Client::new()
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(&UpdateMeta { state })
@@ -300,7 +308,7 @@ impl HmacKey {
             crate::SERVICE_ACCOUNT.project_id,
             access_id
         );
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -372,6 +380,18 @@ mod tests {
         let key = get_test_hmac().await;
         HmacKey::update(&key.access_id, HmacState::Inactive).await?;
         HmacKey::delete(&key.access_id).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn clear_keys() -> Result<(), Box<dyn std::error::Error>> {
+        let keys = HmacKey::list().await?;
+        for key in &keys {
+            if key.state != HmacState::Inactive {
+                HmacKey::update(&key.access_id, HmacState::Inactive).await?;
+            }
+            HmacKey::delete(&key.access_id).await?;
+        }
         Ok(())
     }
 

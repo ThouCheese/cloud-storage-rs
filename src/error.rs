@@ -78,21 +78,24 @@ pub(crate) enum GoogleResponse<T> {
     Error(GoogleErrorResponse),
 }
 
+// TODO comment this in when try_trait (#42327) get stabilized and enjoy the nicer handling of
+// errors
+//
 // impl<T> std::ops::Try for GoogleResponse<T> {
 //     type Ok = T;
 //     type Error = Error;
-
+//
 //     fn into_result(self) -> Result<Self::Ok, Error> {
 //         match self {
 //             GoogleResponse::Success(t) => Ok(t),
 //             GoogleResponse::Error(error) => Err(Error::Google(error)),
 //         }
 //     }
-
+//
 //     fn from_error(_a: Error) -> Self {
 //         unimplemented!()
 //     }
-
+//
 //     fn from_ok(t: T) -> Self {
 //         GoogleResponse::Success(t)
 //     }
@@ -103,6 +106,20 @@ pub(crate) enum GoogleResponse<T> {
 #[serde(rename = "camelCase")]
 pub struct GoogleErrorResponse {
     error: ErrorList,
+}
+
+impl GoogleErrorResponse {
+    /// Return list of errors returned by Google
+    pub fn errors(&self) -> &[GoogleError] {
+        &self.error.errors
+    }
+
+    /// Check whether errors contain given reason
+    pub fn errors_has_reason(&self, reason: &Reason) -> bool {
+        self.errors()
+            .iter()
+            .any(|google_error| google_error.is_reason(reason))
+    }
 }
 
 impl std::fmt::Display for GoogleErrorResponse {
@@ -125,9 +142,10 @@ struct ErrorList {
     message: String,
 }
 
+/// Google Error structure
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename = "camelCase")]
-struct GoogleError {
+pub struct GoogleError {
     domain: String,
     reason: Reason,
     message: String,
@@ -135,17 +153,21 @@ struct GoogleError {
     location: Option<String>,
 }
 
+impl GoogleError {
+    /// Check what was the reasons of error
+    pub fn is_reason(&self, reason: &Reason) -> bool {
+        &self.reason == reason
+    }
+}
+
 impl From<GoogleErrorResponse> for Error {
     fn from(err: GoogleErrorResponse) -> Self {
-        Self::Other(format!(
-            "got error response from Google: {}",
-            err.error.message
-        ))
+        Self::Google(err)
     }
 }
 
 /// Google provides a list of codes, but testing indicates that this list is not exhaustive.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Reason {
     /// When requesting a download using alt=media URL parameter, the direct URL path to use is

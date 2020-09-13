@@ -168,7 +168,7 @@ impl Object {
     /// use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
-    /// Object::create("cat-photos", &file, "recently read cat.png", "image/png").await?;
+    /// Object::create("cat-photos", file, "recently read cat.png", "image/png").await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -191,7 +191,7 @@ impl Object {
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
         headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .post(url)
             .headers(headers)
             .body(file)
@@ -227,7 +227,7 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
-    /// let file = crate::CLIENT
+    /// let file = reqwest::Client::new()
     ///     .get("https://my_domain.rs/nice_cat_photo.png")
     ///     .send()
     ///     .await?
@@ -239,7 +239,7 @@ impl Object {
     pub async fn create_streamed<S>(
         bucket: &str,
         stream: S,
-        length: u64,
+        length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Self>
@@ -260,10 +260,12 @@ impl Object {
         );
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
-        headers.insert(CONTENT_LENGTH, length.to_string().parse()?);
+        if let Some(length) = length.into() {
+            headers.insert(CONTENT_LENGTH, length.into());
+        }
 
         let body = reqwest::Body::wrap_stream(stream);
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .post(url)
             .headers(headers)
             .body(body)
@@ -285,7 +287,7 @@ impl Object {
     pub async fn create_streamed_sync<R: std::io::Read + Send + 'static>(
         bucket: &str,
         mut file: R,
-        length: u64,
+        length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Self> {
@@ -330,7 +332,7 @@ impl Object {
     /// Obtain a list of objects by prefix within this Bucket .
     /// ### Example
     /// ```no_run
-    /// #[tokio::main]
+    /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
@@ -389,7 +391,7 @@ impl Object {
                 query.push(("prefix", prefix.to_string()));
             };
 
-            let response = crate::CLIENT
+            let response = reqwest::Client::new()
                 .get(&url)
                 .query(&query)
                 .headers(headers)
@@ -442,7 +444,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -483,7 +485,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        Ok(crate::CLIENT
+        Ok(reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -510,9 +512,15 @@ impl Object {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
+    /// use futures::StreamExt;
+    /// use std::fs::File;
+    /// use std::io::Write;
     ///
-    /// let stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
-    /// for
+    /// let mut stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
+    /// let mut file = File::create("file.png").unwrap();
+    /// for part in stream.next().await {
+    ///     file.write_all(&part.unwrap()).unwrap();
+    /// }
     /// # Ok(())
     /// # }
     /// ```
@@ -528,7 +536,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        Ok(crate::CLIENT
+        Ok(reqwest::Client::new()
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -557,7 +565,7 @@ impl Object {
             percent_encode(&self.bucket),
             percent_encode(&self.name),
         );
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(&self)
@@ -599,7 +607,7 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        let response = crate::CLIENT
+        let response = reqwest::Client::new()
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -662,7 +670,7 @@ impl Object {
             percent_encode(&bucket),
             percent_encode(&destination_object)
         );
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(crate::get_headers().await?)
             .json(req)
@@ -716,7 +724,7 @@ impl Object {
         );
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: GoogleResponse<Self> = crate::CLIENT
+        let result: GoogleResponse<Self> = reqwest::Client::new()
             .post(&url)
             .headers(headers)
             .send()
@@ -772,7 +780,7 @@ impl Object {
         );
         let mut headers = crate::get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: GoogleResponse<RewriteResponse> = crate::CLIENT
+        let result: GoogleResponse<RewriteResponse> = reqwest::Client::new()
             .post(&url)
             .headers(headers)
             .send()
@@ -1068,6 +1076,29 @@ mod tests {
         // let data = data.next().await.flat_map(|part| part.into_iter()).collect();
         assert_eq!(data, content);
 
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn download_streamed_large() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let content = vec![5u8; 1_000_000];
+        Object::create(
+            &bucket.name,
+            content.to_vec(),
+            "test-download-large",
+            "application/octet-stream",
+        )
+        .await?;
+
+        let mut result = Object::download_streamed(&bucket.name, "test-download-large").await?;
+        let mut data: Vec<u8> = Vec::new();
+        while let Some(part) = result.next().await {
+            data.extend(part?);
+        }
+        assert_eq!(data, content);
+
         Ok(())
     }
 
@@ -1137,7 +1168,7 @@ mod tests {
         let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file").await?;
         let url = obj3.download_url(100)?;
         let content = reqwest::get(&url).await?.text().await?;
-        assert_eq!(content.as_bytes(), vec![0, 1, 2, 3]);
+        assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
         Ok(())
     }
 
@@ -1155,7 +1186,7 @@ mod tests {
         let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
         let obj = obj.rewrite(&bucket.name, "test-rewritten").await?;
         let url = obj.download_url(100)?;
-        let download = crate::CLIENT.head(&url).send().await?;
+        let download = reqwest::Client::new().head(&url).send().await?;
         assert_eq!(download.status().as_u16(), 200);
         Ok(())
     }
@@ -1175,7 +1206,7 @@ mod tests {
             let _obj = Object::create(&bucket.name, vec![0, 1], name, "text/plain").await?;
             let obj = Object::read(&bucket.name, &name).await.unwrap();
             let url = obj.download_url(100)?;
-            let download = crate::CLIENT.head(&url).send().await?;
+            let download = reqwest::Client::new().head(&url).send().await?;
             assert_eq!(download.status().as_u16(), 200);
         }
         Ok(())
@@ -1329,7 +1360,7 @@ mod tests {
             let obj3 = Object::compose_sync(&bucket.name, &compose_request, "test-concatted-file")?;
             let url = obj3.download_url(100)?;
             let content = reqwest::blocking::get(&url)?.text()?;
-            assert_eq!(content.as_bytes(), vec![0, 1, 2, 3]);
+            assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
             Ok(())
         }
 
