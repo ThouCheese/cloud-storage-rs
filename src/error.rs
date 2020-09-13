@@ -108,6 +108,20 @@ pub struct GoogleErrorResponse {
     error: ErrorList,
 }
 
+impl GoogleErrorResponse {
+    /// Return list of errors returned by Google
+    pub fn errors(&self) -> &[GoogleError] {
+        &self.error.errors
+    }
+
+    /// Check whether errors contain given reason
+    pub fn errors_has_reason(&self, reason: &Reason) -> bool {
+        self.errors()
+            .iter()
+            .any(|google_error| google_error.is_reason(reason))
+    }
+}
+
 impl std::fmt::Display for GoogleErrorResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         writeln!(f, "{:?}", self)
@@ -128,9 +142,10 @@ struct ErrorList {
     message: String,
 }
 
+/// Google Error structure
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename = "camelCase")]
-struct GoogleError {
+pub struct GoogleError {
     domain: String,
     reason: Reason,
     message: String,
@@ -138,17 +153,21 @@ struct GoogleError {
     location: Option<String>,
 }
 
+impl GoogleError {
+    /// Check what was the reasons of error
+    pub fn is_reason(&self, reason: &Reason) -> bool {
+        &self.reason == reason
+    }
+}
+
 impl From<GoogleErrorResponse> for Error {
     fn from(err: GoogleErrorResponse) -> Self {
-        Self::Other(format!(
-            "got error response from Google: {}",
-            err.error.message
-        ))
+        Self::Google(err)
     }
 }
 
 /// Google provides a list of codes, but testing indicates that this list is not exhaustive.
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Reason {
     /// When requesting a download using alt=media URL parameter, the direct URL path to use is
