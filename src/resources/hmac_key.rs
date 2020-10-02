@@ -171,8 +171,8 @@ impl HmacKey {
             Ok(parsed) => match parsed {
                 GoogleResponse::Success(s) => Ok(s.items),
                 GoogleResponse::Error(e) => Err(e.into()),
-            }
-            Err(_) =>  Ok(vec![]),
+            },
+            Err(_) => Ok(vec![]),
         }
     }
 

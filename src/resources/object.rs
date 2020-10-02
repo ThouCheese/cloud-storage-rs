@@ -820,7 +820,36 @@ impl Object {
     /// # }
     /// ```
     pub fn download_url(&self, duration: u32) -> crate::Result<String> {
-        self.sign(&self.name, duration, "GET")
+        self.sign(&self.name, duration, "GET", None)
+    }
+
+    /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
+    /// which is valid for `duration` seconds, and lets the posessor download the file contents
+    /// without any authentication.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::object::{Object, ComposeRequest};
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let url = obj1.download_url(50)?;
+    /// // url is now a url to which an unauthenticated user can make a request to download a file
+    /// // for 50 seconds.
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn download_url_with(
+        &self,
+        duration: u32,
+        opts: crate::DownloadOptions,
+    ) -> crate::Result<String> {
+        self.sign(
+            &self.name,
+            duration,
+            "GET",
+            opts.content_disposition,
+        )
     }
 
     // /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
@@ -831,7 +860,13 @@ impl Object {
     // }
 
     #[inline(always)]
-    fn sign(&self, file_path: &str, duration: u32, http_verb: &str) -> crate::Result<String> {
+    fn sign(
+        &self,
+        file_path: &str,
+        duration: u32,
+        http_verb: &str,
+        content_disposition: Option<String>,
+    ) -> crate::Result<String> {
         use openssl::sha;
 
         if duration > 604800 {
@@ -842,11 +877,32 @@ impl Object {
             return Err(Error::Other(msg));
         }
 
-        // 1 construct the canonical reques
+        // 0 Sort and construct the canonical headers
+        let mut headers = vec![];
+        headers.push(("host".to_string(), "storage.googleapis.com".to_string()));
+        headers.sort_unstable_by(|(k1, _), (k2, _)| k1.cmp(&k2));
+        let canonical_headers: String = headers
+            .iter()
+            .map(|(k, v)| format!("{}:{}", k.to_lowercase(), v.to_lowercase()))
+            .collect::<Vec<String>>()
+            .join("\n");
+        let signed_headers = headers
+            .iter()
+            .map(|(k, _)| k.to_lowercase())
+            .collect::<Vec<String>>()
+            .join(";");
+
+        // 1 construct the canonical request
         let issue_date = chrono::Utc::now();
         let file_path = self.path_to_resource(file_path);
-        let query_string = Self::get_canonical_query_string(&issue_date, duration);
-        let canonical_request = self.get_canonical_request(&file_path, &query_string, http_verb);
+        let query_string = Self::get_canonical_query_string(
+            &issue_date,
+            duration,
+            &signed_headers,
+            content_disposition,
+        );
+        let canonical_request =
+            self.get_canonical_request(&file_path, &query_string, http_verb, &canonical_headers);
 
         // 2 get hex encoded SHA256 hash the canonical request
         let hash = sha::sha256(canonical_request.as_bytes());
@@ -865,8 +921,8 @@ impl Object {
         );
 
         // 4 sign the string to sign with RSA - SHA256
-        let buffer = Self::sign_str(&string_to_sign);
-        let signature = hex::encode(&buffer?);
+        let buffer = Self::sign_str(&string_to_sign)?;
+        let signature = hex::encode(&buffer);
 
         // 5 construct the signed url
         Ok(format!(
@@ -880,7 +936,13 @@ impl Object {
     }
 
     #[inline(always)]
-    fn get_canonical_request(&self, path: &str, query_string: &str, http_verb: &str) -> String {
+    fn get_canonical_request(
+        &self,
+        path: &str,
+        query_string: &str,
+        http_verb: &str,
+        headers: &str,
+    ) -> String {
         format!(
             "{http_verb}\n\
             {path_to_resource}\n\
@@ -892,20 +954,26 @@ impl Object {
             http_verb = http_verb,
             path_to_resource = path,
             canonical_query_string = query_string,
-            canonical_headers = "host:storage.googleapis.com",
+            // canonical_headers = "host:storage.googleapis.com",
+            canonical_headers = headers,
             signed_headers = "host",
             payload = "UNSIGNED-PAYLOAD",
         )
     }
 
     #[inline(always)]
-    fn get_canonical_query_string(date: &chrono::DateTime<chrono::Utc>, exp: u32) -> String {
+    fn get_canonical_query_string(
+        date: &chrono::DateTime<chrono::Utc>,
+        exp: u32,
+        headers: &str,
+        content_disposition: Option<String>,
+    ) -> String {
         let credential = format!(
             "{authorizer}/{scope}",
             authorizer = crate::SERVICE_ACCOUNT.client_email,
             scope = Self::get_credential_scope(date),
         );
-        format!(
+        let mut s = format!(
             "X-Goog-Algorithm={algo}&\
             X-Goog-Credential={cred}&\
             X-Goog-Date={date}&\
@@ -915,8 +983,13 @@ impl Object {
             cred = percent_encode(&credential),
             date = date.format("%Y%m%dT%H%M%SZ"),
             exp = exp,
-            signed = "host",
-        )
+            // signed="host",
+            signed = headers,
+        );
+        if let Some(cd) = content_disposition {
+            s.push_str(&format!("&response-content-disposition={}", cd));
+        }
+        s
     }
 
     #[inline(always)]
@@ -1076,7 +1149,6 @@ mod tests {
         // let data = data.next().await.flat_map(|part| part.into_iter()).collect();
         assert_eq!(data, content);
 
-
         Ok(())
     }
 
@@ -1209,6 +1281,19 @@ mod tests {
             let download = reqwest::Client::new().head(&url).send().await?;
             assert_eq!(download.status().as_u16(), 200);
         }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_download_url_with() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let client = reqwest::Client::new();
+        let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
+
+        let opts1 = crate::DownloadOptions::new().content_disposition("attachment");
+        let download_url1 = obj.download_url_with(100, opts1)?;
+        let download1 = client.head(&download_url1).send().await?;
+        assert_eq!(download1.headers()["content-disposition"], "attachment");
         Ok(())
     }
 
