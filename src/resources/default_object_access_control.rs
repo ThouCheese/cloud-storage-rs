@@ -103,7 +103,7 @@ impl DefaultObjectAccessControl {
         new_acl: &NewDefaultObjectAccessControl,
     ) -> crate::Result<Self> {
         let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<Self> = reqwest::Client::new()
+        let result: GoogleResponse<Self> = crate::CLIENT
             .post(&url)
             .headers(crate::get_headers().await?)
             .json(new_acl)
@@ -150,7 +150,7 @@ impl DefaultObjectAccessControl {
     /// ```
     pub async fn list(bucket: &str) -> crate::Result<Vec<Self>> {
         let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<ListResponse<Self>> = reqwest::Client::new()
+        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -206,7 +206,7 @@ impl DefaultObjectAccessControl {
             bucket,
             entity
         );
-        let result: GoogleResponse<Self> = reqwest::Client::new()
+        let result: GoogleResponse<Self> = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
@@ -256,7 +256,7 @@ impl DefaultObjectAccessControl {
             self.bucket,
             self.entity
         );
-        let result: GoogleResponse<Self> = reqwest::Client::new()
+        let result: GoogleResponse<Self> = crate::CLIENT
             .put(&url)
             .headers(crate::get_headers().await?)
             .json(self)
@@ -306,7 +306,7 @@ impl DefaultObjectAccessControl {
             self.bucket,
             self.entity
         );
-        let response = reqwest::Client::new()
+        let response = crate::CLIENT
             .delete(&url)
             .headers(crate::get_headers().await?)
             .send()
