@@ -524,25 +524,19 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn download_streamed(
-        bucket: &str,
-        file_name: &str,
-    ) -> crate::Result<impl Stream<Item = crate::Result<Vec<u8>>>> {
-        use futures::StreamExt;
-
+    pub async fn download_streamed(bucket: &str, file_name: &str) -> crate::Result<Download> {
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
             crate::BASE_URL,
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        Ok(crate::CLIENT
+        let res = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
-            .await?
-            .bytes_stream()
-            .map(|res| Ok(res.map(|r| r.to_vec())?)))
+            .await?;
+        Ok(Download::from(res))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -1486,5 +1480,44 @@ mod tests {
             }
             Ok(())
         }
+    }
+}
+
+/// A wrapper around a downloaded object's byte stream.
+pub struct Download {
+    size: Option<u64>,
+    bytes: std::pin::Pin<Box<dyn Stream<Item = crate::Result<Vec<u8>>>>>,
+}
+
+impl Download {
+    /// Returns the size of the downloaded object in bytes.
+    pub fn size(&self) -> Option<u64> {
+        self.size
+    }
+}
+
+impl From<reqwest::Response> for Download {
+    fn from(res: reqwest::Response) -> Self {
+        use futures::StreamExt;
+        Self {
+            size: res.content_length(),
+            bytes: res
+                .bytes_stream()
+                .map(|res| Ok(res.map(|r| r.to_vec())?))
+                .boxed(),
+        }
+    }
+}
+
+impl std::ops::Deref for Download {
+    type Target = dyn Stream<Item = crate::Result<Vec<u8>>> + Unpin;
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
+}
+
+impl std::ops::DerefMut for Download {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.bytes
     }
 }
