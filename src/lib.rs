@@ -84,8 +84,8 @@
 #![forbid(unsafe_code, missing_docs)]
 
 mod download_options;
-/// Contains objects as represented by Google, to be used for serialization and deserialization.
 mod error;
+/// Contains objects as represented by Google, to be used for serialization and deserialization.
 mod resources;
 mod token;
 
