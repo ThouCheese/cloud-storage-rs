@@ -531,12 +531,12 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        let res = crate::CLIENT
+        Ok(crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
-            .await?;
-        Ok(Download::from(res))
+            .await?
+            .into())
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
