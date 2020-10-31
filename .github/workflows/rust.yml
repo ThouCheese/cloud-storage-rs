@@ -16,6 +16,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Run cargo clippy
+      uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: -- -D warnings
     - name: Create Secret
       run: 'echo "$SECRET_FILE" > auth.json'
       env:
