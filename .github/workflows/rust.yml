@@ -16,6 +16,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Run cargo fmt
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: -- --check
     - name: Create Secret
       run: 'echo "$SECRET_FILE" > auth.json'
       env:
