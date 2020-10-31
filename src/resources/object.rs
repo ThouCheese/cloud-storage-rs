@@ -227,7 +227,7 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
-    /// let file = crate::CLIENT
+    /// let file = reqwest::Client::new()
     ///     .get("https://my_domain.rs/nice_cat_photo.png")
     ///     .send()
     ///     .await?
