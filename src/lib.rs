@@ -89,7 +89,6 @@ mod error;
 mod resources;
 mod token;
 
-pub use download_options::DownloadOptions;
 pub use crate::error::*;
 use crate::resources::service_account::ServiceAccount;
 pub use crate::resources::{
@@ -98,6 +97,7 @@ pub use crate::resources::{
     *,
 };
 use crate::token::Token;
+pub use download_options::DownloadOptions;
 use tokio::sync::Mutex;
 
 lazy_static::lazy_static! {
