@@ -524,19 +524,28 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn download_streamed(bucket: &str, file_name: &str) -> crate::Result<Download> {
+    pub async fn download_streamed(
+        bucket: &str,
+        file_name: &str,
+    ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
+        use futures::{StreamExt, TryStreamExt};
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
             crate::BASE_URL,
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        Ok(crate::CLIENT
+        let res = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
-            .await?
-            .into())
+            .await?;
+        let size = res.content_length();
+        let bytes = res
+            .bytes_stream()
+            .map(|chunk| chunk.map(|c| futures::stream::iter(c.into_iter().map(Ok))))
+            .try_flatten();
+        Ok(SizedByteStream::new(bytes, size))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -1133,7 +1142,7 @@ mod tests {
         let mut result = Object::download_streamed(&bucket.name, "test-download").await?;
         let mut data = Vec::new();
         for part in result.next().await {
-            data.extend(part?);
+            data.push(part?);
         }
         // let data = data.next().await.flat_map(|part| part.into_iter()).collect();
         assert_eq!(data, content);
@@ -1156,7 +1165,7 @@ mod tests {
         let mut result = Object::download_streamed(&bucket.name, "test-download-large").await?;
         let mut data: Vec<u8> = Vec::new();
         while let Some(part) = result.next().await {
-            data.extend(part?);
+            data.push(part?);
         }
         assert_eq!(data, content);
 
@@ -1483,34 +1492,26 @@ mod tests {
     }
 }
 
-/// A wrapper around a downloaded object's byte stream.
-pub struct Download {
+/// A wrapper around a downloaded object's byte stream that provides a useful `size_hint`.
+pub struct SizedByteStream<S: Stream<Item = crate::Result<u8>> + Unpin> {
     size: Option<u64>,
-    bytes: std::pin::Pin<Box<dyn Stream<Item = crate::Result<u8>>>>,
+    bytes: S,
 }
 
-impl From<reqwest::Response> for Download {
-    fn from(res: reqwest::Response) -> Self {
-        use futures::{StreamExt, TryStreamExt};
-        Self {
-            size: res.content_length(),
-            bytes: res
-                .bytes_stream()
-                .map(|chunk| chunk.map(|c| futures::stream::iter(c.into_iter().map(Ok))))
-                .try_flatten()
-                .boxed(),
-        }
+impl<S: Stream<Item = crate::Result<u8>> + Unpin> SizedByteStream<S> {
+    fn new(bytes: S, size: Option<u64>) -> Self {
+        Self { bytes, size }
     }
 }
 
-impl Stream for Download {
+impl<S: Stream<Item = crate::Result<u8>> + Unpin> Stream for SizedByteStream<S> {
     type Item = crate::Result<u8>;
 
     fn poll_next(
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut futures::task::Context,
     ) -> futures::task::Poll<Option<Self::Item>> {
-        Stream::poll_next(self.bytes.as_mut(), cx)
+        futures::StreamExt::poll_next_unpin(&mut self.bytes, cx)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
