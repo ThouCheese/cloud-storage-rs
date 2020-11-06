@@ -398,7 +398,11 @@ impl Object {
                 .send()
                 .await;
             let response = match response {
-                Ok(r) => r,
+                Ok(r) if r.status() == 200 => r,
+                Ok(r) => {
+                    let e = Error::Google(r.json().await.ok()?);
+                    return Some((Err(e), state));
+                }
                 Err(e) => return Some((Err(e.into()), state)),
             };
 
@@ -489,6 +493,8 @@ impl Object {
             .headers(crate::get_headers().await?)
             .send()
             .await?
+            .error_for_status()
+            .map_err(Error::from)?
             .bytes()
             .await?
             .to_vec())
@@ -533,13 +539,15 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        let res = crate::CLIENT
+        let response = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
-            .await?;
-        let size = res.content_length();
-        let bytes = res
+            .await?
+            .error_for_status()
+            .map_err(Error::from)?;
+        let size = response.content_length();
+        let bytes = response
             .bytes_stream()
             .map(|chunk| chunk.map(|c| futures::stream::iter(c.into_iter().map(Ok))))
             .try_flatten();
