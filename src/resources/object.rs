@@ -514,12 +514,12 @@ impl Object {
     /// use cloud_storage::Object;
     /// use futures::StreamExt;
     /// use std::fs::File;
-    /// use std::io::Write;
+    /// use std::io::{BufWriter, Write};
     ///
     /// let mut stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
-    /// let mut file = File::create("file.png").unwrap();
-    /// for part in stream.next().await {
-    ///     file.write_all(&part.unwrap()).unwrap();
+    /// let mut file = BufWriter::new(File::create("file.png").unwrap());
+    /// while let Some(byte) = stream.next().await {
+    ///     file.write_all(&[byte.unwrap()]).unwrap();
     /// }
     /// # Ok(())
     /// # }
@@ -1139,12 +1139,8 @@ mod tests {
         )
         .await?;
 
-        let mut result = Object::download_streamed(&bucket.name, "test-download").await?;
-        let mut data = Vec::new();
-        for part in result.next().await {
-            data.push(part?);
-        }
-        // let data = data.next().await.flat_map(|part| part.into_iter()).collect();
+        let result = Object::download_streamed(&bucket.name, "test-download").await?;
+        let data = result.try_collect::<Vec<_>>().await?;
         assert_eq!(data, content);
 
         Ok(())
