@@ -27,8 +27,9 @@ println!("{}", object.download_url(1000)); // download link for 1000 seconds
 object.delete().await?;
 ```
 
-Authorization can be granted using the `SERVICE_ACCOUNT` environment variable, which should contain path to the `service-account-*******.json` file that contains the Google credentials. The service account requires the permission `devstorage.full_control`. This is not strictly necessary, so if you need this fixed, let me know! 
+Authorization can be granted using the `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS` environment variable, which should contain path to the `service-account-*******.json` file that contains the Google credentials. Alternatively, the service account credentials can be provided as JSON directly through the `SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_JSON` environment variable, which is useful when providing secrets in CI or k8s.
 
+The service account requires the permission `devstorage.full_control`. This is not strictly necessary, so if you need this fixed, let me know!  
 The service account should also have the roles `Service Account Token Creator` (for generating access tokens) and `Storage Object Admin` (for generating sign urls to download the files).
 
 ### Sync
