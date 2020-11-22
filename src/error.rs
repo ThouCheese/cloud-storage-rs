@@ -70,6 +70,12 @@ impl From<reqwest::header::InvalidHeaderValue> for Error {
     }
 }
 
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Self::Other(err.to_string())
+    }
+}
+
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename = "camelCase")]
 #[serde(untagged)]

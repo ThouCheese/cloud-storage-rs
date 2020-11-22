@@ -125,12 +125,11 @@ impl DefaultObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn create_sync(
+    pub fn create_sync(
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
     ) -> crate::Result<Self> {
-        Self::create(bucket, new_acl).await
+        crate::runtime()?.block_on(Self::create(bucket, new_acl))
     }
 
     /// Retrieves default object ACL entries on the specified bucket.
@@ -175,9 +174,8 @@ impl DefaultObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn list_sync(bucket: &str) -> crate::Result<Vec<Self>> {
-        Self::list(bucket).await
+    pub fn list_sync(bucket: &str) -> crate::Result<Vec<Self>> {
+        crate::runtime()?.block_on(Self::list(bucket))
     }
 
     /// Read a single `DefaultObjectAccessControl`.
@@ -227,9 +225,8 @@ impl DefaultObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn read_sync(bucket: &str, entity: &Entity) -> crate::Result<Self> {
-        Self::read(bucket, entity).await
+    pub fn read_sync(bucket: &str, entity: &Entity) -> crate::Result<Self> {
+        crate::runtime()?.block_on(Self::read(bucket, entity))
     }
 
     /// Update the current `DefaultObjectAccessControl`.
@@ -278,9 +275,8 @@ impl DefaultObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn update_sync(&self) -> crate::Result<Self> {
-        self.update().await
+    pub fn update_sync(&self) -> crate::Result<Self> {
+        crate::runtime()?.block_on(self.update())
     }
 
     /// Delete this 'DefaultObjectAccessControl`.
@@ -323,9 +319,8 @@ impl DefaultObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn delete_sync(self) -> Result<(), crate::Error> {
-        self.delete().await
+    pub fn delete_sync(self) -> Result<(), crate::Error> {
+        crate::runtime()?.block_on(self.delete())
     }
 }
 

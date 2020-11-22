@@ -167,9 +167,8 @@ where
 
 #[cfg(test)]
 #[cfg(feature = "sync")]
-#[tokio::main]
-async fn read_test_bucket_sync() -> Bucket {
-    read_test_bucket().await
+fn read_test_bucket_sync() -> Bucket {
+    crate::runtime().unwrap().block_on(read_test_bucket())
 }
 
 #[cfg(test)]
@@ -191,9 +190,8 @@ async fn read_test_bucket() -> Bucket {
 // the same name in each test.
 #[cfg(test)]
 #[cfg(feature = "sync")]
-#[tokio::main]
-async fn create_test_bucket_sync(name: &str) -> Bucket {
-    create_test_bucket(name).await
+fn create_test_bucket_sync(name: &str) -> Bucket {
+    crate::runtime().unwrap().block_on(create_test_bucket(name))
 }
 
 // since all tests run in parallel, we need to make sure we do not create multiple buckets with
@@ -213,4 +211,12 @@ async fn create_test_bucket(name: &str) -> Bucket {
         Ok(bucket) => bucket,
         Err(_alread_exists) => Bucket::read(&new_bucket.name).await.unwrap(),
     }
+}
+
+#[cfg(feature = "sync")]
+fn runtime() -> Result<tokio::runtime::Runtime> {
+    Ok(tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_all()
+        .build()?)
 }
