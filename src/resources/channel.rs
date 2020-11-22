@@ -9,12 +9,11 @@ impl Channel {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn stop(&self) -> Result<(), crate::Error> {
-        self.stop_async().await
+    pub async fn stop_sync(&self) -> Result<(), crate::Error> {
+        crate::runtime()?.block_on(self.stop_async().await)
     }
 
-    pub async fn stop_async(&self) -> Result<(), crate::Error> {
+    pub async fn stop(&self) -> Result<(), crate::Error> {
         let url = format!("{}/channels/stop", crate::BASE_URL);
         let response = create::CLIENT
             .post(&url)

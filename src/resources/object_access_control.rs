@@ -135,13 +135,12 @@ impl ObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn create_sync(
+    pub fn create_sync(
         bucket: &str,
         object: &str,
         new_object_access_control: &NewObjectAccessControl,
     ) -> crate::Result<Self> {
-        Self::create(bucket, object, new_object_access_control).await
+        crate::runtime()?.block_on(Self::create(bucket, object, new_object_access_control))
     }
 
     /// Retrieves `ACL` entries on the specified object.
@@ -170,9 +169,8 @@ impl ObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn list_sync(bucket: &str, object: &str) -> crate::Result<Vec<Self>> {
-        Self::list(bucket, object).await
+    pub fn list_sync(bucket: &str, object: &str) -> crate::Result<Vec<Self>> {
+        crate::runtime()?.block_on(Self::list(bucket, object))
     }
 
     /// Returns the `ACL` entry for the specified entity on the specified bucket.
@@ -207,9 +205,8 @@ impl ObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn read_sync(bucket: &str, object: &str, entity: &Entity) -> crate::Result<Self> {
-        Self::read(bucket, object, entity).await
+    pub fn read_sync(bucket: &str, object: &str, entity: &Entity) -> crate::Result<Self> {
+        crate::runtime()?.block_on(Self::read(bucket, object, entity))
     }
 
     /// Updates an ACL entry on the specified object.
@@ -245,9 +242,8 @@ impl ObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn update_sync(&self) -> crate::Result<Self> {
-        self.update().await
+    pub fn update_sync(&self) -> crate::Result<Self> {
+        crate::runtime()?.block_on(self.update())
     }
 
     /// Permanently deletes the ACL entry for the specified entity on the specified object.
@@ -281,9 +277,8 @@ impl ObjectAccessControl {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn delete_sync(self) -> crate::Result<()> {
-        self.delete().await
+    pub fn delete_sync(self) -> crate::Result<()> {
+        crate::runtime()?.block_on(self.delete())
     }
 }
 

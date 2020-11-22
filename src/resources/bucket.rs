@@ -585,9 +585,8 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn create_sync(new_bucket: &NewBucket) -> crate::Result<Self> {
-        Self::create(new_bucket).await
+    pub fn create_sync(new_bucket: &NewBucket) -> crate::Result<Self> {
+        crate::runtime()?.block_on(Self::create(new_bucket))
     }
 
     /// Returns all `Bucket`s within this project.
@@ -628,9 +627,8 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn list_sync() -> Result<Vec<Self>, Error> {
-        Self::list().await
+    pub fn list_sync() -> Result<Vec<Self>, Error> {
+        crate::runtime()?.block_on(Self::list())
     }
 
     /// Returns a single `Bucket` by its name. If the Bucket does not exist, an error is returned.
@@ -671,9 +669,8 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn read_sync(name: &str) -> crate::Result<Self> {
-        Self::read(name).await
+    pub fn read_sync(name: &str) -> crate::Result<Self> {
+        crate::runtime()?.block_on(Self::read(name))
     }
 
     /// Update an existing `Bucket`. If you declare you bucket as mutable, you can edit its fields.
@@ -722,9 +719,8 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn update_sync(&self) -> crate::Result<Self> {
-        self.update().await
+    pub fn update_sync(&self) -> crate::Result<Self> {
+        crate::runtime()?.block_on(self.update())
     }
 
     /// Delete an existing `Bucket`. This permanently removes a bucket from Google Cloud Storage.
@@ -766,9 +762,8 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn delete_sync(self) -> crate::Result<()> {
-        self.delete().await
+    pub fn delete_sync(self) -> crate::Result<()> {
+        crate::runtime()?.block_on(self.delete())
     }
 
     /// Returns the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
@@ -810,9 +805,8 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn get_iam_policy_sync(&self) -> crate::Result<IamPolicy> {
-        self.get_iam_policy().await
+    pub fn get_iam_policy_sync(&self) -> crate::Result<IamPolicy> {
+        crate::runtime()?.block_on(self.get_iam_policy())
     }
 
     /// Updates the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
@@ -867,9 +861,8 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn set_iam_policy_sync(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
-        self.set_iam_policy(iam).await
+    pub fn set_iam_policy_sync(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
+        crate::runtime()?.block_on(self.set_iam_policy(iam))
     }
 
     /// Checks whether the user provided in the service account has this permission.
@@ -910,12 +903,11 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    #[tokio::main]
-    pub async fn test_iam_permission_sync(
+    pub fn test_iam_permission_sync(
         &self,
         permission: &str,
     ) -> crate::Result<TestIamPermission> {
-        self.test_iam_permission(permission).await
+        crate::runtime()?.block_on(self.test_iam_permission(permission))
     }
 
     fn _lock_retention_policy() {
