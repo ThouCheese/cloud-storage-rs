@@ -295,7 +295,9 @@ impl Object {
 
         let stream = stream::once(async { Ok::<_, Error>(buffer) });
 
-        crate::runtime()?.block_on(Self::create_streamed(bucket, stream, length, filename, mime_type))
+        crate::runtime()?.block_on(Self::create_streamed(
+            bucket, stream, length, filename, mime_type,
+        ))
     }
 
     /// Obtain a list of objects within this Bucket.
@@ -323,7 +325,7 @@ impl Object {
     pub fn list_sync(bucket: &str) -> Result<Vec<Self>, Error> {
         use futures::TryStreamExt;
 
-        let mut rt = crate::runtime()?;
+        let rt = crate::runtime()?;
         let listed = rt.block_on(Self::list_from(bucket, None))?;
         rt.block_on(listed.try_concat())
     }
@@ -354,7 +356,7 @@ impl Object {
     pub fn list_prefix_sync(bucket: &str, prefix: &str) -> Result<Vec<Self>, Error> {
         use futures::TryStreamExt;
 
-        let mut rt = crate::runtime()?;
+        let rt = crate::runtime()?;
         let listed = rt.block_on(Self::list_from(bucket, Some(prefix)))?;
         rt.block_on(listed.try_concat())
     }
@@ -942,7 +944,6 @@ impl Object {
             http_verb = http_verb,
             path_to_resource = path,
             canonical_query_string = query_string,
-            // canonical_headers = "host:storage.googleapis.com",
             canonical_headers = headers,
             signed_headers = "host",
             payload = "UNSIGNED-PAYLOAD",
@@ -971,7 +972,6 @@ impl Object {
             cred = percent_encode(&credential),
             date = date.format("%Y%m%dT%H%M%SZ"),
             exp = exp,
-            // signed="host",
             signed = headers,
         );
         if let Some(cd) = content_disposition {

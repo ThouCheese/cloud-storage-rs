@@ -1,6 +1,6 @@
 [package]
 name = "cloud-storage"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["Luuk Wester <luuk.wester@gmail.com>"]
 edition = "2018"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
@@ -21,7 +21,7 @@ rustls-tls = ["reqwest/rustls-tls"]
 trust-dns = ["reqwest/trust-dns"]
 
 [dependencies]
-reqwest =          { version = "0.10", default-features = false, features = ["json", "stream"] }
+reqwest =          { version = "0.11", default-features = false, features = ["json", "stream"] }
 percent-encoding = { version = "2",    default-features = false }
 jsonwebtoken =     { version = "7",    default-features = false }
 serde =            { version = "1",    default-features = false, features = ["derive"] }
@@ -32,9 +32,9 @@ dotenv =           { version = "0.15", default-features = false }
 openssl =          { version = "0.10", default-features = false }
 chrono =           { version = "0.4",  default-features = false, features = ["serde"] }
 hex =              { version = "0.4",  default-features = false }
-tokio =            { version = "0.2",  default-features = false, features = ["macros", "rt-threaded"] }
+tokio =            { version = "1.0",  default-features = false, features = ["macros", "rt"] }
 futures =          { version = "0.3",  default_features = false, features = ["alloc"] }
-bytes =            { version = "0.5",  default_features = false }
+bytes =            { version = "1.0",  default_features = false }
 
 [package.metadata.docs.rs]
 features = ["sync"]

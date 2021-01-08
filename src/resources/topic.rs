@@ -32,7 +32,7 @@ impl<'de> serde::de::Visitor<'de> for TopicVisitor {
     type Value = Topic;
 
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str("an `Topic` resource")
+        f.write_str("a `Topic` resource")
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
