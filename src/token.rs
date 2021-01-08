@@ -1,5 +1,4 @@
 use crate::error::Error;
-use serde::{Deserialize, Serialize};
 
 /// This struct contains contains a token, an expiry, and an access scope.
 pub struct Token {
@@ -10,7 +9,7 @@ pub struct Token {
     access_scope: String,
 }
 
-#[derive(Serialize)]
+#[derive(serde::Serialize)]
 struct Claims {
     iss: String,
     scope: String,
@@ -19,7 +18,7 @@ struct Claims {
     iat: u64,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug)]
 struct TokenResponse {
     access_token: String,
     expires_in: usize,
@@ -60,8 +59,10 @@ impl Token {
             exp,
             iat: now,
         };
-        let mut header = jsonwebtoken::Header::default();
-        header.alg = jsonwebtoken::Algorithm::RS256;
+        let header = jsonwebtoken::Header {
+            alg: jsonwebtoken::Algorithm::RS256,
+            ..Default::default()
+        };
         let private_key_bytes = crate::SERVICE_ACCOUNT.private_key.as_bytes();
         let private_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key_bytes)?;
         let jwt = jsonwebtoken::encode(&header, &claims, &private_key)?;

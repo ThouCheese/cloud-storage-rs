@@ -903,10 +903,7 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    pub fn test_iam_permission_sync(
-        &self,
-        permission: &str,
-    ) -> crate::Result<TestIamPermission> {
+    pub fn test_iam_permission_sync(&self, permission: &str) -> crate::Result<TestIamPermission> {
         crate::runtime()?.block_on(self.test_iam_permission(permission))
     }
 

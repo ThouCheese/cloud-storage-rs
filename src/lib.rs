@@ -215,8 +215,9 @@ async fn create_test_bucket(name: &str) -> Bucket {
 
 #[cfg(feature = "sync")]
 fn runtime() -> Result<tokio::runtime::Runtime> {
-    Ok(tokio::runtime::Builder::new()
-        .basic_scheduler()
-        .enable_all()
+    Ok(tokio::runtime::Builder::new_current_thread()
+        .thread_name("cloud-storage-worker")
+        .enable_time()
+        .enable_io()
         .build()?)
 }
