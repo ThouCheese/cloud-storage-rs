@@ -842,6 +842,26 @@ impl Object {
         self.sign(&self.name, duration, "GET", opts.content_disposition)
     }
 
+    /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
+    /// which is valid for `duration` seconds, and lets the posessor upload data to a blob
+    /// without any authentication.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::object::{Object, ComposeRequest};
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let url = obj1.upload_url(50)?;
+    /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
+    /// // for 50 seconds.
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn upload_url(&self, duration: u32) -> crate::Result<String> {
+        self.sign(&self.name, duration, "PUT", None)
+    }
+
     // /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
     // /// which is valid for `duration` seconds, and lets the posessor upload new file contents.
     // /// without any authentication.
