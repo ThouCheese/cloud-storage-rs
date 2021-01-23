@@ -1301,6 +1301,17 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
+    async fn test_upload_url() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let client = reqwest::Client::new();
+        let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
+        let url = obj.upload_url(100).unwrap();
+        let response = client.put(&url).body(vec![2, 3]).send().await?;
+        assert!(response.status().is_success());
+        Ok(())
+    }
+
     #[cfg(feature = "sync")]
     mod sync {
         use super::*;
