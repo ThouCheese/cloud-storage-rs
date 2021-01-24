@@ -1305,10 +1305,15 @@ mod tests {
     async fn test_upload_url() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
         let client = reqwest::Client::new();
-        let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
+        let blob_name = "test-upload-url";
+        let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain").await?;
+
         let url = obj.upload_url(100).unwrap();
-        let response = client.put(&url).body(vec![2, 3]).send().await?;
+        let updated_content = vec![2, 3];
+        let response = client.put(&url).body(updated_content.clone()).send().await?;
         assert!(response.status().is_success());
+        let data = Object::download(&bucket.name, blob_name).await?;
+        assert_eq!(data, updated_content);
         Ok(())
     }
 
