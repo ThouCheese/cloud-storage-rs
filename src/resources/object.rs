@@ -840,7 +840,13 @@ impl Object {
         duration: u32,
         opts: crate::DownloadOptions,
     ) -> crate::Result<String> {
-        self.sign(&self.name, duration, "GET", opts.content_disposition, &HashMap::new())
+        self.sign(
+            &self.name,
+            duration,
+            "GET",
+            opts.content_disposition,
+            &HashMap::new(),
+        )
     }
 
     /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
@@ -864,7 +870,7 @@ impl Object {
     }
 
     /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
-    /// which is valid for `duration` seconds, and lets the posessor upload data and custom metadata 
+    /// which is valid for `duration` seconds, and lets the posessor upload data and custom metadata
     /// to a blob without any authentication.
     /// ### Example
     /// ```no_run
@@ -881,11 +887,15 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn upload_url_with(&self, duration: u32, custom_metadata: HashMap<String, String>) -> crate::Result<(String, HashMap<String, String>)> {
+    pub fn upload_url_with(
+        &self,
+        duration: u32,
+        custom_metadata: HashMap<String, String>,
+    ) -> crate::Result<(String, HashMap<String, String>)> {
         let url = self.sign(&self.name, duration, "PUT", None, &custom_metadata)?;
         let mut headers = HashMap::new();
         for (k, v) in custom_metadata.iter() {
-          headers.insert(format!("x-goog-meta-{}", k.to_string()), v.to_string());
+            headers.insert(format!("x-goog-meta-{}", k.to_string()), v.to_string());
         }
         Ok((url, headers))
     }
@@ -904,7 +914,7 @@ impl Object {
         duration: u32,
         http_verb: &str,
         content_disposition: Option<String>,
-        custom_metadata: &HashMap<String, String>
+        custom_metadata: &HashMap<String, String>,
     ) -> crate::Result<String> {
         use openssl::sha;
 
@@ -944,8 +954,13 @@ impl Object {
             &signed_headers,
             content_disposition,
         );
-        let canonical_request =
-            self.get_canonical_request(&file_path, &query_string, http_verb, &canonical_headers, &signed_headers);
+        let canonical_request = self.get_canonical_request(
+            &file_path,
+            &query_string,
+            http_verb,
+            &canonical_headers,
+            &signed_headers,
+        );
 
         // 2 get hex encoded SHA256 hash the canonical request
         let hash = sha::sha256(canonical_request.as_bytes());
@@ -1344,7 +1359,11 @@ mod tests {
 
         let url = obj.upload_url(100).unwrap();
         let updated_content = vec![2, 3];
-        let response = client.put(&url).body(updated_content.clone()).send().await?;
+        let response = client
+            .put(&url)
+            .body(updated_content.clone())
+            .send()
+            .await?;
         assert!(response.status().is_success());
         let data = Object::download(&bucket.name, blob_name).await?;
         assert_eq!(data, updated_content);
@@ -1358,7 +1377,7 @@ mod tests {
         let blob_name = "test-upload-url";
         let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain").await?;
         let mut custom_metadata = HashMap::new();
-        custom_metadata.insert(String::from("field"), String::from("value")); 
+        custom_metadata.insert(String::from("field"), String::from("value"));
 
         let (url, headers) = obj.upload_url_with(100, custom_metadata).unwrap();
         let updated_content = vec![2, 3];
