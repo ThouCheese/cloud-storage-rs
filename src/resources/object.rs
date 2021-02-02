@@ -4,6 +4,7 @@ use crate::resources::common::ListResponse;
 use crate::resources::object_access_control::ObjectAccessControl;
 use futures::{stream, Stream, TryStream};
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
+use std::collections::HashMap;
 
 /// A resource representing a file in Google Cloud Storage.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -815,7 +816,7 @@ impl Object {
     /// # }
     /// ```
     pub fn download_url(&self, duration: u32) -> crate::Result<String> {
-        self.sign(&self.name, duration, "GET", None)
+        self.sign(&self.name, duration, "GET", None, &HashMap::new())
     }
 
     /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
@@ -839,7 +840,64 @@ impl Object {
         duration: u32,
         opts: crate::DownloadOptions,
     ) -> crate::Result<String> {
-        self.sign(&self.name, duration, "GET", opts.content_disposition)
+        self.sign(
+            &self.name,
+            duration,
+            "GET",
+            opts.content_disposition,
+            &HashMap::new(),
+        )
+    }
+
+    /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
+    /// which is valid for `duration` seconds, and lets the posessor upload data to a blob
+    /// without any authentication.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::object::{Object, ComposeRequest};
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let url = obj1.upload_url(50)?;
+    /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
+    /// // for 50 seconds.
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn upload_url(&self, duration: u32) -> crate::Result<String> {
+        self.sign(&self.name, duration, "PUT", None, &HashMap::new())
+    }
+
+    /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
+    /// which is valid for `duration` seconds, and lets the posessor upload data and custom metadata
+    /// to a blob without any authentication.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::object::{Object, ComposeRequest};
+    ///
+    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let mut custom_metadata = HashMap::new();
+    /// custom_metadata.insert(String::from("field"), String::from("value"));    
+    /// let (url, headers) = obj1.upload_url_with(50, custom_metadata)?;
+    /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
+    /// // for 50 seconds. Note that the user must also include the returned headers in the PUT request
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn upload_url_with(
+        &self,
+        duration: u32,
+        custom_metadata: HashMap<String, String>,
+    ) -> crate::Result<(String, HashMap<String, String>)> {
+        let url = self.sign(&self.name, duration, "PUT", None, &custom_metadata)?;
+        let mut headers = HashMap::new();
+        for (k, v) in custom_metadata.iter() {
+            headers.insert(format!("x-goog-meta-{}", k.to_string()), v.to_string());
+        }
+        Ok((url, headers))
     }
 
     // /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
@@ -856,6 +914,7 @@ impl Object {
         duration: u32,
         http_verb: &str,
         content_disposition: Option<String>,
+        custom_metadata: &HashMap<String, String>,
     ) -> crate::Result<String> {
         use openssl::sha;
 
@@ -870,6 +929,10 @@ impl Object {
         // 0 Sort and construct the canonical headers
         let mut headers = vec![];
         headers.push(("host".to_string(), "storage.googleapis.com".to_string()));
+        // Add custom metadata headers, guaranteed unique by HashMap input
+        for (k, v) in custom_metadata.iter() {
+            headers.push((format!("x-goog-meta-{}", k.to_string()), v.to_string()));
+        }
         headers.sort_unstable_by(|(k1, _), (k2, _)| k1.cmp(&k2));
         let canonical_headers: String = headers
             .iter()
@@ -891,8 +954,13 @@ impl Object {
             &signed_headers,
             content_disposition,
         );
-        let canonical_request =
-            self.get_canonical_request(&file_path, &query_string, http_verb, &canonical_headers);
+        let canonical_request = self.get_canonical_request(
+            &file_path,
+            &query_string,
+            http_verb,
+            &canonical_headers,
+            &signed_headers,
+        );
 
         // 2 get hex encoded SHA256 hash the canonical request
         let hash = sha::sha256(canonical_request.as_bytes());
@@ -932,6 +1000,7 @@ impl Object {
         query_string: &str,
         http_verb: &str,
         headers: &str,
+        signed_headers: &str,
     ) -> String {
         format!(
             "{http_verb}\n\
@@ -945,7 +1014,7 @@ impl Object {
             path_to_resource = path,
             canonical_query_string = query_string,
             canonical_headers = headers,
-            signed_headers = "host",
+            signed_headers = signed_headers,
             payload = "UNSIGNED-PAYLOAD",
         )
     }
@@ -972,7 +1041,7 @@ impl Object {
             cred = percent_encode(&credential),
             date = date.format("%Y%m%dT%H%M%SZ"),
             exp = exp,
-            signed = headers,
+            signed = percent_encode(headers),
         );
         if let Some(cd) = content_disposition {
             s.push_str(&format!("&response-content-disposition={}", cd));
@@ -1278,6 +1347,49 @@ mod tests {
         let download_url1 = obj.download_url_with(100, opts1)?;
         let download1 = client.head(&download_url1).send().await?;
         assert_eq!(download1.headers()["content-disposition"], "attachment");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_upload_url() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let client = reqwest::Client::new();
+        let blob_name = "test-upload-url";
+        let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain").await?;
+
+        let url = obj.upload_url(100).unwrap();
+        let updated_content = vec![2, 3];
+        let response = client
+            .put(&url)
+            .body(updated_content.clone())
+            .send()
+            .await?;
+        assert!(response.status().is_success());
+        let data = Object::download(&bucket.name, blob_name).await?;
+        assert_eq!(data, updated_content);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_upload_url_with() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let client = reqwest::Client::new();
+        let blob_name = "test-upload-url";
+        let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain").await?;
+        let mut custom_metadata = HashMap::new();
+        custom_metadata.insert(String::from("field"), String::from("value"));
+
+        let (url, headers) = obj.upload_url_with(100, custom_metadata).unwrap();
+        let updated_content = vec![2, 3];
+        let mut request = client.put(&url).body(updated_content);
+        for (metadata_field, metadata_value) in headers.iter() {
+            request = request.header(metadata_field, metadata_value);
+        }
+        let response = request.send().await?;
+        assert!(response.status().is_success());
+        let updated_obj = Object::read(&bucket.name, blob_name).await?;
+        let obj_metadata = updated_obj.metadata.unwrap();
+        assert_eq!(obj_metadata.get("field").unwrap(), "value");
         Ok(())
     }
 
