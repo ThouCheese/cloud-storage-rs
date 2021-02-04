@@ -5,7 +5,7 @@
 
 A library that can be used to push blobs to [Google Cloud Storage](https://cloud.google.com/storage/), and then generate download links to those files.
 ### Usage
-Add the following line to you Cargo.toml
+Add the following line to your Cargo.toml
 ```toml
 [dependencies]
 cloud-storage = "0.6"
