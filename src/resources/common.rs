@@ -63,6 +63,8 @@ pub enum Role {
 pub(crate) struct ListResponse<T> {
     #[serde(default = "Vec::new")]
     pub items: Vec<T>,
+    #[serde(default = "Vec::new")]
+    pub prefixes: Vec<String>,
     pub next_page_token: Option<String>,
 }
 

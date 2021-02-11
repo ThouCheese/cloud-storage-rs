@@ -363,6 +363,82 @@ impl Object {
         rt.block_on(listed.try_concat())
     }
 
+    /// Obtain a list of objects by prefix and with a delimiter within this Bucket.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Object;
+    ///
+    /// let all_objects = Object::list_prefix_delimiter("my_bucket", "prefix/", "/").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn list_prefix_delimiter<'a>(
+        bucket: &'a str,
+        prefix: &'a str,
+        delimiter: &'a str,
+    ) -> Result<impl Stream<Item = Result<(Vec<Self>, Vec<String>), Error>> + 'a, Error> {
+        #[derive(Clone)]
+        enum ListState {
+            Start,
+            HasMore(String),
+            Done,
+        }
+        use ListState::*;
+
+        Ok(stream::unfold(ListState::Start, move |state| async move {
+            let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
+            let headers = match crate::get_headers().await {
+                Ok(h) => h,
+                Err(e) => return Some((Err(e), state)),
+            };
+
+            let mut query = match state.clone() {
+                HasMore(page_token) => vec![("pageToken", page_token)],
+                Done => return None,
+                Start => vec![],
+            };
+
+            query.push(("prefix", prefix.to_string()));
+            query.push(("delimiter", delimiter.to_string()));
+
+            let response = crate::CLIENT
+                .get(&url)
+                .query(&query)
+                .headers(headers)
+                .send()
+                .await;
+            let response = match response {
+                Ok(r) => r,
+                Err(e) => return Some((Err(e.into()), state)),
+            };
+
+            let json = match response.json().await {
+                Ok(json) => json,
+                Err(e) => return Some((Err(e.into()), state)),
+            };
+
+            let result: GoogleResponse<ListResponse<Self>> = json;
+
+            let response_body = match result {
+                GoogleResponse::Success(success) => success,
+                GoogleResponse::Error(e) => return Some((Err(e.into()), state)),
+            };
+
+            let items = response_body.items;
+            let prefixes = response_body.prefixes;
+
+            let next_state = if let Some(page_token) = response_body.next_page_token {
+                HasMore(page_token)
+            } else {
+                Done
+            };
+
+            Some((Ok((items, prefixes)), next_state))
+        }))
+    }
+
     async fn list_from<'a>(
         bucket: &'a str,
         prefix: Option<&'a str>,
