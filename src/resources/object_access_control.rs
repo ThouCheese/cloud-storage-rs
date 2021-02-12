@@ -130,7 +130,7 @@ impl ObjectAccessControl {
         }
     }
 
-    /// The sync equivalent of `ObjectAccessControl::create`.
+    /// The synchronous equivalent of `ObjectAccessControl::create`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
@@ -164,7 +164,7 @@ impl ObjectAccessControl {
         }
     }
 
-    /// The sync equivalent of `ObjectAccessControl::list`.
+    /// The synchronous equivalent of `ObjectAccessControl::list`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
@@ -200,7 +200,7 @@ impl ObjectAccessControl {
         }
     }
 
-    /// The sync equivalent of `ObjectAccessControl::read`.
+    /// The synchronous equivalent of `ObjectAccessControl::read`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
@@ -237,7 +237,7 @@ impl ObjectAccessControl {
         }
     }
 
-    /// The sync equivalent of `ObjectAccessControl::update`.
+    /// The synchronous equivalent of `ObjectAccessControl::update`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
@@ -272,7 +272,7 @@ impl ObjectAccessControl {
         }
     }
 
-    /// The sync equivalent of `ObjectAccessControl::delete`.
+    /// The synchronous equivalent of `ObjectAccessControl::delete`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
