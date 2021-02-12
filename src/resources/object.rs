@@ -328,7 +328,7 @@ impl Object {
         use futures::TryStreamExt;
 
         let rt = crate::runtime()?;
-        let listed = rt.block_on(Self::list_from(bucket, None))?;
+        let listed = rt.block_on(Self::list_from(bucket, None, None, |body| body.items))?;
         rt.block_on(listed.try_concat())
     }
 
@@ -359,7 +359,9 @@ impl Object {
         use futures::TryStreamExt;
 
         let rt = crate::runtime()?;
-        let listed = rt.block_on(Self::list_from(bucket, Some(prefix)))?;
+        let listed = rt.block_on(Self::list_from(bucket, Some(prefix), None, |body| {
+            body.items
+        }))?;
         rt.block_on(listed.try_concat())
     }
 
@@ -383,6 +385,41 @@ impl Object {
             (body.items, body.prefixes)
         })
         .await
+    }
+
+    /// The sync equivalent of `Object::list_prefix_delimiter`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(feature = "sync")]
+    pub fn list_prefix_delimiter_sync(
+        bucket: &str,
+        prefix: &str,
+        delimiter: &str,
+    ) -> Result<(Vec<Self>, Vec<String>), Error> {
+        use futures::TryStreamExt;
+
+        let rt = crate::runtime()?;
+        let listed = rt.block_on(Self::list_from(
+            bucket,
+            Some(prefix),
+            Some(delimiter),
+            |body| (body.items, body.prefixes),
+        ))?;
+
+        let mut items = vec![];
+        let mut prefixes = vec![];
+
+        rt.block_on(async {
+            listed
+                .try_for_each(|(item_list, prefix_list)| {
+                    items.extend(item_list.into_iter());
+                    prefixes.extend(prefix_list.into_iter());
+                    async { Ok(()) }
+                })
+                .await?;
+            Ok((items, prefixes))
+        })
     }
 
     async fn list_from<'a, Item>(
