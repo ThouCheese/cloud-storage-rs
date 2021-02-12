@@ -5,7 +5,7 @@ use crate::{
 };
 use futures::{stream, Stream, TryStream};
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
-use std::collections::HashMap;
+use std::{collections::HashMap, mem};
 
 /// A resource representing a file in Google Cloud Storage.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -316,7 +316,7 @@ impl Object {
     pub async fn list(
         bucket: &str,
     ) -> Result<impl Stream<Item = Result<Vec<Self>, Error>> + '_, Error> {
-        Self::list_from(bucket, None).await
+        Self::list_from(bucket, None, None, |body| body.items).await
     }
 
     /// The synchronous equivalent of `Object::list`.
@@ -347,7 +347,7 @@ impl Object {
         bucket: &'a str,
         prefix: &'a str,
     ) -> Result<impl Stream<Item = Result<Vec<Self>, Error>> + 'a, Error> {
-        Self::list_from(bucket, Some(prefix)).await
+        Self::list_from(bucket, Some(prefix), None, |body| body.items).await
     }
 
     /// The synchronous equivalent of `Object::list_prefix`.
@@ -379,70 +379,18 @@ impl Object {
         prefix: &'a str,
         delimiter: &'a str,
     ) -> Result<impl Stream<Item = Result<(Vec<Self>, Vec<String>), Error>> + 'a, Error> {
-        #[derive(Clone)]
-        enum ListState {
-            Start,
-            HasMore(String),
-            Done,
-        }
-        use ListState::*;
-
-        Ok(stream::unfold(ListState::Start, move |state| async move {
-            let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
-            let headers = match crate::get_headers().await {
-                Ok(h) => h,
-                Err(e) => return Some((Err(e), state)),
-            };
-
-            let mut query = match state.clone() {
-                HasMore(page_token) => vec![("pageToken", page_token)],
-                Done => return None,
-                Start => vec![],
-            };
-
-            query.push(("prefix", prefix.to_string()));
-            query.push(("delimiter", delimiter.to_string()));
-
-            let response = crate::CLIENT
-                .get(&url)
-                .query(&query)
-                .headers(headers)
-                .send()
-                .await;
-            let response = match response {
-                Ok(r) => r,
-                Err(e) => return Some((Err(e.into()), state)),
-            };
-
-            let json = match response.json().await {
-                Ok(json) => json,
-                Err(e) => return Some((Err(e.into()), state)),
-            };
-
-            let result: GoogleResponse<ListResponse<Self>> = json;
-
-            let response_body = match result {
-                GoogleResponse::Success(success) => success,
-                GoogleResponse::Error(e) => return Some((Err(e.into()), state)),
-            };
-
-            let items = response_body.items;
-            let prefixes = response_body.prefixes;
-
-            let next_state = if let Some(page_token) = response_body.next_page_token {
-                HasMore(page_token)
-            } else {
-                Done
-            };
-
-            Some((Ok((items, prefixes)), next_state))
-        }))
+        Self::list_from(bucket, Some(prefix), Some(delimiter), |body| {
+            (body.items, body.prefixes)
+        })
+        .await
     }
 
-    async fn list_from<'a>(
+    async fn list_from<'a, Item>(
         bucket: &'a str,
         prefix: Option<&'a str>,
-    ) -> Result<impl Stream<Item = Result<Vec<Self>, Error>> + 'a, Error> {
+        delimiter: Option<&'a str>,
+        extract: impl Copy + Fn(ListResponse<Object>) -> Item + 'static,
+    ) -> Result<impl Stream<Item = Result<Item, Error>> + 'a, Error> {
         #[derive(Clone)]
         enum ListState {
             Start,
@@ -467,6 +415,9 @@ impl Object {
             if let Some(prefix) = prefix {
                 query.push(("prefix", prefix.to_string()));
             };
+            if let Some(delimiter) = delimiter {
+                query.push(("delimiter", delimiter.to_string()));
+            }
 
             let response = crate::CLIENT
                 .get(&url)
@@ -493,20 +444,21 @@ impl Object {
 
             let result: GoogleResponse<ListResponse<Self>> = json;
 
-            let response_body = match result {
+            let mut response_body = match result {
                 GoogleResponse::Success(success) => success,
                 GoogleResponse::Error(e) => return Some((Err(e.into()), state)),
             };
 
-            let items = response_body.items;
-
-            let next_state = if let Some(page_token) = response_body.next_page_token {
+            let next_state = if let Some(page_token) = mem::take(&mut response_body.next_page_token)
+            {
                 HasMore(page_token)
             } else {
                 Done
             };
 
-            Some((Ok(items), next_state))
+            let item = extract(response_body);
+
+            Some((Ok(item), next_state))
         }))
     }
 
