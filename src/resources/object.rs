@@ -278,7 +278,7 @@ impl Object {
         }
     }
 
-    /// The async equivalent of `Object::create_streamed`.
+    /// The synchronous equivalent of `Object::create_streamed`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
@@ -318,7 +318,7 @@ impl Object {
         Self::list_from(bucket, None).await
     }
 
-    /// The async equivalent of `Object::list`.
+    /// The synchronous equivalent of `Object::list`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
@@ -349,7 +349,7 @@ impl Object {
         Self::list_from(bucket, Some(prefix)).await
     }
 
-    /// The async equivalent of `Object::list_prefix`.
+    /// The synchronous equivalent of `Object::list_prefix`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.

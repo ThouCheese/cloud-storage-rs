@@ -175,7 +175,7 @@ impl HmacKey {
         }
     }
 
-    /// The async equivalent of `HmacKey::list`.
+    /// The synchronous equivalent of `HmacKey::list`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.

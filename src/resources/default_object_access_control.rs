@@ -314,7 +314,7 @@ impl DefaultObjectAccessControl {
         }
     }
 
-    /// The async equivalent of `DefautObjectAccessControl::delete`.
+    /// The synchronous equivalent of `DefautObjectAccessControl::delete`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
