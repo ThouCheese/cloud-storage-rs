@@ -877,10 +877,11 @@ impl Object {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use std::collections::HashMap;
     ///
     /// let obj1 = Object::read("my_bucket", "file1").await?;
     /// let mut custom_metadata = HashMap::new();
-    /// custom_metadata.insert(String::from("field"), String::from("value"));    
+    /// custom_metadata.insert(String::from("field"), String::from("value"));
     /// let (url, headers) = obj1.upload_url_with(50, custom_metadata)?;
     /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
     /// // for 50 seconds. Note that the user must also include the returned headers in the PUT request
