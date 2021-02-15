@@ -93,7 +93,7 @@ pub use crate::{
     error::*,
     resources::{
         bucket::{Bucket, NewBucket},
-        object::Object,
+        object::{ListRequest, Object},
         *,
     },
 };

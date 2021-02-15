@@ -1,11 +1,11 @@
 pub use crate::resources::bucket::Owner;
 use crate::{
     error::{Error, GoogleResponse},
-    resources::{common::ListResponse, object_access_control::ObjectAccessControl},
+    resources::object_access_control::ObjectAccessControl,
 };
 use futures::{stream, Stream, TryStream};
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
-use std::{collections::HashMap, mem};
+use std::collections::HashMap;
 
 /// A resource representing a file in Google Cloud Storage.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -141,11 +141,87 @@ pub struct ObjectPrecondition {
     pub if_generation_match: i64,
 }
 
-#[derive(Debug, serde::Deserialize)]
+/// The request that is supplied to perform `Object::list`.
+/// See [the Google Cloud Storage API
+/// reference](https://cloud.google.com/storage/docs/json_api/v1/objects/list)
+/// for more details.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
-struct ObjectList {
-    kind: String,
-    items: Vec<Object>,
+pub struct ListRequest {
+    /// When specified, allows the `list` to operate like a directory listing by splitting the
+    /// object location on this delimiter.
+    pub delimiter: Option<String>,
+
+    /// Filter results to objects whose names are lexicographically before `end_offset`.
+    /// If `start_offset` is also set, the objects listed have names between `start_offset`
+    /// (inclusive) and `end_offset` (exclusive).
+    pub end_offset: Option<String>,
+
+    /// If true, objects that end in exactly one instance of `delimiter` have their metadata
+    /// included in `items` in addition to the relevant part of the object name appearing in
+    /// `prefixes`.
+    pub include_trailing_delimiter: Option<bool>,
+
+    /// Maximum combined number of entries in `items` and `prefixes` to return in a single
+    /// page of responses. Because duplicate entries in `prefixes` are omitted, fewer total
+    /// results may be returned than requested. The service uses this parameter or 1,000
+    /// items, whichever is smaller.
+    pub max_results: Option<u8>,
+
+    /// A previously-returned page token representing part of the larger set of results to view.
+    /// The `page_token` is an encoded field that marks the name and generation of the last object
+    /// in the returned list. In a subsequent request using the `page_token`, items that come after
+    /// the `page_token` are shown (up to `max_results`).
+    pub page_token: Option<String>,
+
+    /// Filter results to include only objects whose names begin with this prefix.
+    pub prefix: Option<String>,
+
+    /// Set of properties to return. Defaults to `NoAcl`.
+    pub projection: Option<Projection>,
+
+    /// Filter results to objects whose names are lexicographically equal to or after
+    /// `start_offset`. If `end_offset` is also set, the objects listed have names between
+    /// `start_offset` (inclusive) and `end_offset` (exclusive).
+    pub start_offset: Option<String>,
+
+    /// If true, lists all versions of an object as distinct results in order of increasing
+    /// generation number. The default value for versions is false. For more information, see
+    /// Object Versioning.
+    pub versions: Option<bool>,
+}
+
+/// Acceptable values of `projection` properties to return from `Object::list` requests.
+#[derive(Debug, PartialEq, serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum Projection {
+    /// Include all properties.
+    Full,
+    /// Omit the owner, acl property.
+    NoAcl,
+}
+
+/// Response from `Object::list`.
+#[derive(Debug, serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectList {
+    /// The kind of item this is. For lists of objects, this is always `storage#objects`.
+    pub kind: String,
+
+    /// The list of objects, ordered lexicographically by name.
+    #[serde(default = "Vec::new")]
+    pub items: Vec<Object>,
+
+    /// Object name prefixes for objects that matched the listing request but were excluded
+    /// from `items` because of a delimiter. Values in this list are object names up to and
+    /// including the requested delimiter. Duplicate entries are omitted from this list.
+    #[serde(default = "Vec::new")]
+    pub prefixes: Vec<String>,
+
+    /// The continuation token, included only if there are more items to return. Provide
+    /// this value as the `page_token` of a subsequent request in order to return the next
+    /// page of results.
+    pub next_page_token: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -307,16 +383,81 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
+    /// use cloud_storage::{Object, ListRequest};
     ///
-    /// let all_objects = Object::list("my_bucket").await?;
+    /// let all_objects = Object::list("my_bucket", ListRequest::default()).await?;
     /// # Ok(())
     /// # }
     /// ```
     pub async fn list(
         bucket: &str,
-    ) -> Result<impl Stream<Item = Result<Vec<Self>, Error>> + '_, Error> {
-        Self::list_from(bucket, None, None, |body| body.items).await
+        list_request: ListRequest,
+    ) -> Result<impl Stream<Item = Result<ObjectList, Error>> + '_, Error> {
+        #[derive(Clone)]
+        enum ListState {
+            Start(ListRequest),
+            HasMore(ListRequest),
+            Done,
+        }
+        use ListState::*;
+
+        Ok(stream::unfold(
+            ListState::Start(list_request),
+            move |state| async move {
+                let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
+                let headers = match crate::get_headers().await {
+                    Ok(h) => h,
+                    Err(e) => return Some((Err(e), state)),
+                };
+
+                let req = match state.clone() {
+                    Start(req) => req,
+                    HasMore(req) => req,
+                    Done => return None,
+                };
+
+                let response = crate::CLIENT
+                    .get(&url)
+                    .query(&req)
+                    .headers(headers)
+                    .send()
+                    .await;
+
+                let response = match response {
+                    Ok(r) if r.status() == 200 => r,
+                    Ok(r) => {
+                        let e = match r.json::<crate::error::GoogleErrorResponse>().await {
+                            Ok(err_res) => err_res.into(),
+                            Err(serde_err) => serde_err.into(),
+                        };
+                        return Some((Err(e), state));
+                    }
+                    Err(e) => return Some((Err(e.into()), state)),
+                };
+
+                let json = match response.json().await {
+                    Ok(json) => json,
+                    Err(e) => return Some((Err(e.into()), state)),
+                };
+
+                let result: GoogleResponse<ObjectList> = json;
+
+                let response_body = match result {
+                    GoogleResponse::Success(success) => success,
+                    GoogleResponse::Error(e) => return Some((Err(e.into()), state)),
+                };
+
+                let next_state = if let Some(ref page_token) = response_body.next_page_token {
+                    let mut req = req;
+                    req.page_token = Some(page_token.clone());
+                    HasMore(req)
+                } else {
+                    Done
+                };
+
+                Some((Ok(response_body), next_state))
+            },
+        ))
     }
 
     /// The synchronous equivalent of `Object::list`.
@@ -324,179 +465,12 @@ impl Object {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    pub fn list_sync(bucket: &str) -> Result<Vec<Self>, Error> {
+    pub fn list_sync(bucket: &str, list_request: ListRequest) -> Result<Vec<ObjectList>, Error> {
         use futures::TryStreamExt;
 
         let rt = crate::runtime()?;
-        let listed = rt.block_on(Self::list_from(bucket, None, None, |body| body.items))?;
-        rt.block_on(listed.try_concat())
-    }
-
-    /// Obtain a list of objects by prefix within this Bucket .
-    /// ### Example
-    /// ```no_run
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
-    ///
-    /// let all_objects = Object::list_prefix("my_bucket", "prefix/").await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn list_prefix<'a>(
-        bucket: &'a str,
-        prefix: &'a str,
-    ) -> Result<impl Stream<Item = Result<Vec<Self>, Error>> + 'a, Error> {
-        Self::list_from(bucket, Some(prefix), None, |body| body.items).await
-    }
-
-    /// The synchronous equivalent of `Object::list_prefix`.
-    ///
-    /// ### Features
-    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
-    pub fn list_prefix_sync(bucket: &str, prefix: &str) -> Result<Vec<Self>, Error> {
-        use futures::TryStreamExt;
-
-        let rt = crate::runtime()?;
-        let listed = rt.block_on(Self::list_from(bucket, Some(prefix), None, |body| {
-            body.items
-        }))?;
-        rt.block_on(listed.try_concat())
-    }
-
-    /// Obtain a list of objects by prefix and with a delimiter within this Bucket.
-    /// ### Example
-    /// ```no_run
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
-    ///
-    /// let all_objects = Object::list_prefix_delimiter("my_bucket", "prefix/", "/").await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn list_prefix_delimiter<'a>(
-        bucket: &'a str,
-        prefix: &'a str,
-        delimiter: &'a str,
-    ) -> Result<impl Stream<Item = Result<(Vec<Self>, Vec<String>), Error>> + 'a, Error> {
-        Self::list_from(bucket, Some(prefix), Some(delimiter), |body| {
-            (body.items, body.prefixes)
-        })
-        .await
-    }
-
-    /// The sync equivalent of `Object::list_prefix_delimiter`.
-    ///
-    /// ### Features
-    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
-    pub fn list_prefix_delimiter_sync(
-        bucket: &str,
-        prefix: &str,
-        delimiter: &str,
-    ) -> Result<(Vec<Self>, Vec<String>), Error> {
-        use futures::TryStreamExt;
-
-        let rt = crate::runtime()?;
-        let listed = rt.block_on(Self::list_from(
-            bucket,
-            Some(prefix),
-            Some(delimiter),
-            |body| (body.items, body.prefixes),
-        ))?;
-
-        let mut items = vec![];
-        let mut prefixes = vec![];
-
-        rt.block_on(async {
-            listed
-                .try_for_each(|(item_list, prefix_list)| {
-                    items.extend(item_list.into_iter());
-                    prefixes.extend(prefix_list.into_iter());
-                    async { Ok(()) }
-                })
-                .await?;
-            Ok((items, prefixes))
-        })
-    }
-
-    async fn list_from<'a, Item>(
-        bucket: &'a str,
-        prefix: Option<&'a str>,
-        delimiter: Option<&'a str>,
-        extract: impl Copy + Fn(ListResponse<Object>) -> Item + 'static,
-    ) -> Result<impl Stream<Item = Result<Item, Error>> + 'a, Error> {
-        #[derive(Clone)]
-        enum ListState {
-            Start,
-            HasMore(String),
-            Done,
-        }
-        use ListState::*;
-
-        Ok(stream::unfold(ListState::Start, move |state| async move {
-            let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
-            let headers = match crate::get_headers().await {
-                Ok(h) => h,
-                Err(e) => return Some((Err(e), state)),
-            };
-
-            let mut query = match state.clone() {
-                HasMore(page_token) => vec![("pageToken", page_token)],
-                Done => return None,
-                Start => vec![],
-            };
-
-            if let Some(prefix) = prefix {
-                query.push(("prefix", prefix.to_string()));
-            };
-            if let Some(delimiter) = delimiter {
-                query.push(("delimiter", delimiter.to_string()));
-            }
-
-            let response = crate::CLIENT
-                .get(&url)
-                .query(&query)
-                .headers(headers)
-                .send()
-                .await;
-            let response = match response {
-                Ok(r) if r.status() == 200 => r,
-                Ok(r) => {
-                    let e = match r.json::<crate::error::GoogleErrorResponse>().await {
-                        Ok(err_res) => err_res.into(),
-                        Err(serde_err) => serde_err.into(),
-                    };
-                    return Some((Err(e), state));
-                }
-                Err(e) => return Some((Err(e.into()), state)),
-            };
-
-            let json = match response.json().await {
-                Ok(json) => json,
-                Err(e) => return Some((Err(e.into()), state)),
-            };
-
-            let result: GoogleResponse<ListResponse<Self>> = json;
-
-            let mut response_body = match result {
-                GoogleResponse::Success(success) => success,
-                GoogleResponse::Error(e) => return Some((Err(e.into()), state)),
-            };
-
-            let next_state = if let Some(page_token) = mem::take(&mut response_body.next_page_token)
-            {
-                HasMore(page_token)
-            } else {
-                Done
-            };
-
-            let item = extract(response_body);
-
-            Some((Ok(item), next_state))
-        }))
+        let listed = rt.block_on(Self::list(bucket, list_request))?;
+        rt.block_on(listed.try_collect())
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -1199,7 +1173,10 @@ mod tests {
     #[tokio::test]
     async fn list() -> Result<(), Box<dyn std::error::Error>> {
         let test_bucket = crate::read_test_bucket().await;
-        let _v: Vec<Object> = Object::list(&test_bucket.name).await?.try_concat().await?;
+        let _v: Vec<ObjectList> = Object::list(&test_bucket.name, ListRequest::default())
+            .await?
+            .try_collect()
+            .await?;
         Ok(())
     }
 
@@ -1207,8 +1184,14 @@ mod tests {
         bucket: &str,
         prefix: &str,
     ) -> Result<Vec<Object>, Box<dyn std::error::Error>> {
-        Ok(Object::list_prefix(bucket, prefix)
+        let request = ListRequest {
+            prefix: Some(prefix.into()),
+            ..Default::default()
+        };
+
+        Ok(Object::list(bucket, request)
             .await?
+            .map_ok(|object_list| object_list.items)
             .try_concat()
             .await?)
     }
@@ -1496,7 +1479,7 @@ mod tests {
         #[test]
         fn list() -> Result<(), Box<dyn std::error::Error>> {
             let test_bucket = crate::read_test_bucket_sync();
-            Object::list_sync(&test_bucket.name)?;
+            Object::list_sync(&test_bucket.name, ListRequest::default())?;
             Ok(())
         }
 
@@ -1515,10 +1498,45 @@ mod tests {
                 Object::create_sync(&test_bucket.name, vec![0, 1], name, "text/plain")?;
             }
 
-            let list = Object::list_prefix_sync(&test_bucket.name, "test-list-prefix/")?;
-            assert_eq!(list.len(), 4);
-            let list = Object::list_prefix_sync(&test_bucket.name, "test-list-prefix/sub")?;
-            assert_eq!(list.len(), 2);
+            let request = ListRequest {
+                prefix: Some("test-list-prefix/".into()),
+                ..Default::default()
+            };
+            let list = Object::list_sync(&test_bucket.name, request)?;
+            assert_eq!(list[0].items.len(), 4);
+
+            let request = ListRequest {
+                prefix: Some("test-list-prefix/sub".into()),
+                ..Default::default()
+            };
+            let list = Object::list_sync(&test_bucket.name, request)?;
+            assert_eq!(list[0].items.len(), 2);
+            Ok(())
+        }
+
+        #[test]
+        fn list_prefix_delimiter() -> Result<(), Box<dyn std::error::Error>> {
+            let test_bucket = crate::read_test_bucket_sync();
+
+            let prefix_names = [
+                "test-list-prefix/1",
+                "test-list-prefix/2",
+                "test-list-prefix/sub/1",
+                "test-list-prefix/sub/2",
+            ];
+
+            for name in &prefix_names {
+                Object::create_sync(&test_bucket.name, vec![0, 1], name, "text/plain")?;
+            }
+
+            let request = ListRequest {
+                prefix: Some("test-list-prefix/".into()),
+                delimiter: Some("/".into()),
+                ..Default::default()
+            };
+            let list = Object::list_sync(&test_bucket.name, request)?;
+            assert_eq!(list[0].items.len(), 2);
+            assert_eq!(list[0].prefixes.len(), 1);
             Ok(())
         }
 
@@ -1564,8 +1582,13 @@ mod tests {
 
             Object::delete_sync(&bucket.name, "test-delete")?;
 
-            let list = Object::list_prefix_sync(&bucket.name, "test-delete")?;
-            assert!(list.is_empty());
+            let request = ListRequest {
+                prefix: Some("test-delete".into()),
+                ..Default::default()
+            };
+
+            let list = Object::list_sync(&bucket.name, request)?;
+            assert!(list[0].items.is_empty());
 
             Ok(())
         }
