@@ -1,7 +1,8 @@
-use crate::error::{Error, GoogleResponse};
 pub use crate::resources::bucket::Owner;
-use crate::resources::common::ListResponse;
-use crate::resources::object_access_control::ObjectAccessControl;
+use crate::{
+    error::{Error, GoogleResponse},
+    resources::{common::ListResponse, object_access_control::ObjectAccessControl},
+};
 use futures::{stream, Stream, TryStream};
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use std::collections::HashMap;
@@ -937,8 +938,7 @@ impl Object {
         }
 
         // 0 Sort and construct the canonical headers
-        let mut headers = vec![];
-        headers.push(("host".to_string(), "storage.googleapis.com".to_string()));
+        let mut headers = vec![("host".to_string(), "storage.googleapis.com".to_string())];
         // Add custom metadata headers, guaranteed unique by HashMap input
         for (k, v) in custom_metadata.iter() {
             headers.push((format!("x-goog-meta-{}", k.to_string()), v.to_string()));

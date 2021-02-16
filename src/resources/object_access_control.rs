@@ -1,8 +1,7 @@
 #![allow(unused_imports)]
 
-use crate::error::GoogleResponse;
-use crate::resources::common::ListResponse;
 pub use crate::resources::common::{Entity, ProjectTeam, Role};
+use crate::{error::GoogleResponse, resources::common::ListResponse};
 
 /// The ObjectAccessControls resources represent the Access Control Lists (ACLs) for objects within
 /// Google Cloud Storage. ACLs let you specify who has access to your data and to what extent.

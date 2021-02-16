@@ -1,8 +1,7 @@
 #![allow(unused_imports)]
 
-use crate::error::GoogleResponse;
-use crate::resources::common::ListResponse;
 pub use crate::resources::common::{Entity, ProjectTeam, Role};
+use crate::{error::GoogleResponse, resources::common::ListResponse};
 
 /// The DefaultObjectAccessControls resources represent the Access Control Lists (ACLs) applied to a
 /// new object within Google Cloud Storage when no ACL was provided for that object. ACLs let you

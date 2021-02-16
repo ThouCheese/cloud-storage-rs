@@ -1,6 +1,5 @@
-use crate::error::GoogleResponse;
-use crate::resources::common::ListResponse;
 pub use crate::resources::common::{Entity, ProjectTeam, Role};
+use crate::{error::GoogleResponse, resources::common::ListResponse};
 
 /// The BucketAccessControl resource represents the Access Control Lists (ACLs) for buckets within
 /// Google Cloud Storage. ACLs let you specify who has access to your data and to what extent.

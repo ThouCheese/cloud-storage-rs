@@ -1,11 +1,14 @@
-use crate::error::{Error, GoogleResponse};
-use crate::resources::bucket_access_control::{BucketAccessControl, NewBucketAccessControl};
-pub use crate::resources::common::Entity;
-use crate::resources::common::ListResponse;
-use crate::resources::default_object_access_control::{
-    DefaultObjectAccessControl, NewDefaultObjectAccessControl,
+pub use crate::resources::{common::Entity, location::*};
+use crate::{
+    error::{Error, GoogleResponse},
+    resources::{
+        bucket_access_control::{BucketAccessControl, NewBucketAccessControl},
+        common::ListResponse,
+        default_object_access_control::{
+            DefaultObjectAccessControl, NewDefaultObjectAccessControl,
+        },
+    },
 };
-pub use crate::resources::location::*;
 
 /// The Buckets resource represents a
 /// [bucket](https://cloud.google.com/storage/docs/key-terms#buckets) in Google Cloud Storage. There

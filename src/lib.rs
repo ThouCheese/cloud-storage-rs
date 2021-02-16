@@ -18,7 +18,7 @@
 //! Add the following line to your `Cargo.toml`
 //! ```toml
 //! [dependencies]
-//! cloud-storage = "0.6"
+//! cloud-storage = "0.7"
 //! ```
 //! The two most important concepts are [Buckets](bucket/struct.Bucket.html), which represent
 //! file systems, and [Objects](object/struct.Object.html), which represent files.
@@ -89,14 +89,15 @@ mod error;
 mod resources;
 mod token;
 
-pub use crate::error::*;
-use crate::resources::service_account::ServiceAccount;
-pub use crate::resources::{
-    bucket::{Bucket, NewBucket},
-    object::Object,
-    *,
+pub use crate::{
+    error::*,
+    resources::{
+        bucket::{Bucket, NewBucket},
+        object::Object,
+        *,
+    },
 };
-use crate::token::Token;
+use crate::{resources::service_account::ServiceAccount, token::Token};
 pub use download_options::DownloadOptions;
 use tokio::sync::Mutex;
 
