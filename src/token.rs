@@ -1,6 +1,6 @@
 use crate::error::Error;
 
-/// This struct contains contains a token, an expiry, and an access scope.
+/// This struct contains a token, an expiry, and an access scope.
 pub struct Token {
     // this field contains the JWT and the expiry thereof. They are in the same Option because if
     // one of them is `Some`, we require that the other be `Some` as well.
@@ -33,17 +33,21 @@ impl Token {
         }
     }
 
-    pub async fn get(&mut self) -> crate::Result<String> {
-        match self.token {
-            Some((ref token, exp)) if exp > now() => Ok(token.clone()),
+    // TODO: should not need to use mem::take and then place back when the token is valid
+    pub async fn get(&mut self) -> crate::Result<&str> {
+        match std::mem::take(&mut self.token) {
+            Some((token, exp)) if exp > now() => {
+                self.token = Some((token, exp));
+                Ok(&self.token.as_ref().unwrap().0)
+            },
             _ => self.retrieve().await,
         }
     }
 
-    async fn retrieve(&mut self) -> crate::Result<String> {
+    async fn retrieve(&mut self) -> crate::Result<&str> {
         self.token = Some(Self::get_token(&self.access_scope).await?);
         match self.token {
-            Some(ref token) => Ok(token.0.clone()),
+            Some(ref token) => Ok(&token.0),
             None => unreachable!(),
         }
     }
