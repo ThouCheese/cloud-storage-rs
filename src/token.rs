@@ -39,7 +39,7 @@ impl Token {
             Some((token, exp)) if exp > now() => {
                 self.token = Some((token, exp));
                 Ok(&self.token.as_ref().unwrap().0)
-            },
+            }
             _ => self.retrieve().await,
         }
     }
