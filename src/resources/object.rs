@@ -393,32 +393,40 @@ impl Object {
         bucket: &str,
         list_request: ListRequest,
     ) -> Result<impl Stream<Item = Result<ObjectList, Error>> + '_, Error> {
-        #[derive(Clone)]
+        // #[derive(Clone)]
         enum ListState {
             Start(ListRequest),
             HasMore(ListRequest),
             Done,
         }
         use ListState::*;
+        impl ListState {
+            fn to_has_more(self) -> Option<ListState> {
+                match self {
+                    Start(req) | HasMore(req) => Some(HasMore(req)),
+                    Done => None,
+                }
+            }
+        }
 
         Ok(stream::unfold(
             ListState::Start(list_request),
-            move |state| async move {
+            move |mut state| async move {
                 let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
                 let headers = match crate::get_headers().await {
                     Ok(h) => h,
                     Err(e) => return Some((Err(e), state)),
                 };
 
-                let req = match state.clone() {
-                    Start(req) => req,
-                    HasMore(req) => req,
+                let req = match state {
+                    Start(ref mut req) => req,
+                    HasMore(ref mut req) => req,
                     Done => return None,
                 };
 
                 let response = crate::CLIENT
                     .get(&url)
-                    .query(&req)
+                    .query(req)
                     .headers(headers)
                     .send()
                     .await;
@@ -448,9 +456,8 @@ impl Object {
                 };
 
                 let next_state = if let Some(ref page_token) = response_body.next_page_token {
-                    let mut req = req;
                     req.page_token = Some(page_token.clone());
-                    HasMore(req)
+                    state.to_has_more()?
                 } else {
                     Done
                 };
