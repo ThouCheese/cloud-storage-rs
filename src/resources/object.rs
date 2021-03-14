@@ -172,6 +172,8 @@ pub struct ListRequest {
     /// The `page_token` is an encoded field that marks the name and generation of the last object
     /// in the returned list. In a subsequent request using the `page_token`, items that come after
     /// the `page_token` are shown (up to `max_results`).
+    ///
+    /// This
     pub page_token: Option<String>,
 
     /// Filter results to include only objects whose names begin with this prefix.
@@ -393,17 +395,17 @@ impl Object {
         bucket: &str,
         list_request: ListRequest,
     ) -> Result<impl Stream<Item = Result<ObjectList, Error>> + '_, Error> {
-        // #[derive(Clone)]
         enum ListState {
             Start(ListRequest),
-            HasMore(ListRequest),
+            HasMore(ListRequest, usize),
             Done,
         }
         use ListState::*;
         impl ListState {
-            fn to_has_more(self) -> Option<ListState> {
+            fn into_has_more(self, yielded: usize) -> Option<ListState> {
                 match self {
-                    Start(req) | HasMore(req) => Some(HasMore(req)),
+                    Start(req) => Some(HasMore(req, yielded)),
+                    HasMore(req, elems) => Some(HasMore(req, elems + yielded)),
                     Done => None,
                 }
             }
@@ -420,7 +422,7 @@ impl Object {
 
                 let req = match state {
                     Start(ref mut req) => req,
-                    HasMore(ref mut req) => req,
+                    HasMore(ref mut req, _) => req,
                     Done => return None,
                 };
 
@@ -457,7 +459,7 @@ impl Object {
 
                 let next_state = if let Some(ref page_token) = response_body.next_page_token {
                     req.page_token = Some(page_token.clone());
-                    state.to_has_more()?
+                    state.into_has_more(response_body.items.len())?
                 } else {
                     Done
                 };
