@@ -166,14 +166,14 @@ pub struct ListRequest {
     /// page of responses. Because duplicate entries in `prefixes` are omitted, fewer total
     /// results may be returned than requested. The service uses this parameter or 1,000
     /// items, whichever is smaller.
-    pub max_results: Option<u8>,
+    pub max_results: Option<usize>,
 
     /// A previously-returned page token representing part of the larger set of results to view.
     /// The `page_token` is an encoded field that marks the name and generation of the last object
     /// in the returned list. In a subsequent request using the `page_token`, items that come after
     /// the `page_token` are shown (up to `max_results`).
     ///
-    /// This
+    /// If the page token is provided, all objects starting at that page token are queried
     pub page_token: Option<String>,
 
     /// Filter results to include only objects whose names begin with this prefix.
@@ -380,7 +380,10 @@ impl Object {
         ))
     }
 
-    /// Obtain a list of objects within this Bucket.
+    /// Obtain a list of objects within this Bucket. This function will repeatedly query Google and
+    /// merge the responses into one. Google responds with 1000 Objects at a time, so if you want to
+    /// make sure only one http call is performed, make sure to set `list_request.max_results` to
+    /// 1000.
     /// ### Example
     /// ```no_run
     /// # #[tokio::main]
@@ -397,16 +400,22 @@ impl Object {
     ) -> Result<impl Stream<Item = Result<ObjectList, Error>> + '_, Error> {
         enum ListState {
             Start(ListRequest),
-            HasMore(ListRequest, usize),
+            HasMore(ListRequest),
             Done,
         }
         use ListState::*;
         impl ListState {
-            fn into_has_more(self, yielded: usize) -> Option<ListState> {
+            fn into_has_more(self) -> Option<ListState> {
                 match self {
-                    Start(req) => Some(HasMore(req, yielded)),
-                    HasMore(req, elems) => Some(HasMore(req, elems + yielded)),
+                    Start(req) | HasMore(req) => Some(HasMore(req)),
                     Done => None,
+                }
+            }
+
+            fn req_mut(&mut self) -> Option<&mut ListRequest> {
+                match self {
+                    Start(ref mut req) | HasMore(ref mut req) => Some(req),
+                    Done => return None,
                 }
             }
         }
@@ -414,17 +423,16 @@ impl Object {
         Ok(stream::unfold(
             ListState::Start(list_request),
             move |mut state| async move {
+                println!("reached");
                 let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
                 let headers = match crate::get_headers().await {
                     Ok(h) => h,
                     Err(e) => return Some((Err(e), state)),
                 };
-
-                let req = match state {
-                    Start(ref mut req) => req,
-                    HasMore(ref mut req, _) => req,
-                    Done => return None,
-                };
+                let req = state.req_mut()?;
+                if req.max_results == Some(0) {
+                    return None;
+                }
 
                 let response = crate::CLIENT
                     .get(&url)
@@ -445,12 +453,10 @@ impl Object {
                     Err(e) => return Some((Err(e.into()), state)),
                 };
 
-                let json = match response.json().await {
+                let result: GoogleResponse<ObjectList> = match response.json().await {
                     Ok(json) => json,
                     Err(e) => return Some((Err(e.into()), state)),
                 };
-
-                let result: GoogleResponse<ObjectList> = json;
 
                 let response_body = match result {
                     GoogleResponse::Success(success) => success,
@@ -459,7 +465,10 @@ impl Object {
 
                 let next_state = if let Some(ref page_token) = response_body.next_page_token {
                     req.page_token = Some(page_token.clone());
-                    state.into_has_more(response_body.items.len())?
+                    req.max_results = req
+                        .max_results
+                        .map(|rem| rem.saturating_sub(response_body.items.len()));
+                    state.into_has_more()?
                 } else {
                     Done
                 };
