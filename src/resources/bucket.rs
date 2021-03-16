@@ -252,7 +252,6 @@ pub struct Cors {
     pub response_header: Vec<String>,
     /// The value, in seconds, to return in the Access-Control-Max-Age header used in preflight
     /// responses.
-    #[serde(deserialize_with = "crate::from_str")]
     pub max_age_seconds: i32,
 }
 
@@ -304,7 +303,7 @@ pub struct Condition {
     /// A date in `RFC 3339` format with only the date part (for instance, "2013-01-15"). This
     /// condition is satisfied when an object is created before midnight of the specified date in
     /// UTC.
-    pub created_before: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_before: Option<chrono::NaiveDate>,
     /// Relevant only for versioned objects. If the value is true, this condition matches the live
     /// version of objects; if the value is `false`, it matches noncurrent versions of objects.
     pub is_live: Option<bool>,
@@ -952,16 +951,6 @@ mod tests {
     #[tokio::test]
     async fn list() -> Result<(), Box<dyn std::error::Error>> {
         Bucket::list().await?;
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn read() -> Result<(), Box<dyn std::error::Error>> {
-        let bucket = crate::create_test_bucket("test-read").await;
-        let also_bucket = Bucket::read(&bucket.name).await?;
-        assert_eq!(bucket, also_bucket);
-        bucket.delete().await?;
-        assert!(also_bucket.delete().await.is_err());
         Ok(())
     }
 

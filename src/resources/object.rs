@@ -5,6 +5,7 @@ use crate::{
 };
 use futures::{stream, Stream, TryStream};
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
+use reqwest::StatusCode;
 use std::collections::HashMap;
 
 /// A resource representing a file in Google Cloud Storage.
@@ -549,15 +550,16 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        Ok(crate::CLIENT
+        let resp = dbg!(crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
-            .await?
-            .error_for_status()?
-            .bytes()
-            .await?
-            .to_vec())
+            .await?);
+        if resp.status() == StatusCode::NOT_FOUND {
+            Err(Error::Other(resp.text().await?))
+        } else {
+            Ok(resp.error_for_status()?.bytes().await?.to_vec())
+        }
     }
 
     /// The synchronous equivalent of `Object::download`.
