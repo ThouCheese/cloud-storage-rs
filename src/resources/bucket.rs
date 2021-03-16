@@ -57,7 +57,7 @@ pub struct Bucket {
     /// responses, and requests that specify this field fail.
     pub default_object_acl: Option<Vec<DefaultObjectAccessControl>>,
     /// The bucket's IAM configuration.
-    pub iam_configuration: IamConfiguration,
+    pub iam_configuration: Option<IamConfiguration>,
     /// Encryption configuration for a bucket.
     pub encryption: Option<Encryption>,
     /// The owner of the bucket. This is always the project team's owner group.
