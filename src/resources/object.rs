@@ -424,7 +424,6 @@ impl Object {
         Ok(stream::unfold(
             ListState::Start(list_request),
             move |mut state| async move {
-                println!("reached");
                 let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
                 let headers = match crate::get_headers().await {
                     Ok(h) => h,
@@ -550,11 +549,11 @@ impl Object {
             percent_encode(bucket),
             percent_encode(file_name),
         );
-        let resp = dbg!(crate::CLIENT
+        let resp = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers().await?)
             .send()
-            .await?);
+            .await?;
         if resp.status() == StatusCode::NOT_FOUND {
             Err(Error::Other(resp.text().await?))
         } else {
