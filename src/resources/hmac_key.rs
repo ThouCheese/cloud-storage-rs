@@ -95,6 +95,7 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create() -> crate::Result<Self> {
         crate::CLOUD_CLIENT.hmac_key().create().await
     }
@@ -103,7 +104,7 @@ impl HmacKey {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_sync() -> crate::Result<Self> {
         crate::runtime()?.block_on(Self::create())
     }
@@ -127,6 +128,7 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn list() -> crate::Result<Vec<HmacMeta>> {
         crate::CLOUD_CLIENT.hmac_key().list().await
     }
@@ -135,7 +137,7 @@ impl HmacKey {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn list_sync() -> crate::Result<Vec<HmacMeta>> {
         crate::runtime()?.block_on(Self::list())
     }
@@ -158,6 +160,7 @@ impl HmacKey {
     /// let key = HmacKey::read("some identifier").await?;
     /// # Ok(())
     /// # }
+    #[cfg(feature = "global-client")]
     pub async fn read(access_id: &str) -> crate::Result<HmacMeta> {
         crate::CLOUD_CLIENT.hmac_key().read(access_id).await
     }
@@ -166,7 +169,7 @@ impl HmacKey {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn read_sync(access_id: &str) -> crate::Result<HmacMeta> {
         crate::runtime()?.block_on(Self::read(access_id))
     }
@@ -189,6 +192,7 @@ impl HmacKey {
     /// let key = HmacKey::update("your key", HmacState::Active).await?;
     /// # Ok(())
     /// # }
+    #[cfg(feature = "global-client")]
     pub async fn update(access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
         crate::CLOUD_CLIENT
             .hmac_key()
@@ -200,7 +204,7 @@ impl HmacKey {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn update_sync(access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
         crate::runtime()?.block_on(Self::update(access_id, state))
     }
@@ -222,18 +226,19 @@ impl HmacKey {
     /// HmacKey::delete(&key.access_id).await?;
     /// # Ok(())
     /// # }
+    #[cfg(feature = "global-client")]
     pub async fn delete(access_id: &str) -> crate::Result<()> {
         crate::CLOUD_CLIENT.hmac_key().delete(access_id).await
     }
 
     /// The synchronous equivalent of `HmacKey::delete`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn delete_sync(access_id: &str) -> crate::Result<()> {
         crate::runtime()?.block_on(Self::delete(access_id))
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "global-client"))]
 mod tests {
     use super::*;
 
@@ -300,7 +305,7 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     mod sync {
         use super::*;
 

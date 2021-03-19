@@ -15,6 +15,7 @@ categories = ["api-bindings", "web-programming"]
 [features]
 default = ["native-tls"]
 
+global-client = []
 sync = ["reqwest/blocking"]
 native-tls = ["reqwest/default-tls"]
 rustls-tls = ["reqwest/rustls-tls"]
@@ -37,4 +38,4 @@ futures =          { version = "0.3",  default_features = false, features = ["al
 bytes =            { version = "1.0",  default_features = false }
 
 [package.metadata.docs.rs]
-features = ["sync"]
+features = ["global-client", "sync"]

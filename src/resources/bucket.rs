@@ -557,6 +557,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create(new_bucket: &NewBucket) -> crate::Result<Self> {
         crate::CLOUD_CLIENT.bucket().create(new_bucket).await
     }
@@ -565,7 +566,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_sync(new_bucket: &NewBucket) -> crate::Result<Self> {
         crate::runtime()?.block_on(Self::create(new_bucket))
     }
@@ -585,6 +586,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn list() -> crate::Result<Vec<Self>> {
         crate::CLOUD_CLIENT.bucket().list().await
     }
@@ -593,7 +595,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn list_sync() -> crate::Result<Vec<Self>> {
         crate::runtime()?.block_on(Self::list())
     }
@@ -616,6 +618,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn read(name: &str) -> crate::Result<Self> {
         crate::CLOUD_CLIENT.bucket().read(name).await
     }
@@ -624,7 +627,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn read_sync(name: &str) -> crate::Result<Self> {
         crate::runtime()?.block_on(Self::read(name))
     }
@@ -654,6 +657,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn update(&self) -> crate::Result<Self> {
         crate::CLOUD_CLIENT.bucket().update(self).await
     }
@@ -662,7 +666,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn update_sync(&self) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.update())
     }
@@ -687,6 +691,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn delete(self) -> crate::Result<()> {
         crate::CLOUD_CLIENT.bucket().delete(self).await
     }
@@ -695,7 +700,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn delete_sync(self) -> crate::Result<()> {
         crate::runtime()?.block_on(self.delete())
     }
@@ -719,6 +724,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn get_iam_policy(&self) -> crate::Result<IamPolicy> {
         crate::CLOUD_CLIENT.bucket().get_iam_policy(self).await
     }
@@ -727,7 +733,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn get_iam_policy_sync(&self) -> crate::Result<IamPolicy> {
         crate::runtime()?.block_on(self.get_iam_policy())
     }
@@ -763,6 +769,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn set_iam_policy(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
         crate::CLOUD_CLIENT.bucket().set_iam_policy(self, iam).await
     }
@@ -771,7 +778,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn set_iam_policy_sync(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
         crate::runtime()?.block_on(self.set_iam_policy(iam))
     }
@@ -788,6 +795,7 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn test_iam_permission(&self, permission: &str) -> crate::Result<TestIamPermission> {
         crate::CLOUD_CLIENT
             .bucket()
@@ -799,7 +807,7 @@ impl Bucket {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn test_iam_permission_sync(&self, permission: &str) -> crate::Result<TestIamPermission> {
         crate::runtime()?.block_on(self.test_iam_permission(permission))
     }
@@ -809,7 +817,7 @@ impl Bucket {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "global-client"))]
 mod tests {
     use super::*;
     use crate::resources::common::Role;
@@ -905,7 +913,7 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     mod sync {
         use super::*;
         use crate::resources::common::Role;

@@ -1,6 +1,8 @@
 pub use crate::resources::bucket::Owner;
 use crate::resources::object_access_control::ObjectAccessControl;
-use futures::{Stream, TryStream};
+use futures::Stream;
+#[cfg(feature = "global-client")]
+use futures::TryStream;
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use std::collections::HashMap;
 
@@ -249,6 +251,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create(
         bucket: &str,
         file: Vec<u8>,
@@ -265,7 +268,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_sync(
         bucket: &str,
         file: Vec<u8>,
@@ -292,6 +295,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create_streamed<S>(
         bucket: &str,
         stream: S,
@@ -314,7 +318,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_streamed_sync<R: std::io::Read + Send + 'static>(
         bucket: &str,
         mut file: R,
@@ -347,6 +351,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn list(
         bucket: &str,
         list_request: ListRequest,
@@ -361,7 +366,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn list_sync(bucket: &str, list_request: ListRequest) -> crate::Result<Vec<ObjectList>> {
         use futures::TryStreamExt;
 
@@ -381,6 +386,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn read(bucket: &str, file_name: &str) -> crate::Result<Self> {
         crate::CLOUD_CLIENT.object().read(bucket, file_name).await
     }
@@ -389,7 +395,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn read_sync(bucket: &str, file_name: &str) -> crate::Result<Self> {
         crate::runtime()?.block_on(Self::read(bucket, file_name))
     }
@@ -405,6 +411,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn download(bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
         crate::CLOUD_CLIENT
             .object()
@@ -416,7 +423,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn download_sync(bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
         crate::runtime()?.block_on(Self::download(bucket, file_name))
     }
@@ -440,6 +447,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn download_streamed(
         bucket: &str,
         file_name: &str,
@@ -463,6 +471,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn update(&self) -> crate::Result<Self> {
         crate::CLOUD_CLIENT.object().update(self).await
     }
@@ -471,7 +480,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn update_sync(&self) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.update())
     }
@@ -487,6 +496,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn delete(bucket: &str, file_name: &str) -> crate::Result<()> {
         crate::CLOUD_CLIENT.object().delete(bucket, file_name).await
     }
@@ -495,7 +505,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn delete_sync(bucket: &str, file_name: &str) -> crate::Result<()> {
         crate::runtime()?.block_on(Self::delete(bucket, file_name))
     }
@@ -530,6 +540,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn compose(
         bucket: &str,
         req: &ComposeRequest,
@@ -545,7 +556,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn compose_sync(
         bucket: &str,
         req: &ComposeRequest,
@@ -567,6 +578,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn copy(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .object()
@@ -578,7 +590,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn copy_sync(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.copy(destination_bucket, path))
     }
@@ -603,6 +615,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn rewrite(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .object()
@@ -614,7 +627,7 @@ impl Object {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn rewrite_sync(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.rewrite(destination_bucket, path))
     }
@@ -626,9 +639,10 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
     /// // for 50 seconds.
@@ -646,9 +660,10 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
     /// // for 50 seconds.
@@ -676,9 +691,10 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let url = obj1.upload_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
     /// // for 50 seconds.
@@ -696,10 +712,11 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     /// use std::collections::HashMap;
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let mut custom_metadata = HashMap::new();
     /// custom_metadata.insert(String::from("field"), String::from("value"));
     /// let (url, headers) = obj1.upload_url_with(50, custom_metadata)?;
@@ -912,7 +929,7 @@ pub(crate) fn percent_encode(input: &str) -> String {
     utf8_percent_encode(input, ENCODE_SET).to_string()
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "global-client"))]
 mod tests {
     use super::*;
     use crate::Error;

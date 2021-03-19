@@ -97,6 +97,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create(
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
@@ -111,7 +112,7 @@ impl DefaultObjectAccessControl {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_sync(
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
@@ -134,6 +135,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn list(bucket: &str) -> crate::Result<Vec<Self>> {
         crate::CLOUD_CLIENT
             .default_object_access_control()
@@ -145,7 +147,7 @@ impl DefaultObjectAccessControl {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn list_sync(bucket: &str) -> crate::Result<Vec<Self>> {
         crate::runtime()?.block_on(Self::list(bucket))
     }
@@ -169,6 +171,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn read(bucket: &str, entity: &Entity) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .default_object_access_control()
@@ -180,7 +183,7 @@ impl DefaultObjectAccessControl {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn read_sync(bucket: &str, entity: &Entity) -> crate::Result<Self> {
         crate::runtime()?.block_on(Self::read(bucket, entity))
     }
@@ -202,6 +205,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn update(&self) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .default_object_access_control()
@@ -213,7 +217,7 @@ impl DefaultObjectAccessControl {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn update_sync(&self) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.update())
     }
@@ -234,6 +238,7 @@ impl DefaultObjectAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn delete(self) -> Result<(), crate::Error> {
         crate::CLOUD_CLIENT
             .default_object_access_control()
@@ -245,13 +250,13 @@ impl DefaultObjectAccessControl {
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn delete_sync(self) -> Result<(), crate::Error> {
         crate::runtime()?.block_on(self.delete())
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "global-client"))]
 mod tests {
     use super::*;
 
@@ -306,7 +311,7 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     mod sync {
         use super::*;
 
