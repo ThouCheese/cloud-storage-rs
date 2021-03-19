@@ -114,19 +114,10 @@ impl ObjectAccessControl {
         object: &str,
         new_object_access_control: &NewObjectAccessControl,
     ) -> crate::Result<Self> {
-        let url = format!("{}/b/{}/o/{}/acl", crate::BASE_URL, bucket, object);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .post(&url)
-            .headers(crate::get_headers().await?)
-            .json(new_object_access_control)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .object_access_control()
+            .create(bucket, object, new_object_access_control)
+            .await
     }
 
     /// The synchronous equivalent of `ObjectAccessControl::create`.
@@ -149,18 +140,10 @@ impl ObjectAccessControl {
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
     pub async fn list(bucket: &str, object: &str) -> crate::Result<Vec<Self>> {
-        let url = format!("{}/b/{}/o/{}/acl", crate::BASE_URL, bucket, object);
-        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s.items),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .object_access_control()
+            .list(bucket, object)
+            .await
     }
 
     /// The synchronous equivalent of `ObjectAccessControl::list`.
@@ -179,24 +162,10 @@ impl ObjectAccessControl {
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
     pub async fn read(bucket: &str, object: &str, entity: &Entity) -> crate::Result<Self> {
-        let url = format!(
-            "{}/b/{}/o/{}/acl/{}",
-            crate::BASE_URL,
-            bucket,
-            object,
-            entity
-        );
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .object_access_control()
+            .read(bucket, object, entity)
+            .await
     }
 
     /// The synchronous equivalent of `ObjectAccessControl::read`.
@@ -215,25 +184,10 @@ impl ObjectAccessControl {
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
     pub async fn update(&self) -> crate::Result<Self> {
-        let url = format!(
-            "{}/b/{}/o/{}/acl/{}",
-            crate::BASE_URL,
-            self.bucket,
-            self.object,
-            self.entity,
-        );
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .put(&url)
-            .headers(crate::get_headers().await?)
-            .json(self)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .object_access_control()
+            .update(self)
+            .await
     }
 
     /// The synchronous equivalent of `ObjectAccessControl::update`.
@@ -252,23 +206,10 @@ impl ObjectAccessControl {
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
     pub async fn delete(self) -> crate::Result<()> {
-        let url = format!(
-            "{}/b/{}/o/{}/acl/{}",
-            crate::BASE_URL,
-            self.bucket,
-            self.object,
-            self.entity,
-        );
-        let response = crate::CLIENT
-            .delete(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(crate::Error::Google(response.json().await?))
-        }
+        crate::CLOUD_CLIENT
+            .object_access_control()
+            .delete(self)
+            .await
     }
 
     /// The synchronous equivalent of `ObjectAccessControl::delete`.

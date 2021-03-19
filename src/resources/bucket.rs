@@ -1,14 +1,8 @@
-pub use crate::resources::{common::Entity, location::*};
-use crate::{
-    error::{Error, GoogleResponse},
-    resources::{
-        bucket_access_control::{BucketAccessControl, NewBucketAccessControl},
-        common::ListResponse,
-        default_object_access_control::{
-            DefaultObjectAccessControl, NewDefaultObjectAccessControl,
-        },
-    },
+use crate::resources::{
+    bucket_access_control::{BucketAccessControl, NewBucketAccessControl},
+    default_object_access_control::{DefaultObjectAccessControl, NewDefaultObjectAccessControl},
 };
+pub use crate::resources::{common::Entity, location::*};
 
 /// The Buckets resource represents a
 /// [bucket](https://cloud.google.com/storage/docs/key-terms#buckets) in Google Cloud Storage. There
@@ -564,22 +558,7 @@ impl Bucket {
     /// # }
     /// ```
     pub async fn create(new_bucket: &NewBucket) -> crate::Result<Self> {
-        let url = format!("{}/b/", crate::BASE_URL);
-        let project = &crate::SERVICE_ACCOUNT.project_id;
-        let query = [("project", project)];
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .post(&url)
-            .headers(crate::get_headers().await?)
-            .query(&query)
-            .json(new_bucket)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.bucket().create(new_bucket).await
     }
 
     /// The synchronous equivalent of `Bucket::create`.
@@ -606,22 +585,8 @@ impl Bucket {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn list() -> Result<Vec<Self>, Error> {
-        let url = format!("{}/b/", crate::BASE_URL);
-        let project = &crate::SERVICE_ACCOUNT.project_id;
-        let query = [("project", project)];
-        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .query(&query)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s.items),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+    pub async fn list() -> crate::Result<Vec<Self>> {
+        crate::CLOUD_CLIENT.bucket().list().await
     }
 
     /// The synchronous equivalent of `Bucket::list`.
@@ -629,7 +594,7 @@ impl Bucket {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(feature = "sync")]
-    pub fn list_sync() -> Result<Vec<Self>, Error> {
+    pub fn list_sync() -> crate::Result<Vec<Self>> {
         crate::runtime()?.block_on(Self::list())
     }
 
@@ -652,18 +617,7 @@ impl Bucket {
     /// # }
     /// ```
     pub async fn read(name: &str) -> crate::Result<Self> {
-        let url = format!("{}/b/{}", crate::BASE_URL, name);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.bucket().read(name).await
     }
 
     /// The synchronous equivalent of `Bucket::read`.
@@ -701,19 +655,7 @@ impl Bucket {
     /// # }
     /// ```
     pub async fn update(&self) -> crate::Result<Self> {
-        let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .put(&url)
-            .headers(crate::get_headers().await?)
-            .json(self)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.bucket().update(self).await
     }
 
     /// The synchronous equivalent of `Bucket::update`.
@@ -746,17 +688,7 @@ impl Bucket {
     /// # }
     /// ```
     pub async fn delete(self) -> crate::Result<()> {
-        let url = format!("{}/b/{}", crate::BASE_URL, self.name);
-        let response = crate::CLIENT
-            .delete(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(Error::Google(response.json().await?))
-        }
+        crate::CLOUD_CLIENT.bucket().delete(self).await
     }
 
     /// The synchronous equivalent of `Bucket::delete`.
@@ -788,18 +720,7 @@ impl Bucket {
     /// # }
     /// ```
     pub async fn get_iam_policy(&self) -> crate::Result<IamPolicy> {
-        let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let result: GoogleResponse<IamPolicy> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.bucket().get_iam_policy(self).await
     }
 
     /// The synchronous equivalent of `Bucket::get_iam_policy`.
@@ -843,19 +764,7 @@ impl Bucket {
     /// # }
     /// ```
     pub async fn set_iam_policy(&self, iam: &IamPolicy) -> crate::Result<IamPolicy> {
-        let url = format!("{}/b/{}/iam", crate::BASE_URL, self.name);
-        let result: GoogleResponse<IamPolicy> = crate::CLIENT
-            .put(&url)
-            .headers(crate::get_headers().await?)
-            .json(iam)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.bucket().set_iam_policy(self, iam).await
     }
 
     /// The synchronous equivalent of `Bucket::set_iam_policy`.
@@ -880,24 +789,10 @@ impl Bucket {
     /// # }
     /// ```
     pub async fn test_iam_permission(&self, permission: &str) -> crate::Result<TestIamPermission> {
-        if permission == "storage.buckets.list" || permission == "storage.buckets.create" {
-            return Err(Error::new(
-                "tested permission must not be `storage.buckets.list` or `storage.buckets.create`",
-            ));
-        }
-        let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, self.name);
-        let result: GoogleResponse<TestIamPermission> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .query(&[("permissions", permission)])
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .bucket()
+            .test_iam_permission(self, permission)
+            .await
     }
 
     /// The synchronous equivalent of `Bucket::test_iam_policy`.

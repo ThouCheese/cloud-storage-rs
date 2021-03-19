@@ -59,8 +59,8 @@ pub enum HmacState {
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct ListResponse {
-    items: Vec<HmacMeta>,
+pub(crate) struct ListResponse {
+    pub(crate) items: Vec<HmacMeta>,
 }
 
 #[derive(serde::Serialize)]
@@ -70,8 +70,8 @@ struct UpdateRequest {
 }
 
 #[derive(serde::Serialize)]
-struct UpdateMeta {
-    state: HmacState,
+pub(crate) struct UpdateMeta {
+    pub(crate) state: HmacState,
 }
 
 impl HmacKey {
@@ -96,28 +96,7 @@ impl HmacKey {
     /// # }
     /// ```
     pub async fn create() -> crate::Result<Self> {
-        use reqwest::header::CONTENT_LENGTH;
-
-        let url = format!(
-            "{}/projects/{}/hmacKeys",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id
-        );
-        let query = [("serviceAccountEmail", &crate::SERVICE_ACCOUNT.client_email)];
-        let mut headers = crate::get_headers().await?;
-        headers.insert(CONTENT_LENGTH, 0.into());
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .post(&url)
-            .headers(headers)
-            .query(&query)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.hmac_key().create().await
     }
 
     /// The synchronous equivalent of `HmacKey::create`.
@@ -149,30 +128,7 @@ impl HmacKey {
     /// # }
     /// ```
     pub async fn list() -> crate::Result<Vec<HmacMeta>> {
-        let url = format!(
-            "{}/projects/{}/hmacKeys",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id
-        );
-        let response = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .text()
-            .await?;
-        let result: Result<GoogleResponse<ListResponse>, _> = serde_json::from_str(&response);
-
-        // This function rquires more complicated error handling because when there is only one
-        // entry, Google will return the response `{ "kind": "storage#hmacKeysMetadata" }` instead
-        // of a list with one element. This breaks the parser.
-        match result {
-            Ok(parsed) => match parsed {
-                GoogleResponse::Success(s) => Ok(s.items),
-                GoogleResponse::Error(e) => Err(e.into()),
-            },
-            Err(_) => Ok(vec![]),
-        }
+        crate::CLOUD_CLIENT.hmac_key().list().await
     }
 
     /// The synchronous equivalent of `HmacKey::list`.
@@ -203,23 +159,7 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     pub async fn read(access_id: &str) -> crate::Result<HmacMeta> {
-        let url = format!(
-            "{}/projects/{}/hmacKeys/{}",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id,
-            access_id
-        );
-        let result: GoogleResponse<HmacMeta> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.hmac_key().read(access_id).await
     }
 
     /// The synchronous equivalent of `HmacKey::read`.
@@ -250,25 +190,10 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     pub async fn update(access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
-        let url = format!(
-            "{}/projects/{}/hmacKeys/{}",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id,
-            access_id
-        );
-        serde_json::to_string(&UpdateMeta { state })?;
-        let result: GoogleResponse<HmacMeta> = crate::CLIENT
-            .put(&url)
-            .headers(crate::get_headers().await?)
-            .json(&UpdateMeta { state })
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .hmac_key()
+            .update(access_id, state)
+            .await
     }
 
     /// The synchronous equivalent of `HmacKey::update`.
@@ -298,22 +223,7 @@ impl HmacKey {
     /// # Ok(())
     /// # }
     pub async fn delete(access_id: &str) -> crate::Result<()> {
-        let url = format!(
-            "{}/projects/{}/hmacKeys/{}",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id,
-            access_id
-        );
-        let response = crate::CLIENT
-            .delete(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(crate::Error::Google(response.json().await?))
-        }
+        crate::CLOUD_CLIENT.hmac_key().delete(access_id).await
     }
 
     /// The synchronous equivalent of `HmacKey::delete`.

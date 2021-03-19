@@ -83,6 +83,7 @@
 //! ```
 #![forbid(unsafe_code, missing_docs)]
 
+pub mod client;
 mod download_options;
 mod error;
 /// Contains objects as represented by Google, to be used for serialization and deserialization.
@@ -90,6 +91,7 @@ mod resources;
 mod token;
 
 pub use crate::{
+    client::Client,
     error::*,
     resources::{
         bucket::{Bucket, NewBucket},
@@ -102,11 +104,6 @@ pub use download_options::DownloadOptions;
 use tokio::sync::Mutex;
 
 lazy_static::lazy_static! {
-    /// Static `Token` struct that caches
-    static ref TOKEN_CACHE: Mutex<Token> = Mutex::new(Token::new(
-        "https://www.googleapis.com/auth/devstorage.full_control",
-    ));
-
     static ref IAM_TOKEN_CACHE: Mutex<Token> = Mutex::new(Token::new(
         "https://www.googleapis.com/auth/iam"
     ));
@@ -116,24 +113,13 @@ lazy_static::lazy_static! {
     /// [ServiceAccount](service_account/struct.ServiceAccount.html).
     pub static ref SERVICE_ACCOUNT: ServiceAccount = ServiceAccount::get();
 
-    static ref CLIENT: reqwest::Client = reqwest::Client::new();
+    static ref CLOUD_CLIENT: client::Client = client::Client::default();
 }
 
 /// A type alias where the error is set to be `cloud_storage::Error`.
 pub type Result<T> = std::result::Result<T, crate::Error>;
 
 const BASE_URL: &str = "https://www.googleapis.com/storage/v1";
-
-async fn get_headers() -> Result<reqwest::header::HeaderMap> {
-    let mut result = reqwest::header::HeaderMap::new();
-    let mut guard = TOKEN_CACHE.lock().await;
-    let token = guard.get().await?;
-    result.insert(
-        reqwest::header::AUTHORIZATION,
-        format!("Bearer {}", token).parse().unwrap(),
-    );
-    Ok(result)
-}
 
 fn from_str<'de, T, D>(deserializer: D) -> std::result::Result<T, D::Error>
 where

@@ -101,22 +101,10 @@ impl DefaultObjectAccessControl {
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
     ) -> crate::Result<Self> {
-        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .post(&url)
-            .headers(crate::get_headers().await?)
-            .json(new_acl)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(mut s) => {
-                s.bucket = bucket.to_string();
-                Ok(s)
-            }
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .default_object_access_control()
+            .create(bucket, new_acl)
+            .await
     }
 
     /// The synchronous equivalent of `DefautObjectAccessControl::create`.
@@ -147,25 +135,10 @@ impl DefaultObjectAccessControl {
     /// # }
     /// ```
     pub async fn list(bucket: &str) -> crate::Result<Vec<Self>> {
-        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s
-                .items
-                .into_iter()
-                .map(|item| DefaultObjectAccessControl {
-                    bucket: bucket.to_string(),
-                    ..item
-                })
-                .collect()),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .default_object_access_control()
+            .list(bucket)
+            .await
     }
 
     /// The synchronous equivalent of `DefautObjectAccessControl::list`.
@@ -197,26 +170,10 @@ impl DefaultObjectAccessControl {
     /// # }
     /// ```
     pub async fn read(bucket: &str, entity: &Entity) -> crate::Result<Self> {
-        let url = format!(
-            "{}/b/{}/defaultObjectAcl/{}",
-            crate::BASE_URL,
-            bucket,
-            entity
-        );
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(mut s) => {
-                s.bucket = bucket.to_string();
-                Ok(s)
-            }
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .default_object_access_control()
+            .read(bucket, entity)
+            .await
     }
 
     /// The synchronous equivalent of `DefautObjectAccessControl::read`.
@@ -246,27 +203,10 @@ impl DefaultObjectAccessControl {
     /// # }
     /// ```
     pub async fn update(&self) -> crate::Result<Self> {
-        let url = format!(
-            "{}/b/{}/defaultObjectAcl/{}",
-            crate::BASE_URL,
-            self.bucket,
-            self.entity
-        );
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .put(&url)
-            .headers(crate::get_headers().await?)
-            .json(self)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(mut s) => {
-                s.bucket = self.bucket.to_string();
-                Ok(s)
-            }
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .default_object_access_control()
+            .update(self)
+            .await
     }
 
     /// The synchronous equivalent of `DefautObjectAccessControl::update`.
@@ -295,22 +235,10 @@ impl DefaultObjectAccessControl {
     /// # }
     /// ```
     pub async fn delete(self) -> Result<(), crate::Error> {
-        let url = format!(
-            "{}/b/{}/defaultObjectAcl/{}",
-            crate::BASE_URL,
-            self.bucket,
-            self.entity
-        );
-        let response = crate::CLIENT
-            .delete(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(crate::Error::Google(response.json().await?))
-        }
+        crate::CLOUD_CLIENT
+            .default_object_access_control()
+            .delete(self)
+            .await
     }
 
     /// The synchronous equivalent of `DefautObjectAccessControl::delete`.
