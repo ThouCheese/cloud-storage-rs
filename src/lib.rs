@@ -89,6 +89,9 @@
 #![forbid(unsafe_code, missing_docs)]
 
 pub mod client;
+#[cfg(feature = "sync")]
+pub mod sync;
+
 mod download_options;
 mod error;
 /// Contains objects as represented by Google, to be used for serialization and deserialization.
@@ -206,7 +209,7 @@ async fn create_test_bucket(name: &str) -> Bucket {
     }
 }
 
-#[cfg(all(feature = "global-client", feature = "sync"))]
+#[cfg(feature = "sync")]
 fn runtime() -> Result<tokio::runtime::Runtime> {
     Ok(tokio::runtime::Builder::new_current_thread()
         .thread_name("cloud-storage-worker")
