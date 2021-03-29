@@ -1,5 +1,3 @@
-use crate::error::Error;
-
 /// This struct contains a token, an expiry, and an access scope.
 pub struct Token {
     // this field contains the JWT and the expiry thereof. They are in the same Option because if
@@ -34,25 +32,25 @@ impl Token {
     }
 
     // TODO: should not need to use mem::take and then place back when the token is valid
-    pub async fn get(&mut self) -> crate::Result<&str> {
+    pub async fn get(&mut self, client: &reqwest::Client) -> crate::Result<&str> {
         match std::mem::take(&mut self.token) {
             Some((token, exp)) if exp > now() => {
                 self.token = Some((token, exp));
                 Ok(&self.token.as_ref().unwrap().0)
             }
-            _ => self.retrieve().await,
+            _ => self.retrieve(client).await,
         }
     }
 
-    async fn retrieve(&mut self) -> crate::Result<&str> {
-        self.token = Some(Self::get_token(&self.access_scope).await?);
+    async fn retrieve(&mut self, client: &reqwest::Client) -> crate::Result<&str> {
+        self.token = Some(Self::get_token(client, &self.access_scope).await?);
         match self.token {
             Some(ref token) => Ok(&token.0),
             None => unreachable!(),
         }
     }
 
-    async fn get_token(scope: &str) -> Result<(String, u64), Error> {
+    async fn get_token(client: &reqwest::Client, scope: &str) -> crate::Result<(String, u64)> {
         let now = now();
         let exp = now + 3600;
 
@@ -74,7 +72,7 @@ impl Token {
             ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
             ("assertion", &jwt),
         ];
-        let response: TokenResponse = super::CLIENT
+        let response: TokenResponse = client
             .post("https://www.googleapis.com/oauth2/v4/token")
             .form(&body)
             .send()

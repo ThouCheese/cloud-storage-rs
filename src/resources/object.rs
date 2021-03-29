@@ -1,11 +1,9 @@
 pub use crate::resources::bucket::Owner;
-use crate::{
-    error::{Error, GoogleResponse},
-    resources::object_access_control::ObjectAccessControl,
-};
-use futures::{stream, Stream, TryStream};
+use crate::resources::object_access_control::ObjectAccessControl;
+use futures::Stream;
+#[cfg(feature = "global-client")]
+use futures::TryStream;
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
-use reqwest::StatusCode;
 use std::collections::HashMap;
 
 /// A resource representing a file in Google Cloud Storage.
@@ -229,12 +227,12 @@ pub struct ObjectList {
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct RewriteResponse {
-    kind: String,
-    total_bytes_rewritten: String,
-    object_size: String,
-    done: bool,
-    resource: Object,
+pub(crate) struct RewriteResponse {
+    pub(crate) kind: String,
+    pub(crate) total_bytes_rewritten: String,
+    pub(crate) object_size: String,
+    pub(crate) done: bool,
+    pub(crate) resource: Object,
 }
 
 impl Object {
@@ -253,43 +251,24 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create(
         bucket: &str,
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Self> {
-        use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
-
-        // has its own url for some reason
-        const BASE_URL: &str = "https://www.googleapis.com/upload/storage/v1/b";
-        let url = &format!(
-            "{}/{}/o?uploadType=media&name={}",
-            BASE_URL,
-            percent_encode(&bucket),
-            percent_encode(&filename),
-        );
-        let mut headers = crate::get_headers().await?;
-        headers.insert(CONTENT_TYPE, mime_type.parse()?);
-        headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
-        let response = crate::CLIENT
-            .post(url)
-            .headers(headers)
-            .body(file)
-            .send()
-            .await?;
-        if response.status() == 200 {
-            Ok(serde_json::from_str(&response.text().await?)?)
-        } else {
-            Err(Error::new(&response.text().await?))
-        }
+        crate::CLOUD_CLIENT
+            .object()
+            .create(bucket, file, filename, mime_type)
+            .await
     }
 
     /// The synchronous equivalent of `Object::create`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_sync(
         bucket: &str,
         file: Vec<u8>,
@@ -316,6 +295,7 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create_streamed<S>(
         bucket: &str,
         stream: S,
@@ -328,41 +308,17 @@ impl Object {
         S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
         bytes::Bytes: From<S::Ok>,
     {
-        use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
-
-        // has its own url for some reason
-        const BASE_URL: &str = "https://www.googleapis.com/upload/storage/v1/b";
-        let url = &format!(
-            "{}/{}/o?uploadType=media&name={}",
-            BASE_URL,
-            percent_encode(&bucket),
-            percent_encode(&filename),
-        );
-        let mut headers = crate::get_headers().await?;
-        headers.insert(CONTENT_TYPE, mime_type.parse()?);
-        if let Some(length) = length.into() {
-            headers.insert(CONTENT_LENGTH, length.into());
-        }
-
-        let body = reqwest::Body::wrap_stream(stream);
-        let response = crate::CLIENT
-            .post(url)
-            .headers(headers)
-            .body(body)
-            .send()
-            .await?;
-        if response.status() == 200 {
-            Ok(serde_json::from_str(&response.text().await?)?)
-        } else {
-            Err(Error::new(&response.text().await?))
-        }
+        crate::CLOUD_CLIENT
+            .object()
+            .create_streamed(bucket, stream, length, filename, mime_type)
+            .await
     }
 
     /// The synchronous equivalent of `Object::create_streamed`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_streamed_sync<R: std::io::Read + Send + 'static>(
         bucket: &str,
         mut file: R,
@@ -372,9 +328,9 @@ impl Object {
     ) -> crate::Result<Self> {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
-            .map_err(|e| Error::Other(e.to_string()))?;
+            .map_err(|e| crate::Error::Other(e.to_string()))?;
 
-        let stream = stream::once(async { Ok::<_, Error>(buffer) });
+        let stream = futures::stream::once(async { Ok::<_, crate::Error>(buffer) });
 
         crate::runtime()?.block_on(Self::create_streamed(
             bucket, stream, length, filename, mime_type,
@@ -395,95 +351,23 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn list(
         bucket: &str,
         list_request: ListRequest,
-    ) -> Result<impl Stream<Item = Result<ObjectList, Error>> + '_, Error> {
-        enum ListState {
-            Start(ListRequest),
-            HasMore(ListRequest),
-            Done,
-        }
-        use ListState::*;
-        impl ListState {
-            fn into_has_more(self) -> Option<ListState> {
-                match self {
-                    Start(req) | HasMore(req) => Some(HasMore(req)),
-                    Done => None,
-                }
-            }
-
-            fn req_mut(&mut self) -> Option<&mut ListRequest> {
-                match self {
-                    Start(ref mut req) | HasMore(ref mut req) => Some(req),
-                    Done => return None,
-                }
-            }
-        }
-
-        Ok(stream::unfold(
-            ListState::Start(list_request),
-            move |mut state| async move {
-                let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
-                let headers = match crate::get_headers().await {
-                    Ok(h) => h,
-                    Err(e) => return Some((Err(e), state)),
-                };
-                let req = state.req_mut()?;
-                if req.max_results == Some(0) {
-                    return None;
-                }
-
-                let response = crate::CLIENT
-                    .get(&url)
-                    .query(req)
-                    .headers(headers)
-                    .send()
-                    .await;
-
-                let response = match response {
-                    Ok(r) if r.status() == 200 => r,
-                    Ok(r) => {
-                        let e = match r.json::<crate::error::GoogleErrorResponse>().await {
-                            Ok(err_res) => err_res.into(),
-                            Err(serde_err) => serde_err.into(),
-                        };
-                        return Some((Err(e), state));
-                    }
-                    Err(e) => return Some((Err(e.into()), state)),
-                };
-
-                let result: GoogleResponse<ObjectList> = match response.json().await {
-                    Ok(json) => json,
-                    Err(e) => return Some((Err(e.into()), state)),
-                };
-
-                let response_body = match result {
-                    GoogleResponse::Success(success) => success,
-                    GoogleResponse::Error(e) => return Some((Err(e.into()), state)),
-                };
-
-                let next_state = if let Some(ref page_token) = response_body.next_page_token {
-                    req.page_token = Some(page_token.clone());
-                    req.max_results = req
-                        .max_results
-                        .map(|rem| rem.saturating_sub(response_body.items.len()));
-                    state.into_has_more()?
-                } else {
-                    Done
-                };
-
-                Some((Ok(response_body), next_state))
-            },
-        ))
+    ) -> crate::Result<impl Stream<Item = crate::Result<ObjectList>> + '_> {
+        crate::CLOUD_CLIENT
+            .object()
+            .list(bucket, list_request)
+            .await
     }
 
     /// The synchronous equivalent of `Object::list`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
-    pub fn list_sync(bucket: &str, list_request: ListRequest) -> Result<Vec<ObjectList>, Error> {
+    #[cfg(all(feature = "global-client", feature = "sync"))]
+    pub fn list_sync(bucket: &str, list_request: ListRequest) -> crate::Result<Vec<ObjectList>> {
         use futures::TryStreamExt;
 
         let rt = crate::runtime()?;
@@ -502,31 +386,16 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn read(bucket: &str, file_name: &str) -> crate::Result<Self> {
-        let url = format!(
-            "{}/b/{}/o/{}",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(file_name),
-        );
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.object().read(bucket, file_name).await
     }
 
     /// The synchronous equivalent of `Object::read`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn read_sync(bucket: &str, file_name: &str) -> crate::Result<Self> {
         crate::runtime()?.block_on(Self::read(bucket, file_name))
     }
@@ -542,30 +411,19 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn download(bucket: &str, file_name: &str) -> Result<Vec<u8>, Error> {
-        let url = format!(
-            "{}/b/{}/o/{}?alt=media",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(file_name),
-        );
-        let resp = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?;
-        if resp.status() == StatusCode::NOT_FOUND {
-            Err(Error::Other(resp.text().await?))
-        } else {
-            Ok(resp.error_for_status()?.bytes().await?.to_vec())
-        }
+    #[cfg(feature = "global-client")]
+    pub async fn download(bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
+        crate::CLOUD_CLIENT
+            .object()
+            .download(bucket, file_name)
+            .await
     }
 
     /// The synchronous equivalent of `Object::download`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn download_sync(bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
         crate::runtime()?.block_on(Self::download(bucket, file_name))
     }
@@ -589,29 +447,15 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn download_streamed(
         bucket: &str,
         file_name: &str,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
-        use futures::{StreamExt, TryStreamExt};
-        let url = format!(
-            "{}/b/{}/o/{}?alt=media",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(file_name),
-        );
-        let response = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .error_for_status()?;
-        let size = response.content_length();
-        let bytes = response
-            .bytes_stream()
-            .map(|chunk| chunk.map(|c| futures::stream::iter(c.into_iter().map(Ok))))
-            .try_flatten();
-        Ok(SizedByteStream::new(bytes, size))
+        crate::CLOUD_CLIENT
+            .object()
+            .download_streamed(bucket, file_name)
+            .await
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -627,32 +471,16 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn update(&self) -> crate::Result<Self> {
-        let url = format!(
-            "{}/b/{}/o/{}",
-            crate::BASE_URL,
-            percent_encode(&self.bucket),
-            percent_encode(&self.name),
-        );
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .put(&url)
-            .headers(crate::get_headers().await?)
-            .json(&self)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT.object().update(self).await
     }
 
     /// The synchronous equivalent of `Object::download`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn update_sync(&self) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.update())
     }
@@ -668,31 +496,17 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn delete(bucket: &str, file_name: &str) -> Result<(), Error> {
-        let url = format!(
-            "{}/b/{}/o/{}",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(file_name),
-        );
-        let response = crate::CLIENT
-            .delete(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(Error::Google(response.json().await?))
-        }
+    #[cfg(feature = "global-client")]
+    pub async fn delete(bucket: &str, file_name: &str) -> crate::Result<()> {
+        crate::CLOUD_CLIENT.object().delete(bucket, file_name).await
     }
 
     /// The synchronous equivalent of `Object::delete`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
-    pub fn delete_sync(bucket: &str, file_name: &str) -> Result<(), Error> {
+    #[cfg(all(feature = "global-client", feature = "sync"))]
+    pub fn delete_sync(bucket: &str, file_name: &str) -> crate::Result<()> {
         crate::runtime()?.block_on(Self::delete(bucket, file_name))
     }
 
@@ -726,36 +540,23 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn compose(
         bucket: &str,
         req: &ComposeRequest,
         destination_object: &str,
     ) -> crate::Result<Self> {
-        let url = format!(
-            "{}/b/{}/o/{}/compose",
-            crate::BASE_URL,
-            percent_encode(&bucket),
-            percent_encode(&destination_object)
-        );
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .post(&url)
-            .headers(crate::get_headers().await?)
-            .json(req)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .object()
+            .compose(bucket, req, destination_object)
+            .await
     }
 
     /// The synchronous equivalent of `Object::compose`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn compose_sync(
         bucket: &str,
         req: &ComposeRequest,
@@ -777,37 +578,19 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn copy(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
-        use reqwest::header::CONTENT_LENGTH;
-
-        let url = format!(
-            "{base}/b/{sBucket}/o/{sObject}/copyTo/b/{dBucket}/o/{dObject}",
-            base = crate::BASE_URL,
-            sBucket = percent_encode(&self.bucket),
-            sObject = percent_encode(&self.name),
-            dBucket = percent_encode(&destination_bucket),
-            dObject = percent_encode(&path),
-        );
-        let mut headers = crate::get_headers().await?;
-        headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .post(&url)
-            .headers(headers)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .object()
+            .copy(self, destination_bucket, path)
+            .await
     }
 
     /// The synchronous equivalent of `Object::copy`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn copy_sync(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.copy(destination_bucket, path))
     }
@@ -832,37 +615,19 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn rewrite(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
-        use reqwest::header::CONTENT_LENGTH;
-
-        let url = format!(
-            "{base}/b/{sBucket}/o/{sObject}/rewriteTo/b/{dBucket}/o/{dObject}",
-            base = crate::BASE_URL,
-            sBucket = percent_encode(&self.bucket),
-            sObject = percent_encode(&self.name),
-            dBucket = percent_encode(destination_bucket),
-            dObject = percent_encode(path),
-        );
-        let mut headers = crate::get_headers().await?;
-        headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: GoogleResponse<RewriteResponse> = crate::CLIENT
-            .post(&url)
-            .headers(headers)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s.resource),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .object()
+            .rewrite(self, destination_bucket, path)
+            .await
     }
 
     /// The synchronous equivalent of `Object::rewrite`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn rewrite_sync(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.rewrite(destination_bucket, path))
     }
@@ -874,9 +639,10 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
     /// // for 50 seconds.
@@ -894,9 +660,10 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
     /// // for 50 seconds.
@@ -924,9 +691,10 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let url = obj1.upload_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
     /// // for 50 seconds.
@@ -944,10 +712,11 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     /// use std::collections::HashMap;
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
+    /// let client = Client::default();
+    /// let obj1 = client.object().read("my_bucket", "file1").await?;
     /// let mut custom_metadata = HashMap::new();
     /// custom_metadata.insert(String::from("field"), String::from("value"));
     /// let (url, headers) = obj1.upload_url_with(50, custom_metadata)?;
@@ -992,7 +761,7 @@ impl Object {
                 "duration may not be greater than 604800, but was {}",
                 duration
             );
-            return Err(Error::Other(msg));
+            return Err(crate::Error::Other(msg));
         }
 
         // 0 Sort and construct the canonical headers
@@ -1132,7 +901,7 @@ impl Object {
     }
 
     #[inline(always)]
-    fn sign_str(message: &str) -> Result<Vec<u8>, Error> {
+    fn sign_str(message: &str) -> crate::Result<Vec<u8>> {
         use openssl::{hash::MessageDigest, pkey::PKey, sign::Signer};
 
         let key = PKey::private_key_from_pem(crate::SERVICE_ACCOUNT.private_key.as_bytes())?;
@@ -1156,14 +925,15 @@ fn percent_encode_noslash(input: &str) -> String {
     utf8_percent_encode(input, NOSLASH_ENCODE_SET).to_string()
 }
 
-fn percent_encode(input: &str) -> String {
+pub(crate) fn percent_encode(input: &str) -> String {
     utf8_percent_encode(input, ENCODE_SET).to_string()
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "global-client"))]
 mod tests {
     use super::*;
-    use futures::{StreamExt, TryStreamExt};
+    use crate::Error;
+    use futures::{stream, StreamExt, TryStreamExt};
 
     #[tokio::test]
     async fn create() -> Result<(), Box<dyn std::error::Error>> {
@@ -1388,7 +1158,8 @@ mod tests {
         let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
         let obj = obj.rewrite(&bucket.name, "test-rewritten").await?;
         let url = obj.download_url(100)?;
-        let download = crate::CLIENT.head(&url).send().await?;
+        let client = reqwest::Client::default();
+        let download = client.head(&url).send().await?;
         assert_eq!(download.status().as_u16(), 200);
         Ok(())
     }
@@ -1408,7 +1179,8 @@ mod tests {
             let _obj = Object::create(&bucket.name, vec![0, 1], name, "text/plain").await?;
             let obj = Object::read(&bucket.name, &name).await.unwrap();
             let url = obj.download_url(100)?;
-            let download = crate::CLIENT.head(&url).send().await?;
+            let client = reqwest::Client::default();
+            let download = client.head(&url).send().await?;
             assert_eq!(download.status().as_u16(), 200);
         }
         Ok(())
@@ -1714,7 +1486,7 @@ pub struct SizedByteStream<S: Stream<Item = crate::Result<u8>> + Unpin> {
 }
 
 impl<S: Stream<Item = crate::Result<u8>> + Unpin> SizedByteStream<S> {
-    fn new(bytes: S, size: Option<u64>) -> Self {
+    pub(crate) fn new(bytes: S, size: Option<u64>) -> Self {
         Self { bytes, size }
     }
 }

@@ -1,5 +1,4 @@
 pub use crate::resources::common::{Entity, ProjectTeam, Role};
-use crate::{error::GoogleResponse, resources::common::ListResponse};
 
 /// The BucketAccessControl resource represents the Access Control Lists (ACLs) for buckets within
 /// Google Cloud Storage. ACLs let you specify who has access to your data and to what extent.
@@ -111,30 +110,22 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn create(
         bucket: &str,
         new_bucket_access_control: &NewBucketAccessControl,
     ) -> crate::Result<Self> {
-        let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .post(&url)
-            .headers(crate::get_headers().await?)
-            .json(new_bucket_access_control)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .bucket_access_control()
+            .create(bucket, new_bucket_access_control)
+            .await
     }
 
     /// The synchronous equivalent of `BucketAccessControl::create`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn create_sync(
         bucket: &str,
         new_bucket_access_control: &NewBucketAccessControl,
@@ -158,26 +149,19 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn list(bucket: &str) -> crate::Result<Vec<Self>> {
-        let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
-        let result: GoogleResponse<ListResponse<Self>> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s.items),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .bucket_access_control()
+            .list(bucket)
+            .await
     }
 
     /// The synchronous equivalent of `BucketAccessControl::list`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn list_sync(bucket: &str) -> crate::Result<Vec<Self>> {
         crate::runtime()?.block_on(Self::list(bucket))
     }
@@ -198,26 +182,19 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn read(bucket: &str, entity: &Entity) -> crate::Result<Self> {
-        let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, bucket, entity);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .get(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .bucket_access_control()
+            .read(bucket, entity)
+            .await
     }
 
     /// The synchronous equivalent of `BucketAccessControl::read`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn read_sync(bucket: &str, entity: &Entity) -> crate::Result<Self> {
         crate::runtime()?.block_on(Self::read(bucket, entity))
     }
@@ -240,27 +217,19 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn update(&self) -> crate::Result<Self> {
-        let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
-        let result: GoogleResponse<Self> = crate::CLIENT
-            .put(&url)
-            .headers(crate::get_headers().await?)
-            .json(self)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        crate::CLOUD_CLIENT
+            .bucket_access_control()
+            .update(self)
+            .await
     }
 
     /// The synchronous equivalent of `BucketAccessControl::update`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn update_sync(&self) -> crate::Result<Self> {
         crate::runtime()?.block_on(self.update())
     }
@@ -282,31 +251,25 @@ impl BucketAccessControl {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "global-client")]
     pub async fn delete(self) -> crate::Result<()> {
-        let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, self.bucket, self.entity);
-        let response = crate::CLIENT
-            .delete(&url)
-            .headers(crate::get_headers().await?)
-            .send()
-            .await?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(crate::Error::Google(response.json().await?))
-        }
+        crate::CLOUD_CLIENT
+            .bucket_access_control()
+            .delete(self)
+            .await
     }
 
     /// The synchronous equivalent of `BucketAccessControl::delete`.
     ///
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     pub fn delete_sync(self) -> crate::Result<()> {
         crate::runtime()?.block_on(self.delete())
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "global-client"))]
 mod tests {
     use super::*;
 
@@ -366,7 +329,7 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "sync")]
+    #[cfg(all(feature = "global-client", feature = "sync"))]
     mod sync {
         use super::*;
 
