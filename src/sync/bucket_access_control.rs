@@ -1,6 +1,7 @@
 use crate::bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl};
 
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
+#[derive(Debug)]
 pub struct BucketAccessControlClient<'a>(pub(super) &'a super::Client);
 
 impl<'a> BucketAccessControlClient<'a> {

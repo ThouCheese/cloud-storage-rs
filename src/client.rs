@@ -1,5 +1,6 @@
 //! Clients for Google Cloud Storage endpoints.
 
+use std::fmt;
 use tokio::sync::Mutex;
 
 use crate::token::Token;
@@ -24,6 +25,15 @@ pub struct Client {
 
     /// Static `Token` struct that caches
     token_cache: Mutex<Token>,
+}
+
+impl fmt::Debug for Client {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Client")
+            .field("client", &self.client)
+            .field("token_cache", &"<opaque>")
+            .finish()
+    }
 }
 
 impl Default for Client {

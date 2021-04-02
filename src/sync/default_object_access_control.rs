@@ -4,6 +4,7 @@ use crate::{
 };
 
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
+#[derive(Debug)]
 pub struct DefaultObjectAccessControlClient<'a>(pub(super) &'a super::Client);
 
 impl<'a> DefaultObjectAccessControlClient<'a> {

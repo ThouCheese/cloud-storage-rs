@@ -15,6 +15,7 @@ pub use object::ObjectClient;
 pub use object_access_control::ObjectAccessControlClient;
 
 /// The primary synchronous entrypoint to perform operations with Google Cloud Storage.
+#[derive(Debug)]
 pub struct Client {
     runtime: tokio::runtime::Runtime,
     client: crate::client::Client,

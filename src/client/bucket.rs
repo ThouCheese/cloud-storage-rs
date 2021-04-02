@@ -6,6 +6,7 @@ use crate::{
 };
 
 /// Operations on [`Bucket`]()s.
+#[derive(Debug)]
 pub struct BucketClient<'a>(pub(super) &'a super::Client);
 
 impl<'a> BucketClient<'a> {

@@ -4,6 +4,7 @@ use crate::{
 };
 
 /// Operations on [`HmacKey`](HmacKey)s.
+#[derive(Debug)]
 pub struct HmacKeyClient<'a>(pub(super) &'a super::Client);
 
 impl<'a> HmacKeyClient<'a> {
