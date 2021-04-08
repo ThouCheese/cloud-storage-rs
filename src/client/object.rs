@@ -8,6 +8,7 @@ use crate::{
 };
 
 /// Operations on [`Object`](Object)s.
+#[derive(Debug)]
 pub struct ObjectClient<'a>(pub(super) &'a super::Client);
 
 impl<'a> ObjectClient<'a> {
