@@ -1487,7 +1487,7 @@ pub struct SizedByteStream<S: Stream<Item = crate::Result<u8>> + Unpin> {
 
 impl<S: Stream<Item = crate::Result<u8>> + Unpin> SizedByteStream<S> {
     pub(crate) fn new(bytes: S, size: Option<u64>) -> Self {
-        Self { bytes, size }
+        Self { size, bytes }
     }
 }
 
