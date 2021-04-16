@@ -33,6 +33,7 @@ pub enum SingleRegion {
 }
 
 /// All options in North America.
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum NALocation {
     /// Store the files in Montréal.
@@ -56,6 +57,7 @@ pub enum NALocation {
 }
 
 /// All options in South America.
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum SALocation {
     /// Store the files in Soa Paulo.

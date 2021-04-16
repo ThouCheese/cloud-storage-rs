@@ -1,9 +1,8 @@
-use futures::Stream;
-
 use crate::{
     object::{ComposeRequest, ObjectList},
     ListRequest, Object,
 };
+use futures::TryStreamExt;
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
@@ -84,10 +83,10 @@ impl<'a> ObjectClient<'a> {
         &self,
         bucket: &'a str,
         list_request: ListRequest,
-    ) -> crate::Result<impl Stream<Item = crate::Result<ObjectList>> + 'a> {
-        self.0
-            .runtime
-            .block_on(self.0.client.object().list(bucket, list_request))
+    ) -> crate::Result<Vec<ObjectList>> {
+        let rt = &self.0.runtime;
+        let listed = rt.block_on(self.0.client.object().list(bucket, list_request))?;
+        rt.block_on(listed.try_collect())
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
