@@ -4,13 +4,17 @@ use crate::{
     error::GoogleResponse,
     object_access_control::{NewObjectAccessControl, ObjectAccessControl},
     resources::common::ListResponse,
+    token::RefreshableToken,
 };
 
 /// Operations on [`ObjectAccessControl`](ObjectAccessControl)s.
 #[derive(Debug)]
-pub struct ObjectAccessControlClient<'a>(pub(super) &'a super::Client);
+pub struct ObjectAccessControlClient<'a, R: RefreshableToken>(pub(super) &'a super::Client<R>);
 
-impl<'a> ObjectAccessControlClient<'a> {
+impl<'a, R> ObjectAccessControlClient<'a, R>
+where
+    R: RefreshableToken,
+{
     /// Creates a new ACL entry on the specified `object`.
     ///
     /// ### Important

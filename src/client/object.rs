@@ -4,6 +4,7 @@ use reqwest::StatusCode;
 use crate::{
     error::GoogleResponse,
     object::{percent_encode, ComposeRequest, ObjectList, RewriteResponse, SizedByteStream},
+    token::RefreshableToken,
     ListRequest, Object,
 };
 
@@ -12,9 +13,12 @@ const BASE_URL: &str = "https://storage.googleapis.com/upload/storage/v1/b";
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
-pub struct ObjectClient<'a>(pub(super) &'a super::Client);
+pub struct ObjectClient<'a, R: RefreshableToken>(pub(super) &'a super::Client<R>);
 
-impl<'a> ObjectClient<'a> {
+impl<'a, R> ObjectClient<'a, R>
+where
+    R: RefreshableToken,
+{
     /// Create a new object.
     /// Upload a file as that is loaded in memory to google cloud storage, where it will be
     /// interpreted according to the mime type you specified.

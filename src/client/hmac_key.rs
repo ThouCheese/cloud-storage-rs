@@ -1,13 +1,17 @@
 use crate::{
     error::GoogleResponse,
     hmac_key::{HmacKey, HmacMeta, HmacState},
+    token::RefreshableToken,
 };
 
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]
-pub struct HmacKeyClient<'a>(pub(super) &'a super::Client);
+pub struct HmacKeyClient<'a, R: RefreshableToken>(pub(super) &'a super::Client<R>);
 
-impl<'a> HmacKeyClient<'a> {
+impl<'a, R> HmacKeyClient<'a, R>
+where
+    R: RefreshableToken,
+{
     /// Creates a new HMAC key for the specified service account.
     ///
     /// The authenticated user must have `storage.hmacKeys.create` permission for the project in

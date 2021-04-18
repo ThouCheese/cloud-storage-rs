@@ -1,14 +1,18 @@
 use crate::{
     object::{ComposeRequest, ObjectList},
+    token::RefreshableToken,
     ListRequest, Object,
 };
 use futures::TryStreamExt;
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
-pub struct ObjectClient<'a>(pub(super) &'a super::Client);
+pub struct ObjectClient<'a, T: RefreshableToken>(pub(super) &'a super::Client<T>);
 
-impl<'a> ObjectClient<'a> {
+impl<'a, T> ObjectClient<'a, T>
+where
+    T: RefreshableToken,
+{
     /// Create a new object.
     /// Upload a file as that is loaded in memory to google cloud storage, where it will be
     /// interpreted according to the mime type you specified.
