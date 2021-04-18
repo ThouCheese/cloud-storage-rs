@@ -1,8 +1,10 @@
+use std::borrow::Borrow;
+
 /// This struct contains a token, an expiry, and an access scope.
 pub struct Token {
     // this field contains the JWT and the expiry thereof. They are in the same Option because if
     // one of them is `Some`, we require that the other be `Some` as well.
-    token: Option<(String, u64)>,
+    token: tokio::sync::RwLock<Option<(String, u64)>>,
     // store the access scope for later use if we need to refresh the token
     access_scope: String,
 }
@@ -26,26 +28,24 @@ struct TokenResponse {
 impl Token {
     pub fn new(scope: &str) -> Self {
         Self {
-            token: None,
+            token: tokio::sync::RwLock::new(None),
             access_scope: scope.to_string(),
         }
     }
 
     // TODO: should not need to use mem::take and then place back when the token is valid
-    pub async fn get(&mut self, client: &reqwest::Client) -> crate::Result<&str> {
-        match std::mem::take(&mut self.token) {
-            Some((token, exp)) if exp > now() => {
-                self.token = Some((token, exp));
-                Ok(&self.token.as_ref().unwrap().0)
-            }
+    pub async fn get(&self, client: &reqwest::Client) -> crate::Result<String> {
+        match self.token.read().await.as_ref() {
+            Some((token, exp)) if *exp > now() => Ok(token.to_owned()),
             _ => self.retrieve(client).await,
         }
     }
 
-    async fn retrieve(&mut self, client: &reqwest::Client) -> crate::Result<&str> {
-        self.token = Some(Self::get_token(client, &self.access_scope).await?);
-        match self.token {
-            Some(ref token) => Ok(&token.0),
+    async fn retrieve(&self, client: &reqwest::Client) -> crate::Result<String> {
+        let mut token = self.token.write().await;
+        *token = Some(Self::get_token(client, &self.access_scope).await?);
+        match token.as_ref() {
+            Some(token) => Ok(token.0.to_owned()),
             None => unreachable!(),
         }
     }
