@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use lazy_static::__Deref;
 
 /// This struct contains a token, an expiry, and an access scope.
 pub struct Token {
@@ -7,6 +7,58 @@ pub struct Token {
     token: tokio::sync::RwLock<Option<(String, u64)>>,
     // store the access scope for later use if we need to refresh the token
     access_scope: String,
+}
+
+#[async_trait::async_trait]
+pub trait RefreshableToken: Sync {
+    async fn get_inner_token(&self) -> Option<(String, u64)>;
+    async fn update_inner_token(&self, token: (String, u64)) -> crate::Result<()>;
+    async fn get_scope(&self) -> &str;
+
+    async fn get(&self, client: &reqwest::Client) -> crate::Result<String> {
+        match self.get_inner_token().await {
+            Some((token, exp)) if exp > now() => Ok(token),
+            _ => {
+                let scope = self.get_scope().await;
+                let token = Self::fetch_token(client, scope).await?;
+                self.update_inner_token(token).await?;
+
+                Ok(self.get_inner_token().await.unwrap().0)
+            }
+        }
+    }
+
+    async fn fetch_token(client: &reqwest::Client, scope: &str) -> crate::Result<(String, u64)> {
+        let now = now();
+        let exp = now + 3600;
+
+        let claims = Claims {
+            iss: crate::SERVICE_ACCOUNT.client_email.clone(),
+            scope: scope.into(),
+            aud: "https://www.googleapis.com/oauth2/v4/token".to_string(),
+            exp,
+            iat: now,
+        };
+        let header = jsonwebtoken::Header {
+            alg: jsonwebtoken::Algorithm::RS256,
+            ..Default::default()
+        };
+        let private_key_bytes = crate::SERVICE_ACCOUNT.private_key.as_bytes();
+        let private_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key_bytes)?;
+        let jwt = jsonwebtoken::encode(&header, &claims, &private_key)?;
+        let body = [
+            ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
+            ("assertion", &jwt),
+        ];
+        let response: TokenResponse = client
+            .post("https://www.googleapis.com/oauth2/v4/token")
+            .form(&body)
+            .send()
+            .await?
+            .json()
+            .await?;
+        Ok((response.access_token, exp))
+    }
 }
 
 #[derive(serde::Serialize)]
@@ -80,6 +132,19 @@ impl Token {
             .json()
             .await?;
         Ok((response.access_token, exp))
+    }
+}
+#[async_trait::async_trait]
+impl RefreshableToken for Token {
+    async fn get_scope(&self) -> &str {
+        self.access_scope.as_ref()
+    }
+    async fn get_inner_token(&self) -> Option<(String, u64)> {
+        self.token.read().await.deref().clone()
+    }
+    async fn update_inner_token(&self, token: (String, u64)) -> crate::Result<()> {
+        *self.token.write().await = Some(token);
+        Ok(())
     }
 }
 
