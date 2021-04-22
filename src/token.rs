@@ -9,12 +9,18 @@ pub struct Token {
     access_scope: String,
 }
 
+/// Trait that refreshes a token when it is expired
 #[async_trait::async_trait]
 pub trait RefreshableToken: Sync {
+    /// Getter for the token
     async fn get_inner_token(&self) -> Option<(String, u64)>;
+    /// Updates the token
     async fn update_inner_token(&self, token: (String, u64)) -> crate::Result<()>;
+    /// Getter for the scope
     async fn get_scope(&self) -> &str;
 
+    /// Fetches then returns an unexpired token
+    /// Updates the token when it is expired
     async fn get(&self, client: &reqwest::Client) -> crate::Result<String> {
         match self.get_inner_token().await {
             Some((token, exp)) if exp > now() => Ok(token),
@@ -28,6 +34,7 @@ pub trait RefreshableToken: Sync {
         }
     }
 
+    /// Fetches and returns the token using the service account
     async fn fetch_token(client: &reqwest::Client, scope: &str) -> crate::Result<(String, u64)> {
         let now = now();
         let exp = now + 3600;
