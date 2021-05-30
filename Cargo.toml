@@ -1,6 +1,6 @@
 [package]
 name = "cloud-storage"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["Luuk Wester <luuk.wester@gmail.com>"]
 edition = "2018"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
@@ -35,7 +35,7 @@ chrono =           { version = "0.4",  default-features = false, features = ["se
 hex =              { version = "0.4",  default-features = false, features = ["alloc"] }
 tokio =            { version = "1.0",  default-features = false, features = ["macros", "rt"] }
 futures =          { version = "0.3",  default_features = false, features = ["alloc"] }
-bytes =            { version = "1.0",  default_features = false }
+bytes =            { version = "1.0",  default-features = false }
 
 [package.metadata.docs.rs]
 features = ["global-client", "sync"]

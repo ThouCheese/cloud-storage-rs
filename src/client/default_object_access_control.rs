@@ -1,5 +1,6 @@
 use crate::{
     bucket_access_control::Entity,
+    object::percent_encode,
     default_object_access_control::{DefaultObjectAccessControl, NewDefaultObjectAccessControl},
     error::GoogleResponse,
     resources::common::ListResponse,
@@ -39,7 +40,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
     ) -> crate::Result<DefaultObjectAccessControl> {
-        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
+        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, percent_encode(bucket));
         let result: GoogleResponse<DefaultObjectAccessControl> = self
             .0
             .client
@@ -77,7 +78,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// # }
     /// ```
     pub async fn list(&self, bucket: &str) -> crate::Result<Vec<DefaultObjectAccessControl>> {
-        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, bucket);
+        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, percent_encode(bucket));
         let result: GoogleResponse<ListResponse<DefaultObjectAccessControl>> = self
             .0
             .client
@@ -129,8 +130,8 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
             crate::BASE_URL,
-            bucket,
-            entity
+            percent_encode(bucket),
+            percent_encode(&entity.to_string()),
         );
         let result: GoogleResponse<DefaultObjectAccessControl> = self
             .0
@@ -176,8 +177,8 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
             crate::BASE_URL,
-            default_object_access_control.bucket,
-            default_object_access_control.entity
+            percent_encode(&default_object_access_control.bucket),
+            percent_encode(&default_object_access_control.entity.to_string()),
         );
         let result: GoogleResponse<DefaultObjectAccessControl> = self
             .0
@@ -223,8 +224,8 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/defaultObjectAcl/{}",
             crate::BASE_URL,
-            default_object_access_control.bucket,
-            default_object_access_control.entity
+            percent_encode(&default_object_access_control.bucket),
+            percent_encode(&default_object_access_control.entity.to_string()),
         );
         let response = self
             .0

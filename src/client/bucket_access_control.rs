@@ -1,5 +1,6 @@
 use crate::{
     bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl},
+    object::percent_encode,
     error::GoogleResponse,
     resources::common::ListResponse,
 };
@@ -38,7 +39,11 @@ impl<'a> BucketAccessControlClient<'a> {
         bucket: &str,
         new_bucket_access_control: &NewBucketAccessControl,
     ) -> crate::Result<BucketAccessControl> {
-        let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
+        let url = dbg!(format!(
+            "{}/b/{}/acl",
+            crate::BASE_URL,
+            percent_encode(bucket),
+        ));
         let result: GoogleResponse<BucketAccessControl> = self
             .0
             .client
@@ -74,7 +79,7 @@ impl<'a> BucketAccessControlClient<'a> {
     /// # }
     /// ```
     pub async fn list(&self, bucket: &str) -> crate::Result<Vec<BucketAccessControl>> {
-        let url = format!("{}/b/{}/acl", crate::BASE_URL, bucket);
+        let url = format!("{}/b/{}/acl", crate::BASE_URL, percent_encode(bucket));
         let result: GoogleResponse<ListResponse<BucketAccessControl>> = self
             .0
             .client
@@ -109,7 +114,7 @@ impl<'a> BucketAccessControlClient<'a> {
     /// # }
     /// ```
     pub async fn read(&self, bucket: &str, entity: &Entity) -> crate::Result<BucketAccessControl> {
-        let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, bucket, entity);
+        let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, percent_encode(bucket), percent_encode(&entity.to_string()));
         let result: GoogleResponse<BucketAccessControl> = self
             .0
             .client
@@ -152,8 +157,8 @@ impl<'a> BucketAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/acl/{}",
             crate::BASE_URL,
-            bucket_access_control.bucket,
-            bucket_access_control.entity
+            percent_encode(&bucket_access_control.bucket),
+            percent_encode(&bucket_access_control.entity.to_string()),
         );
         let result: GoogleResponse<BucketAccessControl> = self
             .0
@@ -194,8 +199,8 @@ impl<'a> BucketAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/acl/{}",
             crate::BASE_URL,
-            bucket_access_control.bucket,
-            bucket_access_control.entity
+            percent_encode(&bucket_access_control.bucket),
+            percent_encode(&bucket_access_control.entity.to_string()),
         );
         let response = self
             .0

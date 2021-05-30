@@ -1,5 +1,6 @@
 use crate::{
     bucket_access_control::Entity,
+    object::percent_encode,
     error::GoogleResponse,
     object_access_control::{NewObjectAccessControl, ObjectAccessControl},
     resources::common::ListResponse,
@@ -22,7 +23,12 @@ impl<'a> ObjectAccessControlClient<'a> {
         object: &str,
         new_object_access_control: &NewObjectAccessControl,
     ) -> crate::Result<ObjectAccessControl> {
-        let url = format!("{}/b/{}/o/{}/acl", crate::BASE_URL, bucket, object);
+        let url = format!(
+            "{}/b/{}/o/{}/acl",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(object),
+        );
         let result: GoogleResponse<ObjectAccessControl> = self
             .0
             .client
@@ -50,7 +56,12 @@ impl<'a> ObjectAccessControlClient<'a> {
         bucket: &str,
         object: &str,
     ) -> crate::Result<Vec<ObjectAccessControl>> {
-        let url = format!("{}/b/{}/o/{}/acl", crate::BASE_URL, bucket, object);
+        let url = format!(
+            "{}/b/{}/o/{}/acl",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(object),
+        );
         let result: GoogleResponse<ListResponse<ObjectAccessControl>> = self
             .0
             .client
@@ -81,9 +92,9 @@ impl<'a> ObjectAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/o/{}/acl/{}",
             crate::BASE_URL,
-            bucket,
-            object,
-            entity
+            percent_encode(bucket),
+            percent_encode(object),
+            percent_encode(&entity.to_string())
         );
         let result: GoogleResponse<ObjectAccessControl> = self
             .0
@@ -113,9 +124,9 @@ impl<'a> ObjectAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/o/{}/acl/{}",
             crate::BASE_URL,
-            object_access_control.bucket,
-            object_access_control.object,
-            object_access_control.entity,
+            percent_encode(&object_access_control.bucket),
+            percent_encode(&object_access_control.object),
+            percent_encode(&object_access_control.entity.to_string()),
         );
         let result: GoogleResponse<ObjectAccessControl> = self
             .0
@@ -143,9 +154,9 @@ impl<'a> ObjectAccessControlClient<'a> {
         let url = format!(
             "{}/b/{}/o/{}/acl/{}",
             crate::BASE_URL,
-            object_access_control.bucket,
-            object_access_control.object,
-            object_access_control.entity,
+            percent_encode(&object_access_control.bucket),
+            percent_encode(&object_access_control.object),
+            percent_encode(&object_access_control.entity.to_string()),
         );
         let response = self
             .0

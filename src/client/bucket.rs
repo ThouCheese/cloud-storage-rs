@@ -1,5 +1,6 @@
 use crate::{
     bucket::{IamPolicy, TestIamPermission},
+    object::percent_encode,
     error::GoogleResponse,
     resources::common::ListResponse,
     Bucket, NewBucket,
@@ -113,7 +114,11 @@ impl<'a> BucketClient<'a> {
     /// # }
     /// ```
     pub async fn read(&self, name: &str) -> crate::Result<Bucket> {
-        let url = format!("{}/b/{}", crate::BASE_URL, name);
+        let url = format!(
+            "{}/b/{}",
+            crate::BASE_URL,
+            percent_encode(name),
+        );
         let result: GoogleResponse<Bucket> = self
             .0
             .client
@@ -158,7 +163,11 @@ impl<'a> BucketClient<'a> {
     /// # }
     /// ```
     pub async fn update(&self, bucket: &Bucket) -> crate::Result<Bucket> {
-        let url = format!("{}/b/{}", crate::BASE_URL, bucket.name);
+        let url = format!(
+            "{}/b/{}",
+            crate::BASE_URL,
+            percent_encode(&bucket.name),
+        );
         let result: GoogleResponse<Bucket> = self
             .0
             .client
@@ -199,7 +208,7 @@ impl<'a> BucketClient<'a> {
     /// # }
     /// ```
     pub async fn delete(&self, bucket: Bucket) -> crate::Result<()> {
-        let url = format!("{}/b/{}", crate::BASE_URL, bucket.name);
+        let url = format!("{}/b/{}", crate::BASE_URL, percent_encode(&bucket.name));
         let response = self
             .0
             .client
@@ -237,7 +246,7 @@ impl<'a> BucketClient<'a> {
     /// # }
     /// ```
     pub async fn get_iam_policy(&self, bucket: &Bucket) -> crate::Result<IamPolicy> {
-        let url = format!("{}/b/{}/iam", crate::BASE_URL, bucket.name);
+        let url = format!("{}/b/{}/iam", crate::BASE_URL, percent_encode(&bucket.name));
         let result: GoogleResponse<IamPolicy> = self
             .0
             .client
@@ -292,7 +301,7 @@ impl<'a> BucketClient<'a> {
         bucket: &Bucket,
         iam: &IamPolicy,
     ) -> crate::Result<IamPolicy> {
-        let url = format!("{}/b/{}/iam", crate::BASE_URL, bucket.name);
+        let url = format!("{}/b/{}/iam", crate::BASE_URL, percent_encode(&bucket.name));
         let result: GoogleResponse<IamPolicy> = self
             .0
             .client
@@ -333,7 +342,7 @@ impl<'a> BucketClient<'a> {
                 "tested permission must not be `storage.buckets.list` or `storage.buckets.create`",
             ));
         }
-        let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, bucket.name);
+        let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, percent_encode(&bucket.name));
         let result: GoogleResponse<TestIamPermission> = self
             .0
             .client
