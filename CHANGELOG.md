@@ -6,3 +6,4 @@ shepmaster. Big thanks!
 
 # 0.10
 Small fix to the public interface of `sync::ObjectClient` that was not properly sync.
+Update cloud storage to use the new url, `www.googleapis.com` => `storage.googleapis.com`
