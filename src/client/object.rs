@@ -7,6 +7,9 @@ use crate::{
     ListRequest, Object,
 };
 
+// Object uploads has its own url for some reason
+const BASE_URL: &str = "https://storage.googleapis.com/upload/storage/v1/b";
+
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
 pub struct ObjectClient<'a>(pub(super) &'a super::Client);
@@ -38,8 +41,6 @@ impl<'a> ObjectClient<'a> {
     ) -> crate::Result<Object> {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
-        // has its own url for some reason
-        const BASE_URL: &str = "https://www.googleapis.com/upload/storage/v1/b";
         let url = &format!(
             "{}/{}/o?uploadType=media&name={}",
             BASE_URL,
@@ -98,8 +99,6 @@ impl<'a> ObjectClient<'a> {
     {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
-        // has its own url for some reason
-        const BASE_URL: &str = "https://www.googleapis.com/upload/storage/v1/b";
         let url = &format!(
             "{}/{}/o?uploadType=media&name={}",
             BASE_URL,

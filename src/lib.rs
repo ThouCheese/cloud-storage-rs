@@ -130,7 +130,7 @@ lazy_static::lazy_static! {
 /// A type alias where the error is set to be `cloud_storage::Error`.
 pub type Result<T> = std::result::Result<T, crate::Error>;
 
-const BASE_URL: &str = "https://www.googleapis.com/storage/v1";
+const BASE_URL: &str = "https://storage.googleapis.com/storage/v1";
 
 fn from_str<'de, T, D>(deserializer: D) -> std::result::Result<T, D::Error>
 where
