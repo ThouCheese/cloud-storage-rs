@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::token::{Token, TokenCache};
+use crate::token::TokenCache;
 
 mod bucket;
 mod bucket_access_control;
@@ -38,16 +38,16 @@ where
     }
 }
 
-impl Default for Client<Token> {
+impl<T: TokenCache + Default> Default for Client<T> {
     fn default() -> Self {
         Self {
             client: Default::default(),
-            token_cache: Token::new("https://www.googleapis.com/auth/devstorage.full_control"),
+            token_cache: T::default(),
         }
     }
 }
 
-impl Client<Token> {
+impl<T: TokenCache + Default> Client<T> {
     /// Constructs a client
     pub fn new() -> Self {
         Default::default()
