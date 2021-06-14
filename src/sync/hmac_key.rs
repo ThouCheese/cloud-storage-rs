@@ -1,15 +1,15 @@
 use crate::{
     hmac_key::{HmacKey, HmacMeta, HmacState},
-    token::RefreshableToken,
+    token::TokenCache,
 };
 
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]
-pub struct HmacKeyClient<'a, R: RefreshableToken>(pub(super) &'a super::Client<R>);
+pub struct HmacKeyClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
 
 impl<'a, R> HmacKeyClient<'a, R>
 where
-    R: RefreshableToken,
+    R: TokenCache,
 {
     /// Creates a new HMAC key for the specified service account.
     ///

@@ -1,16 +1,16 @@
 use crate::{
     bucket::{IamPolicy, TestIamPermission},
-    token::RefreshableToken,
+    token::TokenCache,
     Bucket, NewBucket,
 };
 
 /// Operations on [`Bucket`]()s.
 #[derive(Debug)]
-pub struct BucketClient<'a, R: RefreshableToken>(pub(super) &'a super::Client<R>);
+pub struct BucketClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
 
 impl<'a, R> BucketClient<'a, R>
 where
-    R: RefreshableToken,
+    R: TokenCache,
 {
     /// Creates a new `Bucket`. There are many options that you can provide for creating a new
     /// bucket, so the `NewBucket` resource contains all of them. Note that `NewBucket` implements

@@ -1,17 +1,17 @@
 use crate::{
     object::{ComposeRequest, ObjectList},
-    token::RefreshableToken,
+    token::TokenCache,
     ListRequest, Object,
 };
 use futures::TryStreamExt;
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
-pub struct ObjectClient<'a, T: RefreshableToken>(pub(super) &'a super::Client<T>);
+pub struct ObjectClient<'a, T: TokenCache>(pub(super) &'a super::Client<T>);
 
 impl<'a, T> ObjectClient<'a, T>
 where
-    T: RefreshableToken,
+    T: TokenCache,
 {
     /// Create a new object.
     /// Upload a file as that is loaded in memory to google cloud storage, where it will be

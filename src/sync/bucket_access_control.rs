@@ -1,15 +1,15 @@
 use crate::{
     bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl},
-    token::RefreshableToken,
+    token::TokenCache,
 };
 
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
 #[derive(Debug)]
-pub struct BucketAccessControlClient<'a, R: RefreshableToken>(pub(super) &'a super::Client<R>);
+pub struct BucketAccessControlClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
 
 impl<'a, R> BucketAccessControlClient<'a, R>
 where
-    R: RefreshableToken,
+    R: TokenCache,
 {
     /// Create a new `BucketAccessControl` using the provided `NewBucketAccessControl`, related to
     /// the `Bucket` provided by the `bucket_name` argument.

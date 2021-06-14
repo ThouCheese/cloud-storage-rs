@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::token::{RefreshableToken, Token};
+use crate::token::{Token, TokenCache};
 
 mod bucket;
 mod bucket_access_control;
@@ -19,7 +19,7 @@ pub use object::ObjectClient;
 pub use object_access_control::ObjectAccessControlClient;
 
 /// The primary entrypoint to perform operations with Google Cloud Storage.
-pub struct Client<R: RefreshableToken> {
+pub struct Client<R: TokenCache> {
     client: reqwest::Client,
 
     /// Static `Token` struct that caches
@@ -28,7 +28,7 @@ pub struct Client<R: RefreshableToken> {
 
 impl<R> fmt::Debug for Client<R>
 where
-    R: RefreshableToken,
+    R: TokenCache,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Client")
@@ -56,7 +56,7 @@ impl Client<Token> {
 
 impl<R> Client<R>
 where
-    R: RefreshableToken,
+    R: TokenCache,
 {
     /// Initializer with a provided refreshable token
     pub fn with_token_cache(token_cache: R) -> Self {

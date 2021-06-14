@@ -1,16 +1,16 @@
 use crate::{
     bucket_access_control::Entity,
     object_access_control::{NewObjectAccessControl, ObjectAccessControl},
-    token::RefreshableToken,
+    token::TokenCache,
 };
 
 /// Operations on [`ObjectAccessControl`](ObjectAccessControl)s.
 #[derive(Debug)]
-pub struct ObjectAccessControlClient<'a, R: RefreshableToken>(pub(super) &'a super::Client<R>);
+pub struct ObjectAccessControlClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
 
 impl<'a, R> ObjectAccessControlClient<'a, R>
 where
-    R: RefreshableToken,
+    R: TokenCache,
 {
     /// Creates a new ACL entry on the specified `object`.
     ///
