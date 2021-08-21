@@ -111,7 +111,8 @@ pub(crate) enum GoogleResponse<T> {
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename = "camelCase")]
 pub struct GoogleErrorResponse {
-    error: ErrorList,
+    /// A container for the error information.
+    pub error: ErrorList,
 }
 
 impl GoogleErrorResponse {
@@ -134,35 +135,60 @@ impl std::fmt::Display for GoogleErrorResponse {
     }
 }
 
-impl std::error::Error for GoogleErrorResponse {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
+impl std::error::Error for GoogleErrorResponse {}
 
+/// A container for the error information.
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename = "camelCase")]
-struct ErrorList {
-    errors: Vec<GoogleError>,
-    code: u16,
-    message: String,
+pub struct ErrorList {
+    /// A container for the error details.
+    pub errors: Vec<GoogleError>,
+    /// An HTTP status code value, without the textual description.
+    ///
+    /// Example values include: 400 (Bad Request), 401 (Unauthorized), and 404 (Not Found).
+    pub code: u16,
+    /// Description of the error. Same as errors.message.
+    pub message: String,
 }
 
 /// Google Error structure
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename = "camelCase")]
 pub struct GoogleError {
-    domain: String,
-    reason: Reason,
-    message: String,
-    location_type: Option<String>,
-    location: Option<String>,
+    /// The scope of the error. Example values include: global and push.
+    pub domain: String,
+    /// Example values include `invalid`, `invalidParameter`, and `required`.
+    pub reason: Reason,
+    /// Description of the error.
+    ///
+    /// Example values include `Invalid argument`, `Login required`, and `Required parameter:
+    /// project`.
+    pub message: String,
+    /// The location or part of the request that caused the error. Use with `location` to pinpoint
+    /// the error. For example, if you specify an invalid value for a parameter, the `locationType`
+    /// will be parameter and the location will be the name of the parameter.
+    /// 
+    /// Example values include `header` and `parameter`.
+    pub location_type: Option<String>,
+    /// The specific item within the `locationType` that caused the error. For example, if you
+    /// specify an invalid value for a parameter, the `location` will be the name of the parameter.
+    ///
+    /// Example values include: `Authorization`, `project`, and `projection`.
+    pub location: Option<String>,
 }
 
+impl std::fmt::Display for GoogleError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for GoogleError {}
+
 impl GoogleError {
-    /// Check what was the reasons of error
+    /// Check what was the reason of error
     pub fn is_reason(&self, reason: &Reason) -> bool {
-        &self.reason == reason
+        self.reason == *reason
     }
 }
 
