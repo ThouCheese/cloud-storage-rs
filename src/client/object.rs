@@ -309,14 +309,14 @@ where
     /// use cloud_storage::Client;
     /// use cloud_storage::Object;
     /// use futures::StreamExt;
-    /// use std::fs::File;
-    /// use std::io::{BufWriter, Write};
+    /// use tokio::fs::File;
+    /// use tokio::io::{AsyncWriteExt, BufWriter};
     ///
     /// let client = Client::default();
     /// let mut stream = client.object().download_streamed("my_bucket", "path/to/my/file.png").await?;
-    /// let mut file = BufWriter::new(File::create("file.png").unwrap());
+    /// let mut file = BufWriter::new(File::create("file.png").await.unwrap());
     /// while let Some(byte) = stream.next().await {
-    ///     file.write_all(&[byte.unwrap()]).unwrap();
+    ///     file.write_all(&[byte.unwrap()]).await.unwrap();
     /// }
     /// # Ok(())
     /// # }
