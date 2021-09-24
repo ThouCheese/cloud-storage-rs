@@ -7,7 +7,7 @@ description = "A crate for uploading files to Google cloud storage, and for gene
 license = "MIT"
 repository = "https://github.com/ThouCheese/cloud-storage-rs"
 documentation = "https://docs.rs/cloud-storage"
-keywords = ["google", "cloud", "storage"]
+keywords = ["google", "cloud", "storage", "gcs"]
 readme = "README.md"
 categories = ["api-bindings", "web-programming"]
 # maintenance = { status = "actively-developed" }
@@ -22,6 +22,8 @@ rustls-tls = ["reqwest/rustls-tls"]
 trust-dns = ["reqwest/trust-dns"]
 
 [dependencies]
+anyhow = "1.0"
+thiserror="1.0"
 reqwest =          { version = "0.11", default-features = false, features = ["json", "stream"] }
 percent-encoding = { version = "2",    default-features = false }
 jsonwebtoken =     { version = "7",    default-features = false }
@@ -33,7 +35,7 @@ dotenv =           { version = "0.15", default-features = false }
 openssl =          { version = "0.10", default-features = false }
 chrono =           { version = "0.4",  default-features = false, features = ["serde"] }
 hex =              { version = "0.4",  default-features = false, features = ["alloc"] }
-tokio =            { version = "1.0",  default-features = false, features = ["macros", "rt"] }
+tokio =            { version = "1.12", default-features = false, features = ["full"] }
 futures =          { version = "0.3",  default_features = false, features = ["alloc"] }
 bytes =            { version = "1.0",  default-features = false }
 

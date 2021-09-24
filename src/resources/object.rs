@@ -95,6 +95,14 @@ pub struct Object {
     pub kms_key_name: Option<String>,
 }
 
+/// A resource representing a file in Google Cloud Storage.
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PartialObject {
+    /// The link to this object.
+    pub self_link: String,
+}
+
 /// Contains data about how a user might encrypt their files in Google Cloud Storage.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -147,6 +155,9 @@ pub struct ObjectPrecondition {
 #[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ListRequest {
+    /// TODO Clem
+    pub fields: Option<String>,
+
     /// When specified, allows the `list` to operate like a directory listing by splitting the
     /// object location on this delimiter.
     pub delimiter: Option<String>,
@@ -225,6 +236,19 @@ pub struct ObjectList {
     pub next_page_token: Option<String>,
 }
 
+/// Partial Response from `Object::list`.
+#[derive(Debug, serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PartialObjectList {
+    /// The list of objects, ordered lexicographically by name.
+    #[serde(default = "Vec::new")]
+    pub items: Vec<PartialObject>,
+
+    /// The continuation token, included only if there are more items to return. Provide
+    /// this value as the `page_token` of a subsequent request in order to return the next
+    /// page of results.
+    pub next_page_token: Option<String>,
+}
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RewriteResponse {

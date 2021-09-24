@@ -3,7 +3,10 @@ use reqwest::StatusCode;
 
 use crate::{
     error::GoogleResponse,
-    object::{percent_encode, ComposeRequest, ObjectList, RewriteResponse, SizedByteStream},
+    object::{
+        percent_encode, ComposeRequest, ObjectList, PartialObjectList, RewriteResponse,
+        SizedByteStream,
+    },
     ListRequest, Object,
 };
 
@@ -144,7 +147,7 @@ impl<'a> ObjectClient<'a> {
         &self,
         bucket: &'a str,
         list_request: ListRequest,
-    ) -> crate::Result<impl Stream<Item = crate::Result<ObjectList>> + 'a> {
+    ) -> crate::Result<impl Stream<Item = crate::Result<PartialObjectList>> + 'a> {
         enum ListState {
             Start(ListRequest),
             HasMore(ListRequest),
@@ -202,7 +205,7 @@ impl<'a> ObjectClient<'a> {
                     Err(e) => return Some((Err(e.into()), state)),
                 };
 
-                let result: GoogleResponse<ObjectList> = match response.json().await {
+                let result: GoogleResponse<PartialObjectList> = match response.json().await {
                     Ok(json) => json,
                     Err(e) => return Some((Err(e.into()), state)),
                 };
