@@ -770,7 +770,7 @@ impl Object {
         for (k, v) in custom_metadata.iter() {
             headers.push((format!("x-goog-meta-{}", k.to_string()), v.to_string()));
         }
-        headers.sort_unstable_by(|(k1, _), (k2, _)| k1.cmp(&k2));
+        headers.sort_unstable_by(|(k1, _), (k2, _)| k1.cmp(k2));
         let canonical_headers: String = headers
             .iter()
             .map(|(k, v)| format!("{}:{}", k.to_lowercase(), v.to_lowercase()))
