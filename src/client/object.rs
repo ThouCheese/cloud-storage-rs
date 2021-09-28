@@ -44,8 +44,8 @@ impl<'a> ObjectClient<'a> {
         let url = &format!(
             "{}/{}/o?uploadType=media&name={}",
             BASE_URL,
-            percent_encode(&bucket),
-            percent_encode(&filename),
+            percent_encode(bucket),
+            percent_encode(filename),
         );
         let mut headers = self.0.get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
@@ -102,8 +102,8 @@ impl<'a> ObjectClient<'a> {
         let url = &format!(
             "{}/{}/o?uploadType=media&name={}",
             BASE_URL,
-            percent_encode(&bucket),
-            percent_encode(&filename),
+            percent_encode(bucket),
+            percent_encode(filename),
         );
         let mut headers = self.0.get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
@@ -458,8 +458,8 @@ impl<'a> ObjectClient<'a> {
         let url = format!(
             "{}/b/{}/o/{}/compose",
             crate::BASE_URL,
-            percent_encode(&bucket),
-            percent_encode(&destination_object)
+            percent_encode(bucket),
+            percent_encode(destination_object)
         );
         let result: GoogleResponse<Object> = self
             .0
@@ -505,8 +505,8 @@ impl<'a> ObjectClient<'a> {
             base = crate::BASE_URL,
             sBucket = percent_encode(&object.bucket),
             sObject = percent_encode(&object.name),
-            dBucket = percent_encode(&destination_bucket),
-            dObject = percent_encode(&path),
+            dBucket = percent_encode(destination_bucket),
+            dObject = percent_encode(path),
         );
         let mut headers = self.0.get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
