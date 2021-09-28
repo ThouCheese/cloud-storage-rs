@@ -45,19 +45,15 @@ impl<'a> ObjectClient<'a> {
     pub fn create_streamed<R>(
         &self,
         bucket: &str,
-        mut file: R,
+        file: R,
         length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
     ) -> crate::Result<Object>
     where
-        R: std::io::Read + Send + 'static,
+        R: std::io::Read + Send + Sync + Unpin + 'static,
     {
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer)
-            .map_err(|e| crate::Error::Other(e.to_string()))?;
-
-        let stream = futures::stream::once(async { Ok::<_, crate::Error>(buffer) });
+        let stream = super::helpers::ReaderStream::new(file);
 
         self.0.runtime.block_on(
             self.0
