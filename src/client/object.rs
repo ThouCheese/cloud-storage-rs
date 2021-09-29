@@ -6,8 +6,8 @@ use reqwest::StatusCode;
 use crate::{
     error::GoogleResponse,
     object::{
-        percent_encode, ComposeRequest, ObjectList, PartialObjectList, RewriteResponse,
-        SizedByteStream,
+        percent_encode, ComposeRequest, ObjectList, PartialObject, PartialObjectList,
+        RewriteResponse, SizedByteStream,
     },
     ListRequest, Object,
 };
@@ -150,7 +150,7 @@ impl<'a> ObjectClient<'a> {
         bucket: &'a str,
         list_request: ListRequest,
     ) -> crate::Result<impl Stream<Item = crate::Result<ObjectList>> + 'a> {
-        let stream = self.list_partial(bucket, list_request).await?;
+        let stream = self.list_objects(bucket, list_request).await?;
         Ok(stream.map(|x| x?.try_into().map_err(crate::error::Error::Other)))
     }
 
@@ -160,16 +160,26 @@ impl<'a> ObjectClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Client;
-    /// use cloud_storage::{PartialObject, ListRequest};
+    /// use cloud_storage::ListRequest;
     ///
     /// let mut rq = ListRequest::default();
     /// rq.fields = Some("items(selfLink),nextPageToken".to_owned());
     /// let client = Client::default();
-    /// let all_objects = client.object().list_partial::<PartialObject>("my_bucket", rq).await?;
+    /// let all_objects = client.object().list_partial("my_bucket", rq).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn list_partial<T>(
+    pub async fn list_partial(
+        &self,
+        bucket: &'a str,
+        list_request: ListRequest,
+    ) -> crate::Result<impl Stream<Item = crate::Result<PartialObjectList<PartialObject>>> + 'a>
+    {
+        self.list_objects::<PartialObject>(bucket, list_request)
+            .await
+    }
+
+    async fn list_objects<T>(
         &self,
         bucket: &'a str,
         list_request: ListRequest,
