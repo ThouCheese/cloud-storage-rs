@@ -348,8 +348,8 @@ impl TryInto<ObjectList> for PartialObjectList<Object> {
             None => {
                 Err("can't convert PartialObjectList to ObjectList: missing kind field".to_owned())
             }
-            Some(k) => Ok(ObjectList {
-                kind: k.to_owned(),
+            Some(kind) => Ok(ObjectList {
+                kind,
                 items: self.items,
                 prefixes: self.prefixes,
                 next_page_token: self.next_page_token,
