@@ -236,7 +236,8 @@ pub struct ObjectPrecondition {
 #[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ListRequest {
-    /// TODO Clem
+    /// When specified, combined with list_partial, allows smaller response and better performance by selecting fields explicitly.
+    /// [Partial Response](https://cloud.google.com/storage/docs/json_api#partial-response)
     pub fields: Option<String>,
 
     /// When specified, allows the `list` to operate like a directory listing by splitting the
