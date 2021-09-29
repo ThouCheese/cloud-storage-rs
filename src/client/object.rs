@@ -1,4 +1,6 @@
-use futures::{stream, Stream, TryStream};
+use std::convert::TryInto;
+
+use futures::{stream, Stream, StreamExt, TryStream};
 use reqwest::StatusCode;
 
 use crate::{
@@ -147,7 +149,34 @@ impl<'a> ObjectClient<'a> {
         &self,
         bucket: &'a str,
         list_request: ListRequest,
-    ) -> crate::Result<impl Stream<Item = crate::Result<PartialObjectList>> + 'a> {
+    ) -> crate::Result<impl Stream<Item = crate::Result<ObjectList>> + 'a> {
+        let stream = self.list_partial(bucket, list_request).await?;
+        Ok(stream.map(|x| x?.try_into().map_err(crate::error::Error::Other)))
+    }
+
+    /// Obtain a list of objects within this Bucket.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Client;
+    /// use cloud_storage::{PartialObject, ListRequest};
+    ///
+    /// let mut rq = ListRequest::default();
+    /// rq.fields = Some("items(selfLink),nextPageToken".to_owned());
+    /// let client = Client::default();
+    /// let all_objects = client.object().list_partial::<PartialObject>("my_bucket", rq).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn list_partial<T>(
+        &self,
+        bucket: &'a str,
+        list_request: ListRequest,
+    ) -> crate::Result<impl Stream<Item = crate::Result<PartialObjectList<T>>> + 'a>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         enum ListState {
             Start(ListRequest),
             HasMore(ListRequest),
@@ -205,7 +234,7 @@ impl<'a> ObjectClient<'a> {
                     Err(e) => return Some((Err(e.into()), state)),
                 };
 
-                let result: GoogleResponse<PartialObjectList> = match response.json().await {
+                let result: GoogleResponse<PartialObjectList<T>> = match response.json().await {
                     Ok(json) => json,
                     Err(e) => return Some((Err(e.into()), state)),
                 };
@@ -325,7 +354,7 @@ impl<'a> ObjectClient<'a> {
         bucket: &str,
         file_name: &str,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
-        use futures::{StreamExt, TryStreamExt};
+        use futures::TryStreamExt;
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
             crate::BASE_URL,
