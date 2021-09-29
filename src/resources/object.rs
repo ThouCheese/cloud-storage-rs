@@ -99,8 +99,89 @@ pub struct Object {
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartialObject {
+    /// The kind of item this is. For objects, this is always `storage#object`.
+    pub kind: Option<String>,
+    /// The ID of the object, including the bucket name, object name, and generation number.
+    pub id: Option<String>,
     /// The link to this object.
-    pub self_link: String,
+    pub self_link: Option<String>,
+    /// The name of the object. Required if not specified by URL parameter.
+    pub name: Option<String>,
+    /// The name of the bucket containing this object.
+    pub bucket: Option<String>,
+    /// The content generation of this object. Used for object versioning.
+    #[serde(default, deserialize_with = "crate::from_str_opt")]
+    pub generation: Option<i64>,
+    /// The version of the metadata for this object at this generation. Used for preconditions and
+    /// for detecting changes in metadata. A metageneration number is only meaningful in the context
+    /// of a particular generation of a particular object.
+    #[serde(default, deserialize_with = "crate::from_str_opt")]
+    pub metageneration: Option<i64>,
+    /// Content-Type of the object data. If an object is stored without a Content-Type, it is served
+    /// as application/octet-stream.
+    pub content_type: Option<String>,
+    /// The creation time of the object in RFC 3339 format.
+    pub time_created: Option<chrono::DateTime<chrono::Utc>>,
+    /// The modification time of the object metadata in RFC 3339 format.
+    pub updated: Option<chrono::DateTime<chrono::Utc>>,
+    /// The deletion time of the object in RFC 3339 format. Returned if and only if this version of
+    /// the object is no longer a live version, but remains in the bucket as a noncurrent version.
+    pub time_deleted: Option<chrono::DateTime<chrono::Utc>>,
+    /// Whether or not the object is subject to a temporary hold.
+    pub temporary_hold: Option<bool>,
+    /// Whether or not the object is subject to an event-based hold.
+    pub event_based_hold: Option<bool>,
+    /// The earliest time that the object can be deleted, based on a bucket's retention policy, in
+    /// RFC 3339 format.
+    pub retention_expiration_time: Option<chrono::DateTime<chrono::Utc>>,
+    /// Storage class of the object.
+    pub storage_class: Option<String>,
+    /// The time at which the object's storage class was last changed. When the object is initially
+    /// created, it will be set to timeCreated.
+    pub time_storage_class_updated: Option<chrono::DateTime<chrono::Utc>>,
+    /// Content-Length of the data in bytes.
+    #[serde(default, deserialize_with = "crate::from_str_opt")]
+    pub size: Option<u64>,
+    /// MD5 hash of the data; encoded using base64. For more information about using the MD5 hash,
+    /// see Hashes and ETags: Best Practices.
+    pub md5_hash: Option<String>,
+    /// Media download link.
+    pub media_link: Option<String>,
+    /// Content-Encoding of the object data.
+    pub content_encoding: Option<String>,
+    /// Content-Disposition of the object data.
+    pub content_disposition: Option<String>,
+    /// Content-Language of the object data.
+    pub content_language: Option<String>,
+    /// Cache-Control directive for the object data. If omitted, and the object is accessible to all
+    /// anonymous users, the default will be public, max-age=3600.
+    pub cache_control: Option<String>,
+    /// User-provided metadata, in key/value pairs.
+    pub metadata: Option<std::collections::HashMap<String, String>>,
+    /// Access controls on the object, containing one or more objectAccessControls Resources. If
+    /// iamConfiguration.uniformBucketLevelAccess.enabled is set to true, this field is omitted in
+    /// responses, and requests that specify this field fail.
+    pub acl: Option<Vec<ObjectAccessControl>>,
+    /// The owner of the object. This will always be the uploader of the object. If
+    /// `iamConfiguration.uniformBucketLevelAccess.enabled` is set to true, this field does not
+    /// apply, and is omitted in responses.
+    pub owner: Option<Owner>,
+    /// CRC32c checksum, as described in RFC 4960, Appendix B; encoded using base64 in big-endian
+    /// byte order. For more information about using the CRC32c checksum, see Hashes and ETags: Best
+    /// Practices.
+    pub crc32c: Option<String>,
+    /// Number of underlying components that make up a composite object. Components are accumulated
+    /// by compose operations, counting 1 for each non-composite source object and componentCount
+    /// for each composite source object. Note: componentCount is included in the metadata for
+    /// composite objects only.
+    #[serde(default, deserialize_with = "crate::from_str_opt")]
+    pub component_count: Option<i32>,
+    /// HTTP 1.1 Entity tag for the object.
+    pub etag: Option<String>,
+    /// Metadata of customer-supplied encryption key, if the object is encrypted by such a key.
+    pub customer_encryption: Option<CustomerEncrypton>,
+    /// Cloud KMS Key used to encrypt this object, if the object is encrypted by such a key.
+    pub kms_key_name: Option<String>,
 }
 
 /// Contains data about how a user might encrypt their files in Google Cloud Storage.
