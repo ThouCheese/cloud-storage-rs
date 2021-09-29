@@ -95,7 +95,7 @@ pub struct Object {
     pub kms_key_name: Option<String>,
 }
 
-/// A resource representing a file in Google Cloud Storage.
+/// A resource representing a file in Google Cloud Storage with PartialResponse support.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartialObject {
