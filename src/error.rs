@@ -5,7 +5,17 @@ pub enum Error {
     Google(GoogleErrorResponse),
     /// If another network error causes something to fail, this variant is used.
     Reqwest(reqwest::Error),
+    /// If we encounter a problem decoding the private key, this variant is used.
+    #[cfg(feature = "ring")]
+    Pem(pem::PemError),
+    /// If we encounter a problem parsing the private key, this variant is used.
+    #[cfg(feature = "ring")]
+    KeyRejected(ring::error::KeyRejected),
+    /// If we encounter a problem signing a request, this variant is used.
+    #[cfg(feature = "ring")]
+    Signing(ring::error::Unspecified),
     /// If we encouter a SSL error, for example an invalid certificate, this variant is used.
+    #[cfg(feature = "openssl")]
     Ssl(openssl::error::ErrorStack),
     /// If we have problems creating or parsing a json web token, this variant is used.
     Jwt(jsonwebtoken::errors::Error),
@@ -32,7 +42,14 @@ impl std::error::Error for Error {
         match self {
             Self::Google(e) => Some(e),
             Self::Reqwest(e) => Some(e),
+            #[cfg(feature = "openssl")]
             Self::Ssl(e) => Some(e),
+            #[cfg(feature = "ring")]
+            Self::Pem(e) => Some(e),
+            #[cfg(feature = "ring")]
+            Self::KeyRejected(e) => Some(e),
+            #[cfg(feature = "ring")]
+            Self::Signing(e) => Some(e),
             Self::Jwt(e) => Some(e),
             Self::Serialization(e) => Some(e),
             Self::Other(_) => None,
@@ -46,9 +63,31 @@ impl From<reqwest::Error> for Error {
     }
 }
 
+#[cfg(feature = "openssl")]
 impl From<openssl::error::ErrorStack> for Error {
     fn from(err: openssl::error::ErrorStack) -> Self {
         Self::Ssl(err)
+    }
+}
+
+#[cfg(feature = "ring")]
+impl From<pem::PemError> for Error {
+    fn from(err: pem::PemError) -> Self {
+        Self::Pem(err)
+    }
+}
+
+#[cfg(feature = "ring")]
+impl From<ring::error::KeyRejected> for Error {
+    fn from(err: ring::error::KeyRejected) -> Self {
+        Self::KeyRejected(err)
+    }
+}
+
+#[cfg(feature = "ring")]
+impl From<ring::error::Unspecified> for Error {
+    fn from(err: ring::error::Unspecified) -> Self {
+        Self::Signing(err)
     }
 }
 
@@ -167,7 +206,7 @@ pub struct GoogleError {
     /// The location or part of the request that caused the error. Use with `location` to pinpoint
     /// the error. For example, if you specify an invalid value for a parameter, the `locationType`
     /// will be parameter and the location will be the name of the parameter.
-    /// 
+    ///
     /// Example values include `header` and `parameter`.
     pub location_type: Option<String>,
     /// The specific item within the `locationType` that caused the error. For example, if you

@@ -754,8 +754,6 @@ impl Object {
         content_disposition: Option<String>,
         custom_metadata: &HashMap<String, String>,
     ) -> crate::Result<String> {
-        use openssl::sha;
-
         if duration > 604800 {
             let msg = format!(
                 "duration may not be greater than 604800, but was {}",
@@ -800,8 +798,7 @@ impl Object {
         );
 
         // 2 get hex encoded SHA256 hash the canonical request
-        let hash = sha::sha256(canonical_request.as_bytes());
-        let hex_hash = hex::encode(hash);
+        let hex_hash = hex::encode(crypto::sha256(canonical_request.as_bytes()).as_ref());
 
         // 3 construct the string to sign
         let string_to_sign = format!(
@@ -816,8 +813,7 @@ impl Object {
         );
 
         // 4 sign the string to sign with RSA - SHA256
-        let buffer = Self::sign_str(&string_to_sign)?;
-        let signature = hex::encode(&buffer);
+        let signature = hex::encode(crypto::rsa_pkcs1_sha256(&string_to_sign)?);
 
         // 5 construct the signed url
         Ok(format!(
@@ -899,9 +895,12 @@ impl Object {
     fn get_credential_scope(date: &chrono::DateTime<chrono::Utc>) -> String {
         format!("{}/henk/storage/goog4_request", date.format("%Y%m%d"))
     }
+}
 
+#[cfg(feature = "openssl")]
+mod openssl {
     #[inline(always)]
-    fn sign_str(message: &str) -> crate::Result<Vec<u8>> {
+    pub fn rsa_pkcs1_sha256(message: &str) -> crate::Result<Vec<u8>> {
         use openssl::{hash::MessageDigest, pkey::PKey, sign::Signer};
 
         let key = PKey::private_key_from_pem(crate::SERVICE_ACCOUNT.private_key.as_bytes())?;
@@ -909,6 +908,42 @@ impl Object {
         signer.update(message.as_bytes())?;
         Ok(signer.sign_to_vec()?)
     }
+
+    #[inline(always)]
+    pub fn sha256(bytes: &[u8]) -> impl AsRef<[u8]> {
+        openssl::sha::sha256(bytes)
+    }
+}
+
+#[cfg(feature = "ring")]
+mod ring {
+    #[cfg_attr(all(feature = "ring", feature = "openssl"), allow(dead_code))]
+    #[inline(always)]
+    pub fn rsa_pkcs1_sha256(message: &str) -> crate::Result<Vec<u8>> {
+        use ring::rand::SystemRandom;
+        use ring::signature::{RsaKeyPair, RSA_PKCS1_SHA256};
+
+        let key_pem = pem::parse(crate::SERVICE_ACCOUNT.private_key.as_bytes())?;
+        let key = RsaKeyPair::from_pkcs8(&key_pem.contents)?;
+        let rng = SystemRandom::new();
+        let mut signature = vec![0; key.public_modulus_len()];
+        key.sign(&RSA_PKCS1_SHA256, &rng, message.as_bytes(), &mut signature)?;
+        Ok(signature)
+    }
+
+    #[cfg_attr(all(feature = "ring", feature = "openssl"), allow(dead_code))]
+    #[inline(always)]
+    pub fn sha256(bytes: &[u8]) -> impl AsRef<[u8]> {
+        use ring::digest::{digest, SHA256};
+        digest(&SHA256, bytes)
+    }
+}
+
+mod crypto {
+    #[cfg(feature = "openssl")]
+    pub use super::openssl::*;
+    #[cfg(all(feature = "ring", not(feature = "openssl")))]
+    pub use super::ring::*;
 }
 
 const ENCODE_SET: &AsciiSet = &NON_ALPHANUMERIC
@@ -1240,6 +1275,20 @@ mod tests {
         let obj_metadata = updated_obj.metadata.unwrap();
         assert_eq!(obj_metadata.get("field").unwrap(), "value");
         Ok(())
+    }
+
+    #[cfg(all(feature = "openssl", feature = "ring"))]
+    #[test]
+    fn check_matching_crypto() {
+        assert_eq!(
+            openssl::sha256(b"hello").as_ref(),
+            ring::sha256(b"hello").as_ref()
+        );
+
+        assert_eq!(
+            openssl::rsa_pkcs1_sha256("world").unwrap(),
+            ring::rsa_pkcs1_sha256("world").unwrap(),
+        );
     }
 
     #[cfg(feature = "sync")]
