@@ -96,6 +96,8 @@ pub struct Object {
 }
 
 /// A resource representing a file in Google Cloud Storage with PartialResponse support.
+/// For performance reason, PartialObject is used with ListRequest fields to return less fields than the default.
+/// [Partial Response](https://cloud.google.com/storage/docs/json_api#partial-response)
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PartialObject {
@@ -229,6 +231,22 @@ pub struct ObjectPrecondition {
     pub if_generation_match: i64,
 }
 
+/// The partial request that is supplied to perform `Object::list_partial`.
+/// See [the Google Cloud Storage API
+/// reference](https://cloud.google.com/storage/docs/json_api/v1/objects/list)
+/// for more details.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+pub struct PartialListRequest {
+    /// When specified, combined with list_partial, allows smaller response and better performance by selecting fields explicitly.
+    /// [Partial Response](https://cloud.google.com/storage/docs/json_api#partial-response)
+    pub fields: Option<String>,
+
+    #[serde(flatten)]
+    /// The base list request
+    /// See [`ListRequest`]
+    pub list_request: ListRequest,
+}
+
 /// The request that is supplied to perform `Object::list`.
 /// See [the Google Cloud Storage API
 /// reference](https://cloud.google.com/storage/docs/json_api/v1/objects/list)
@@ -236,10 +254,6 @@ pub struct ObjectPrecondition {
 #[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ListRequest {
-    /// When specified, combined with list_partial, allows smaller response and better performance by selecting fields explicitly.
-    /// [Partial Response](https://cloud.google.com/storage/docs/json_api#partial-response)
-    pub fields: Option<String>,
-
     /// When specified, allows the `list` to operate like a directory listing by splitting the
     /// object location on this delimiter.
     pub delimiter: Option<String>,
@@ -283,6 +297,15 @@ pub struct ListRequest {
     /// generation number. The default value for versions is false. For more information, see
     /// Object Versioning.
     pub versions: Option<bool>,
+}
+
+impl Into<PartialListRequest> for ListRequest {
+    fn into(self) -> PartialListRequest {
+        PartialListRequest {
+            fields: None,
+            list_request: self,
+        }
+    }
 }
 
 /// Acceptable values of `projection` properties to return from `Object::list` requests.

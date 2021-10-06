@@ -6,8 +6,8 @@ use reqwest::StatusCode;
 use crate::{
     error::GoogleResponse,
     object::{
-        percent_encode, ComposeRequest, ObjectList, PartialObject, PartialObjectList,
-        RewriteResponse, SizedByteStream,
+        percent_encode, ComposeRequest, ObjectList, PartialListRequest, PartialObject,
+        PartialObjectList, RewriteResponse, SizedByteStream,
     },
     ListRequest, Object,
 };
@@ -150,8 +150,12 @@ impl<'a> ObjectClient<'a> {
         bucket: &'a str,
         list_request: ListRequest,
     ) -> crate::Result<impl Stream<Item = crate::Result<ObjectList>> + 'a> {
-        let stream = self.list_objects(bucket, list_request).await?;
-        Ok(stream.map(|x| x?.try_into().map_err(crate::error::Error::Other)))
+        let stream = self.list_objects(bucket, list_request.into()).await?;
+        Ok(stream.map(|x| {
+            x?.try_into().map_err(|err| {
+                crate::error::Error::Other(format!("cannot support Partial Response feature. ListRequest should not contain field fields {}", err))
+            })
+        }))
     }
 
     /// Obtain a list of objects within this Bucket.
@@ -160,9 +164,9 @@ impl<'a> ObjectClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Client;
-    /// use cloud_storage::ListRequest;
+    /// use cloud_storage::PartialListRequest;
     ///
-    /// let mut rq = ListRequest::default();
+    /// let mut rq = PartialListRequest::default();
     /// rq.fields = Some("items(selfLink),nextPageToken".to_owned());
     /// let client = Client::default();
     /// let all_objects = client.object().list_partial("my_bucket", rq).await?;
@@ -172,7 +176,7 @@ impl<'a> ObjectClient<'a> {
     pub async fn list_partial(
         &self,
         bucket: &'a str,
-        list_request: ListRequest,
+        list_request: PartialListRequest,
     ) -> crate::Result<impl Stream<Item = crate::Result<PartialObjectList<PartialObject>>> + 'a>
     {
         self.list_objects::<PartialObject>(bucket, list_request)
@@ -182,14 +186,14 @@ impl<'a> ObjectClient<'a> {
     async fn list_objects<T>(
         &self,
         bucket: &'a str,
-        list_request: ListRequest,
+        list_request: PartialListRequest,
     ) -> crate::Result<impl Stream<Item = crate::Result<PartialObjectList<T>>> + 'a>
     where
         T: serde::de::DeserializeOwned,
     {
         enum ListState {
-            Start(ListRequest),
-            HasMore(ListRequest),
+            Start(PartialListRequest),
+            HasMore(PartialListRequest),
             Done,
         }
         use ListState::*;
@@ -201,7 +205,7 @@ impl<'a> ObjectClient<'a> {
                 }
             }
 
-            fn req_mut(&mut self) -> Option<&mut ListRequest> {
+            fn req_mut(&mut self) -> Option<&mut PartialListRequest> {
                 match self {
                     Start(ref mut req) | HasMore(ref mut req) => Some(req),
                     Done => None,
@@ -220,7 +224,7 @@ impl<'a> ObjectClient<'a> {
                     Err(e) => return Some((Err(e), state)),
                 };
                 let req = state.req_mut()?;
-                if req.max_results == Some(0) {
+                if req.list_request.max_results == Some(0) {
                     return None;
                 }
 
@@ -255,8 +259,9 @@ impl<'a> ObjectClient<'a> {
                 };
 
                 let next_state = if let Some(ref page_token) = response_body.next_page_token {
-                    req.page_token = Some(page_token.clone());
-                    req.max_results = req
+                    req.list_request.page_token = Some(page_token.clone());
+                    req.list_request.max_results = req
+                        .list_request
                         .max_results
                         .map(|rem| rem.saturating_sub(response_body.items.len()));
                     state.into_has_more()?
