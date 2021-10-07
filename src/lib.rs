@@ -103,7 +103,7 @@ pub use crate::{
     error::*,
     resources::{
         bucket::{Bucket, NewBucket},
-        object::{ListRequest, Object, PartialListRequest},
+        object::{ListRequest, Object, PartialListRequest, PartialObject, PartialObjectList},
         *,
     },
 };

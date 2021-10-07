@@ -1,6 +1,6 @@
 use crate::{
     object::{ComposeRequest, ObjectList},
-    ListRequest, Object,
+    ListRequest, Object, PartialListRequest, PartialObject, PartialObjectList,
 };
 use futures::TryStreamExt;
 
@@ -86,6 +86,33 @@ impl<'a> ObjectClient<'a> {
     ) -> crate::Result<Vec<ObjectList>> {
         let rt = &self.0.runtime;
         let listed = rt.block_on(self.0.client.object().list(bucket, list_request))?;
+        rt.block_on(listed.try_collect())
+    }
+
+    /// Obtain a list of objects within this Bucket.
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::sync::Client;
+    /// use cloud_storage::{Object, PartialListRequest};
+    ///
+    /// let client = Client::new()?;
+    /// let all_objects = client.object().list("my_bucket", PartialListRequest::default())?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn list_partial(
+        &self,
+        bucket: &'a str,
+        partial_list_request: PartialListRequest,
+    ) -> crate::Result<Vec<PartialObjectList<PartialObject>>> {
+        let rt = &self.0.runtime;
+        let listed = rt.block_on(
+            self.0
+                .client
+                .object()
+                .list_partial(bucket, partial_list_request),
+        )?;
         rt.block_on(listed.try_collect())
     }
 
