@@ -531,6 +531,48 @@ impl Object {
         rt.block_on(listed.try_collect())
     }
 
+    /// Obtain a list of objects within this Bucket. This function will repeatedly query Google and
+    /// merge the responses into one. Google responds with 1000 Objects at a time, so if you want to
+    /// make sure only one http call is performed, make sure to set `list_request.max_results` to
+    /// 1000.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::{Object, ListRequest};
+    ///
+    /// let all_objects = Object::list("my_bucket", ListRequest::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "global-client")]
+    pub async fn list_partial(
+        bucket: &str,
+        partial_list_request: PartialListRequest,
+    ) -> crate::Result<impl Stream<Item = crate::Result<PartialObjectList<PartialObject>>> + '_>
+    {
+        crate::CLOUD_CLIENT
+            .object()
+            .list_partial(bucket, partial_list_request)
+            .await
+    }
+
+    /// The synchronous equivalent of `Object::list_partial`.
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(all(feature = "global-client", feature = "sync"))]
+    pub fn list_partial_sync(
+        bucket: &str,
+        partial_list_request: PartialListRequest,
+    ) -> crate::Result<Vec<PartialObjectList<PartialObject>>> {
+        use futures::TryStreamExt;
+
+        let rt = crate::runtime()?;
+        let listed = rt.block_on(Self::list_partial(bucket, partial_list_request))?;
+        rt.block_on(listed.try_collect())
+    }
+
     /// Obtains a single object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
@@ -1427,6 +1469,13 @@ mod tests {
         fn list() -> Result<(), Box<dyn std::error::Error>> {
             let test_bucket = crate::read_test_bucket_sync();
             Object::list_sync(&test_bucket.name, ListRequest::default())?;
+            Ok(())
+        }
+
+        #[test]
+        fn list_partial() -> Result<(), Box<dyn std::error::Error>> {
+            let test_bucket = crate::read_test_bucket_sync();
+            Object::list_partial_sync(&test_bucket.name, PartialListRequest::default())?;
             Ok(())
         }
 
