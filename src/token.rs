@@ -1,10 +1,40 @@
-/// This struct contains a token, an expiry, and an access scope.
-pub struct Token {
-    // this field contains the JWT and the expiry thereof. They are in the same Option because if
-    // one of them is `Some`, we require that the other be `Some` as well.
-    token: Option<(String, u64)>,
-    // store the access scope for later use if we need to refresh the token
-    access_scope: String,
+use std::fmt::{Display, Formatter};
+
+/// Trait that refreshes a token when it is expired
+#[async_trait::async_trait]
+pub trait TokenCache: Sync {
+    type TokenData: Sync + Send + Clone + Display;
+    /// Getter for the token
+    async fn get_token(&self) -> Option<Self::TokenData>;
+
+    /// Updates the token
+    async fn set_token(&self, token: Self::TokenData) -> crate::Result<()>;
+
+    /// Getter for the scope
+    fn get_scope(&self) -> &str;
+
+    /// Returns whether the token is expired
+    fn is_expired(token: &Self::TokenData) -> bool;
+
+    /// Returns a valid, unexpired token
+    /// Otherwise updates and returns the token
+    async fn get(&self, client: &reqwest::Client) -> crate::Result<Self::TokenData> {
+        match self.get_token().await {
+            Some(token) if !Self::is_expired(&token) => Ok(token),
+            _ => {
+                let scope = self.get_scope();
+                let token = Self::fetch_token(client, scope).await?;
+                self.set_token(token).await?;
+
+                self.get_token()
+                    .await
+                    .ok_or(crate::Error::Other("Token is not set".to_string()))
+            }
+        }
+    }
+
+    /// Fetches and returns the token using the service account
+    async fn fetch_token(client: &reqwest::Client, scope: &str) -> crate::Result<Self::TokenData>;
 }
 
 #[derive(serde::Serialize)]
@@ -23,34 +53,59 @@ struct TokenResponse {
     token_type: String,
 }
 
+/// This struct contains a token, an expiry, and an access scope.
+pub struct Token {
+    // this field contains the JWT and the expiry thereof. They are in the same Option because if
+    // one of them is `Some`, we require that the other be `Some` as well.
+    token: tokio::sync::RwLock<Option<DefaultTokenData>>,
+    // store the access scope for later use if we need to refresh the token
+    access_scope: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct DefaultTokenData(pub String, u64);
+
+impl Display for DefaultTokenData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Default for Token {
+    fn default() -> Self {
+        Token::new("https://www.googleapis.com/auth/devstorage.full_control")
+    }
+}
+
 impl Token {
     pub fn new(scope: &str) -> Self {
         Self {
-            token: None,
+            token: tokio::sync::RwLock::new(None),
             access_scope: scope.to_string(),
         }
     }
+}
+#[async_trait::async_trait]
+impl TokenCache for Token {
+    type TokenData = DefaultTokenData;
 
-    // TODO: should not need to use mem::take and then place back when the token is valid
-    pub async fn get(&mut self, client: &reqwest::Client) -> crate::Result<&str> {
-        match std::mem::take(&mut self.token) {
-            Some((token, exp)) if exp > now() => {
-                self.token = Some((token, exp));
-                Ok(&self.token.as_ref().unwrap().0)
-            }
-            _ => self.retrieve(client).await,
-        }
+    fn get_scope(&self) -> &str {
+        self.access_scope.as_ref()
     }
 
-    async fn retrieve(&mut self, client: &reqwest::Client) -> crate::Result<&str> {
-        self.token = Some(Self::get_token(client, &self.access_scope).await?);
-        match self.token {
-            Some(ref token) => Ok(&token.0),
-            None => unreachable!(),
-        }
+    fn is_expired(token: &Self::TokenData) -> bool {
+        token.1 > now()
     }
 
-    async fn get_token(client: &reqwest::Client, scope: &str) -> crate::Result<(String, u64)> {
+    async fn get_token(&self) -> Option<Self::TokenData> {
+        self.token.read().await.clone()
+    }
+    async fn set_token(&self, token: Self::TokenData) -> crate::Result<()> {
+        *self.token.write().await = Some(token);
+        Ok(())
+    }
+
+    async fn fetch_token(client: &reqwest::Client, scope: &str) -> crate::Result<Self::TokenData> {
         let now = now();
         let exp = now + 3600;
 
@@ -79,7 +134,7 @@ impl Token {
             .await?
             .json()
             .await?;
-        Ok((response.access_token, exp))
+        Ok(DefaultTokenData(response.access_token, exp))
     }
 }
 

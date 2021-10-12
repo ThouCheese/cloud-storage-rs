@@ -4,13 +4,17 @@ use crate::{
     default_object_access_control::{DefaultObjectAccessControl, NewDefaultObjectAccessControl},
     error::GoogleResponse,
     resources::common::ListResponse,
+    token::TokenCache,
 };
 
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
 #[derive(Debug)]
-pub struct DefaultObjectAccessControlClient<'a>(pub(super) &'a super::Client);
+pub struct DefaultObjectAccessControlClient<'a, T: TokenCache>(pub(super) &'a super::Client<T>);
 
-impl<'a> DefaultObjectAccessControlClient<'a> {
+impl<'a, R> DefaultObjectAccessControlClient<'a, R>
+where
+    R: TokenCache,
+{
     /// Create a new `DefaultObjectAccessControl` entry on the specified bucket.
     /// ### Important
     /// Important: This method fails with a `400 Bad Request` response for buckets with uniform

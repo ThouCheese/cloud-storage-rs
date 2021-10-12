@@ -1,10 +1,16 @@
-use crate::bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl};
+use crate::{
+    bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl},
+    token::TokenCache,
+};
 
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
 #[derive(Debug)]
-pub struct BucketAccessControlClient<'a>(pub(super) &'a super::Client);
+pub struct BucketAccessControlClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
 
-impl<'a> BucketAccessControlClient<'a> {
+impl<'a, R> BucketAccessControlClient<'a, R>
+where
+    R: TokenCache,
+{
     /// Create a new `BucketAccessControl` using the provided `NewBucketAccessControl`, related to
     /// the `Bucket` provided by the `bucket_name` argument.
     ///
