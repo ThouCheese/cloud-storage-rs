@@ -13,6 +13,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: ["--features sync", "--no-default-features --features sync,rustls-tls", "--all-features"]
 
     steps:
     - uses: actions/checkout@v2
@@ -35,7 +38,7 @@ jobs:
     - name: Build
       run: cargo build
     - name: Run tests
-      run: cargo test --features sync -- --test-threads=1
+      run: cargo test ${{ matrix.features }} -- --test-threads=1
       env:
         GOOGLE_APPLICATION_CREDENTIALS: auth.json
-        TEST_BUCKET: cloud-storage-rs-test-bucket 
+        TEST_BUCKET: cloud-storage-rs-test-bucket

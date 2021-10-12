@@ -17,8 +17,8 @@ default = ["native-tls"]
 
 global-client = []
 sync = ["reqwest/blocking"]
-native-tls = ["reqwest/default-tls"]
-rustls-tls = ["reqwest/rustls-tls"]
+native-tls = ["reqwest/default-tls", "openssl"]
+rustls-tls = ["reqwest/rustls-tls", "ring", "pem"]
 trust-dns = ["reqwest/trust-dns"]
 
 [dependencies]
@@ -30,7 +30,9 @@ serde_json =       { version = "1",    default-features = false }
 base64 =           { version = "0.13", default-features = false }
 lazy_static =      { version = "1",    default-features = false }
 dotenv =           { version = "0.15", default-features = false }
-openssl =          { version = "0.10", default-features = false }
+openssl =          { version = "0.10", default-features = false, optional = true }
+ring =             { version = "0.16", default-features = false, optional = true }
+pem =              { version = "0.8",  default-features = false, optional = true }
 chrono =           { version = "0.4",  default-features = false, features = ["serde"] }
 hex =              { version = "0.4",  default-features = false, features = ["alloc"] }
 tokio =            { version = "1.0",  default-features = false, features = ["macros", "rt"] }
