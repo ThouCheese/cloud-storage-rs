@@ -124,7 +124,7 @@ lazy_static::lazy_static! {
 
 #[cfg(feature = "global-client")]
 lazy_static::lazy_static! {
-    static ref CLOUD_CLIENT: client::Client = client::Client::default();
+    static ref CLOUD_CLIENT: client::Client<Token> = client::Client::default();
 }
 
 /// A type alias where the error is set to be `cloud_storage::Error`.
