@@ -1,20 +1,16 @@
 use crate::{
     bucket::{IamPolicy, TestIamPermission},
-    object::percent_encode,
     error::GoogleResponse,
+    object::percent_encode,
     resources::common::ListResponse,
-    token::TokenCache,
     Bucket, NewBucket,
 };
 
 /// Operations on [`Bucket`]()s.
 #[derive(Debug)]
-pub struct BucketClient<'a, T: TokenCache>(pub(super) &'a super::Client<T>);
+pub struct BucketClient<'a>(pub(super) &'a super::Client);
 
-impl<'a, T> BucketClient<'a, T>
-where
-    T: TokenCache,
-{
+impl<'a> BucketClient<'a> {
     /// Creates a new `Bucket`. There are many options that you can provide for creating a new
     /// bucket, so the `NewBucket` resource contains all of them. Note that `NewBucket` implements
     /// `Default`, so you don't have to specify the fields you're not using. And error is returned
@@ -118,11 +114,7 @@ where
     /// # }
     /// ```
     pub async fn read(&self, name: &str) -> crate::Result<Bucket> {
-        let url = format!(
-            "{}/b/{}",
-            crate::BASE_URL,
-            percent_encode(name),
-        );
+        let url = format!("{}/b/{}", crate::BASE_URL, percent_encode(name),);
         let result: GoogleResponse<Bucket> = self
             .0
             .client
@@ -167,11 +159,7 @@ where
     /// # }
     /// ```
     pub async fn update(&self, bucket: &Bucket) -> crate::Result<Bucket> {
-        let url = format!(
-            "{}/b/{}",
-            crate::BASE_URL,
-            percent_encode(&bucket.name),
-        );
+        let url = format!("{}/b/{}", crate::BASE_URL, percent_encode(&bucket.name),);
         let result: GoogleResponse<Bucket> = self
             .0
             .client
@@ -346,7 +334,11 @@ where
                 "tested permission must not be `storage.buckets.list` or `storage.buckets.create`",
             ));
         }
-        let url = format!("{}/b/{}/iam/testPermissions", crate::BASE_URL, percent_encode(&bucket.name));
+        let url = format!(
+            "{}/b/{}/iam/testPermissions",
+            crate::BASE_URL,
+            percent_encode(&bucket.name)
+        );
         let result: GoogleResponse<TestIamPermission> = self
             .0
             .client

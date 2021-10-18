@@ -280,7 +280,9 @@ mod tests {
             entity: Entity::AllUsers,
             role: Role::Reader,
         };
-        BucketAccessControl::create(&bucket.name, &new_bucket_access_control).await.unwrap();
+        BucketAccessControl::create(&bucket.name, &new_bucket_access_control)
+            .await
+            .unwrap();
         Ok(())
     }
 

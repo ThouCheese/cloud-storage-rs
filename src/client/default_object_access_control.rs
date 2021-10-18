@@ -1,20 +1,16 @@
 use crate::{
     bucket_access_control::Entity,
-    object::percent_encode,
     default_object_access_control::{DefaultObjectAccessControl, NewDefaultObjectAccessControl},
     error::GoogleResponse,
+    object::percent_encode,
     resources::common::ListResponse,
-    token::TokenCache,
 };
 
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
 #[derive(Debug)]
-pub struct DefaultObjectAccessControlClient<'a, T: TokenCache>(pub(super) &'a super::Client<T>);
+pub struct DefaultObjectAccessControlClient<'a>(pub(super) &'a super::Client);
 
-impl<'a, R> DefaultObjectAccessControlClient<'a, R>
-where
-    R: TokenCache,
-{
+impl<'a> DefaultObjectAccessControlClient<'a> {
     /// Create a new `DefaultObjectAccessControl` entry on the specified bucket.
     /// ### Important
     /// Important: This method fails with a `400 Bad Request` response for buckets with uniform
@@ -44,7 +40,11 @@ where
         bucket: &str,
         new_acl: &NewDefaultObjectAccessControl,
     ) -> crate::Result<DefaultObjectAccessControl> {
-        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, percent_encode(bucket));
+        let url = format!(
+            "{}/b/{}/defaultObjectAcl",
+            crate::BASE_URL,
+            percent_encode(bucket)
+        );
         let result: GoogleResponse<DefaultObjectAccessControl> = self
             .0
             .client
@@ -82,7 +82,11 @@ where
     /// # }
     /// ```
     pub async fn list(&self, bucket: &str) -> crate::Result<Vec<DefaultObjectAccessControl>> {
-        let url = format!("{}/b/{}/defaultObjectAcl", crate::BASE_URL, percent_encode(bucket));
+        let url = format!(
+            "{}/b/{}/defaultObjectAcl",
+            crate::BASE_URL,
+            percent_encode(bucket)
+        );
         let result: GoogleResponse<ListResponse<DefaultObjectAccessControl>> = self
             .0
             .client

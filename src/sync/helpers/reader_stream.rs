@@ -1,5 +1,9 @@
-use std::{io::{BufReader, Read}, pin::Pin, task::{Context, Poll}};
 use futures::Stream;
+use std::{
+    io::{BufReader, Read},
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 const BUF_CAP: usize = 8 * 1024;
 
@@ -22,7 +26,7 @@ impl<R: std::io::Read + Send + Sync + Unpin + 'static> Stream for ReaderStream<R
             Ok(n) => {
                 buf.truncate(n);
                 Poll::Ready(Some(Ok(buf)))
-            },
+            }
             Err(e) => Poll::Ready(Some(Err(e.into()))),
         }
     }

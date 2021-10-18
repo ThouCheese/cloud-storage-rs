@@ -98,6 +98,7 @@ mod error;
 mod resources;
 mod token;
 
+use crate::resources::service_account::ServiceAccount;
 pub use crate::{
     client::Client,
     error::*,
@@ -106,8 +107,8 @@ pub use crate::{
         object::{ListRequest, Object},
         *,
     },
+    token::{Token, TokenCache},
 };
-use crate::{resources::service_account::ServiceAccount, token::Token};
 pub use download_options::DownloadOptions;
 use tokio::sync::Mutex;
 
@@ -124,7 +125,7 @@ lazy_static::lazy_static! {
 
 #[cfg(feature = "global-client")]
 lazy_static::lazy_static! {
-    static ref CLOUD_CLIENT: client::Client<Token> = client::Client::default();
+    static ref CLOUD_CLIENT: client::Client = client::Client::default();
 }
 
 /// A type alias where the error is set to be `cloud_storage::Error`.

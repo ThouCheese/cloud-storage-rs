@@ -1,18 +1,14 @@
 use crate::{
     bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl},
-    object::percent_encode,
     error::GoogleResponse,
+    object::percent_encode,
     resources::common::ListResponse,
-    token::TokenCache,
 };
 
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
-pub struct BucketAccessControlClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
+pub struct BucketAccessControlClient<'a>(pub(super) &'a super::Client);
 
-impl<'a, R> BucketAccessControlClient<'a, R>
-where
-    R: TokenCache,
-{
+impl<'a> BucketAccessControlClient<'a> {
     /// Create a new `BucketAccessControl` using the provided `NewBucketAccessControl`, related to
     /// the `Bucket` provided by the `bucket_name` argument.
     ///
@@ -117,7 +113,12 @@ where
     /// # }
     /// ```
     pub async fn read(&self, bucket: &str, entity: &Entity) -> crate::Result<BucketAccessControl> {
-        let url = format!("{}/b/{}/acl/{}", crate::BASE_URL, percent_encode(bucket), percent_encode(&entity.to_string()));
+        let url = format!(
+            "{}/b/{}/acl/{}",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(&entity.to_string())
+        );
         let result: GoogleResponse<BucketAccessControl> = self
             .0
             .client

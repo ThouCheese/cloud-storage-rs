@@ -1,17 +1,13 @@
 use crate::{
     bucket_access_control::Entity,
     default_object_access_control::{DefaultObjectAccessControl, NewDefaultObjectAccessControl},
-    token::TokenCache,
 };
 
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
 #[derive(Debug)]
-pub struct DefaultObjectAccessControlClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
+pub struct DefaultObjectAccessControlClient<'a>(pub(super) &'a super::Client);
 
-impl<'a, R> DefaultObjectAccessControlClient<'a, R>
-where
-    R: TokenCache,
-{
+impl<'a> DefaultObjectAccessControlClient<'a> {
     /// Create a new `DefaultObjectAccessControl` entry on the specified bucket.
     /// ### Important
     /// Important: This method fails with a `400 Bad Request` response for buckets with uniform

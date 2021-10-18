@@ -4,7 +4,6 @@ use reqwest::StatusCode;
 use crate::{
     error::GoogleResponse,
     object::{percent_encode, ComposeRequest, ObjectList, RewriteResponse, SizedByteStream},
-    token::TokenCache,
     ListRequest, Object,
 };
 
@@ -13,12 +12,9 @@ const BASE_URL: &str = "https://storage.googleapis.com/upload/storage/v1/b";
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
-pub struct ObjectClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
+pub struct ObjectClient<'a>(pub(super) &'a super::Client);
 
-impl<'a, R> ObjectClient<'a, R>
-where
-    R: TokenCache,
-{
+impl<'a> ObjectClient<'a> {
     /// Create a new object.
     /// Upload a file as that is loaded in memory to google cloud storage, where it will be
     /// interpreted according to the mime type you specified.
@@ -569,18 +565,21 @@ where
         );
         let mut headers = self.0.get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: GoogleResponse<RewriteResponse> = self
+        let s =  self
             .0
             .client
             .post(&url)
             .headers(headers)
             .send()
             .await?
-            .json()
+            .text()
             .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s.resource),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+
+        let result: RewriteResponse = serde_json::from_str(dbg!(&s)).unwrap();
+        Ok(result.resource)
+        // match result {
+            // GoogleResponse::Success(s) => Ok(s.resource),
+            // GoogleResponse::Error(e) => Err(e.into()),
+        // }
     }
 }

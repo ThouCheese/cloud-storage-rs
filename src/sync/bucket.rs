@@ -1,17 +1,13 @@
 use crate::{
     bucket::{IamPolicy, TestIamPermission},
-    token::TokenCache,
     Bucket, NewBucket,
 };
 
 /// Operations on [`Bucket`]()s.
 #[derive(Debug)]
-pub struct BucketClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
+pub struct BucketClient<'a>(pub(super) &'a super::Client);
 
-impl<'a, R> BucketClient<'a, R>
-where
-    R: TokenCache,
-{
+impl<'a> BucketClient<'a> {
     /// Creates a new `Bucket`. There are many options that you can provide for creating a new
     /// bucket, so the `NewBucket` resource contains all of them. Note that `NewBucket` implements
     /// `Default`, so you don't have to specify the fields you're not using. And error is returned

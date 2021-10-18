@@ -227,11 +227,12 @@ pub struct ObjectList {
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub(crate) struct RewriteResponse {
-    pub(crate) kind: String,
-    pub(crate) total_bytes_rewritten: String,
-    pub(crate) object_size: String,
-    pub(crate) done: bool,
+    kind: String,
+    total_bytes_rewritten: String,
+    object_size: String,
+    done: bool,
     pub(crate) resource: Object,
 }
 
@@ -920,8 +921,10 @@ mod ring {
     #[cfg_attr(all(feature = "ring", feature = "openssl"), allow(dead_code))]
     #[inline(always)]
     pub fn rsa_pkcs1_sha256(message: &str) -> crate::Result<Vec<u8>> {
-        use ring::rand::SystemRandom;
-        use ring::signature::{RsaKeyPair, RSA_PKCS1_SHA256};
+        use ring::{
+            rand::SystemRandom,
+            signature::{RsaKeyPair, RSA_PKCS1_SHA256},
+        };
 
         let key_pem = pem::parse(crate::SERVICE_ACCOUNT.private_key.as_bytes())?;
         let key = RsaKeyPair::from_pkcs8(&key_pem.contents)?;

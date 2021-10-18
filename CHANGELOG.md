@@ -8,3 +8,6 @@ shepmaster. Big thanks!
 Small fix to the public interface of `sync::ObjectClient` that was not properly sync.
 Fix urlencoding url paths correctly in several places.
 Update cloud storage to use the new url, `www.googleapis.com` => `storage.googleapis.com`
+
+# 0.11
+@pseguin2011: Implemented a configurable authentication layer through the `TokenCache` trait.

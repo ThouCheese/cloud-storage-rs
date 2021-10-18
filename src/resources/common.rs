@@ -63,7 +63,7 @@ pub enum Role {
 pub(crate) struct ListResponse<T> {
     #[serde(default = "Vec::new")]
     pub items: Vec<T>,
-    pub next_page_token: Option<String>,
+    // pub next_page_token: Option<String>,
 }
 
 /// An entity is used to represent a user or group of users that often have some kind of permission.

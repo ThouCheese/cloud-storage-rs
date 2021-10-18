@@ -1,20 +1,16 @@
 use crate::{
     bucket_access_control::Entity,
-    object::percent_encode,
     error::GoogleResponse,
+    object::percent_encode,
     object_access_control::{NewObjectAccessControl, ObjectAccessControl},
     resources::common::ListResponse,
-    token::TokenCache,
 };
 
 /// Operations on [`ObjectAccessControl`](ObjectAccessControl)s.
 #[derive(Debug)]
-pub struct ObjectAccessControlClient<'a, R: TokenCache>(pub(super) &'a super::Client<R>);
+pub struct ObjectAccessControlClient<'a>(pub(super) &'a super::Client);
 
-impl<'a, R> ObjectAccessControlClient<'a, R>
-where
-    R: TokenCache,
-{
+impl<'a> ObjectAccessControlClient<'a> {
     /// Creates a new ACL entry on the specified `object`.
     ///
     /// ### Important
