@@ -1,6 +1,4 @@
-use crate::{
-    hmac_key::{HmacKey, HmacMeta, HmacState},
-};
+use crate::hmac_key::{HmacKey, HmacMeta, HmacState};
 
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]

@@ -2,7 +2,7 @@ use crate::{
     object::{ComposeRequest, ObjectList},
     ListRequest, Object,
 };
-use futures::TryStreamExt;
+use futures_util::TryStreamExt;
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
