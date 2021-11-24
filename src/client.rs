@@ -51,7 +51,7 @@ impl Client {
     /// at the path specified there as a credentials json file.
     /// 2. It attemps to do the same with the `GOOGLE_APPLICATION_CREDENTIALS` var.
     /// 3. It reads the `SERVICE_ACCOUNT_JSON` environment variable directly as json and uses that
-    /// 4.It attemps to do the same with the `GOOGLE_APPLICATION_CREDENTIALS_JSON` var.
+    /// 4. It attemps to do the same with the `GOOGLE_APPLICATION_CREDENTIALS_JSON` var.
     pub fn new() -> Self {
         Default::default()
     }
