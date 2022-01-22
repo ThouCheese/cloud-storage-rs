@@ -40,7 +40,7 @@ impl Client {
     }
 
     /// Initializer with a provided refreshable token
-    pub fn with_cache(token_cache: impl crate::TokenCache + 'static) -> crate::Result<Self> {
+    pub fn with_cache(token_cache: impl crate::TokenCache + Send + 'static) -> crate::Result<Self> {
         Ok(Self {
             runtime: crate::runtime()?,
             client: crate::Client::with_cache(token_cache),

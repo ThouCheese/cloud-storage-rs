@@ -11,3 +11,6 @@ Update cloud storage to use the new url, `www.googleapis.com` => `storage.google
 
 # 0.11
 @pseguin2011: Implemented a configurable authentication layer through the `TokenCache` trait.
+
+# 0.12
+Implement customisable authentication providers, via the `Client::with_cache` method.

@@ -1,6 +1,6 @@
 //! Clients for Google Cloud Storage endpoints.
 
-use std::fmt;
+use std::{fmt, sync};
 
 use crate::token::TokenCache;
 
@@ -22,7 +22,7 @@ pub use object_access_control::ObjectAccessControlClient;
 pub struct Client {
     client: reqwest::Client,
     /// Static `Token` struct that caches
-    token_cache: Box<dyn crate::TokenCache>,
+    token_cache: sync::Arc<dyn crate::TokenCache + Send>,
 }
 
 impl fmt::Debug for Client {
@@ -38,7 +38,7 @@ impl Default for Client {
     fn default() -> Self {
         Self {
             client: Default::default(),
-            token_cache: Box::new(crate::Token::default()),
+            token_cache: sync::Arc::new(crate::Token::default()),
         }
     }
 }
@@ -57,10 +57,10 @@ impl Client {
     }
 
     /// Initializer with a provided refreshable token
-    pub fn with_cache(token: impl TokenCache + 'static) -> Self {
+    pub fn with_cache(token: impl TokenCache + Send + 'static) -> Self {
         Self {
             client: Default::default(),
-            token_cache: Box::new(token),
+            token_cache: sync::Arc::new(token),
         }
     }
 
