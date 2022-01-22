@@ -1,6 +1,4 @@
-use crate::{
-    bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl},
-};
+use crate::bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl};
 
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
 #[derive(Debug)]

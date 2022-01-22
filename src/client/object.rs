@@ -1,4 +1,4 @@
-use futures::{stream, Stream, TryStream};
+use futures_util::{stream, Stream, TryStream};
 use reqwest::StatusCode;
 
 use crate::{
@@ -322,7 +322,7 @@ impl<'a> ObjectClient<'a> {
         bucket: &str,
         file_name: &str,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
-        use futures::{StreamExt, TryStreamExt};
+        use futures_util::{StreamExt, TryStreamExt};
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
             crate::BASE_URL,
@@ -340,7 +340,7 @@ impl<'a> ObjectClient<'a> {
         let size = response.content_length();
         let bytes = response
             .bytes_stream()
-            .map(|chunk| chunk.map(|c| futures::stream::iter(c.into_iter().map(Ok))))
+            .map(|chunk| chunk.map(|c| futures_util::stream::iter(c.into_iter().map(Ok))))
             .try_flatten();
         Ok(SizedByteStream::new(bytes, size))
     }
@@ -565,7 +565,7 @@ impl<'a> ObjectClient<'a> {
         );
         let mut headers = self.0.get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let s =  self
+        let s = self
             .0
             .client
             .post(&url)
@@ -578,8 +578,8 @@ impl<'a> ObjectClient<'a> {
         let result: RewriteResponse = serde_json::from_str(dbg!(&s)).unwrap();
         Ok(result.resource)
         // match result {
-            // GoogleResponse::Success(s) => Ok(s.resource),
-            // GoogleResponse::Error(e) => Err(e.into()),
+        // GoogleResponse::Success(s) => Ok(s.resource),
+        // GoogleResponse::Error(e) => Err(e.into()),
         // }
     }
 }

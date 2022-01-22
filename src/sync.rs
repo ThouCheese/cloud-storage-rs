@@ -26,7 +26,7 @@ pub struct Client {
 impl Client {
     /// Constructs a client with the default token provider, where it attemps to obtain the
     /// credentials from the following locations:
-    /// 
+    ///
     /// 1. Checks for the environment variable `SERVICE_ACCOUNT`, and if it exists, reads the file
     /// at the path specified there as a credentials json file.
     /// 2. It attemps to do the same with the `GOOGLE_APPLICATION_CREDENTIALS` var.

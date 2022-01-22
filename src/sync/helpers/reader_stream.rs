@@ -1,4 +1,4 @@
-use futures::Stream;
+use futures_util::Stream;
 use std::{
     io::{BufReader, Read},
     pin::Pin,
