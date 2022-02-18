@@ -35,6 +35,12 @@ The service account should also have the roles `Service Account Token Creator` (
 ### Sync
 If you're not (yet) interested in running an async executor, then `cloud_storage` exposes a sync api. To use it, enable the feature flag `sync`, and then call instead of calling `function().await`, call `function_sync()`.
 
+You will need to set both the `global-client` and `sync` flags in your Cargo.toml, for example:
+
+```
+cloud-storage = { version = "0.11.0", features = ["global-client", "sync"] }
+```
+
 ### Testing
 To run the tests for this project, first create an enviroment parameter (or entry in the .env file) named TEST_BUCKET. Make sure that this name is not already in use! The tests will create this bucket for its testing purposes. It will also create a couple of other buckets with this name as prefix, but these will be deleted again. Next, you will need a Google Cloud Storage project, for which you must create a service account. Download the service-account.json file and place the path to the file in the `SERVICE_ACCOUNT` environment parameter. Then, run
 ```bash
