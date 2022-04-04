@@ -279,6 +279,55 @@ impl Object {
         crate::runtime()?.block_on(Self::create(bucket, file, filename, mime_type))
     }
 
+    /// Create a new object with metadata.
+    /// Upload a file as that is loaded in memory to google cloud storage, where it will be
+    /// interpreted according to the mime type you specified.
+    /// ## Example
+    /// ```rust,no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
+    /// use cloud_storage::Object;
+    ///
+    /// let file: Vec<u8> = read_cute_cat("cat.png");
+    /// let metadata = serde_json::json!({
+    ///     "metadata": {
+    ///         "custom_id": "1234"
+    ///     }
+    /// });
+    /// Object::create("cat-photos", file, "recently read cat.png", "image/png", &metadata).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "global-client")]
+    pub async fn create_with(
+        bucket: &str,
+        file: Vec<u8>,
+        filename: &str,
+        mime_type: &str,
+        metadata: &serde_json::Value,
+    ) -> crate::Result<Self> {
+        crate::CLOUD_CLIENT
+            .object()
+            .create_with(bucket, file, filename, mime_type, metadata)
+            .await
+    }
+
+    /// Synchronous equivalent of `Object::create_with`
+    ///
+    /// ### Features
+    /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
+    #[cfg(all(feature = "global-client", feature = "sync"))]
+    pub fn create_with_sync(
+        bucket: &str,
+        file: Vec<u8>,
+        filename: &str,
+        mime_type: &str,
+        metadata: &serde_json::Value,
+    ) -> crate::Result<Self> {
+        crate::runtime()?.block_on(Self::create_with(bucket, file, filename, mime_type, metadata))
+    }
+
     /// Create a new object. This works in the same way as `Object::create`, except it does not need
     /// to load the entire file in ram.
     /// ## Example
@@ -981,6 +1030,19 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn create_with() -> Result<(), Box<dyn std::error::Error>> {
+        let bucket = crate::read_test_bucket().await;
+        let metadata = serde_json::json!({
+            "metadata": {
+                "object_id": "1234"
+            }
+        });
+        let obj = Object::create_with(&bucket.name, vec![0, 1], "test-create-meta", "text/plain", &metadata).await?;
+        assert_eq!(obj.metadata.unwrap().get("object_id"), Some(&String::from("1234")));
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn create_streamed() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
         let stream = stream::iter([0u8, 1].iter())
@@ -1302,6 +1364,19 @@ mod tests {
         fn create() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
             Object::create_sync(&bucket.name, vec![0, 1], "test-create", "text/plain")?;
+            Ok(())
+        }
+
+        #[test]
+        fn create_with() -> Result<(), Box<dyn std::error::Error>> {
+            let bucket = crate::read_test_bucket_sync();
+            let metadata = serde_json::json!({
+                "metadata": {
+                    "object_id": "1234"
+                }
+            });
+            let obj = Object::create_with_sync(&bucket.name, vec![0, 1], "test-create-meta", "text/plain", &metadata)?;
+            assert_eq!(obj.metadata.unwrap().get("object_id"), Some(&String::from("1234")));
             Ok(())
         }
 
