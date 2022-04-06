@@ -104,8 +104,8 @@ impl<'a> ObjectClient<'a> {
 
         // single-request upload that includes metadata require a mutlipart request where
         // part 1 is metadata, and part2 is the file to upload
-        let metadata_part = reqwest::multipart::Part::text(metadata.to_string())
-            .mime_str("application/json")?;
+        let metadata_part =
+            reqwest::multipart::Part::text(metadata.to_string()).mime_str("application/json")?;
         let file_part = reqwest::multipart::Part::bytes(file).mime_str(mime_type)?;
         let form = reqwest::multipart::Form::new()
             .part("metadata", metadata_part)
@@ -120,6 +120,71 @@ impl<'a> ObjectClient<'a> {
             .send()
             .await?;
 
+        if response.status() == 200 {
+            Ok(serde_json::from_str(&response.text().await?)?)
+        } else {
+            Err(crate::Error::new(&response.text().await?))
+        }
+    }
+
+    /// Create a new object. This works in the same way as `ObjectClient::create`, except it does not need
+    /// to load the entire file in ram.
+    /// ## Example
+    /// ```rust,no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Client;
+    /// use cloud_storage::Object;
+    ///
+    /// let client = Client::default();
+    /// let file = reqwest::Client::new()
+    ///     .get("https://my_domain.rs/nice_cat_photo.png")
+    ///     .send()
+    ///     .await?
+    ///     .bytes_stream();
+    /// client.object().create_streamed("cat-photos", file, 10, "recently read cat.png", "image/png").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn create_streamed_with<S>(
+        &self,
+        bucket: &str,
+        stream: S,
+        filename: &str,
+        mime_type: &str,
+        metadata: &serde_json::Value,
+    ) -> crate::Result<Object>
+    where
+        S: TryStream + Send + Sync + 'static,
+        S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+        bytes::Bytes: From<S::Ok>,
+    {
+        let url = &format!(
+            "{}/{}/o?uploadType=multipart&name={}",
+            BASE_URL,
+            percent_encode(bucket),
+            percent_encode(filename),
+        );
+        let headers = self.0.get_headers().await?;
+
+        // single-request upload that includes metadata require a mutlipart request where
+        // part 1 is metadata, and part2 is the file to upload
+        let body = reqwest::Body::wrap_stream(stream);
+        let metadata_part =
+            reqwest::multipart::Part::text(metadata.to_string()).mime_str("application/json")?;
+        let file_part = reqwest::multipart::Part::stream(body).mime_str(mime_type)?;
+        let form = reqwest::multipart::Form::new()
+            .part("metadata", metadata_part)
+            .part("file", file_part);
+
+        let response = self
+            .0
+            .client
+            .post(url)
+            .headers(headers)
+            .multipart(form)
+            .send()
+            .await?;
         if response.status() == 200 {
             Ok(serde_json::from_str(&response.text().await?)?)
         } else {

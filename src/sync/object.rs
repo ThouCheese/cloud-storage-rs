@@ -40,6 +40,43 @@ impl<'a> ObjectClient<'a> {
         )
     }
 
+    /// Create a new object.
+    /// Upload a file as that is loaded in memory to google cloud storage, where it will be
+    /// interpreted according to the mime type you specified.
+    /// ## Example
+    /// ```rust,no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
+    /// use cloud_storage::sync::Client;
+    /// use cloud_storage::Object;
+    ///
+    /// let file: Vec<u8> = read_cute_cat("cat.png");
+    /// let client = Client::new()?;
+    /// let metadata = serde_json::json!({
+    ///     "metadata": {
+    ///         "custom_id": "1234"
+    ///     }
+    /// });
+    /// client.object().create_with("cat-photos", file, "recently read cat.png", "image/png", &metadata)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn create_with(
+        &self,
+        bucket: &str,
+        file: Vec<u8>,
+        filename: &str,
+        mime_type: &str,
+        metadata: &serde_json::Value,
+    ) -> crate::Result<Object> {
+        self.0.runtime.block_on(
+            self.0
+                .client
+                .object()
+                .create_with(bucket, file, filename, mime_type, metadata),
+        )
+    }
+
     /// Create a new object. This works in the same way as `ObjectClient::create`, except it does not need
     /// to load the entire file in ram.
     pub fn create_streamed<R>(
@@ -60,6 +97,29 @@ impl<'a> ObjectClient<'a> {
                 .client
                 .object()
                 .create_streamed(bucket, stream, length, filename, mime_type),
+        )
+    }
+
+    /// Create a new object with metadata. This works in the same way as `ObjectClient::create`, except it does not need
+    /// to load the entire file in ram.
+    pub fn create_streamed_with<R>(
+        &self,
+        bucket: &str,
+        file: R,
+        filename: &str,
+        mime_type: &str,
+        metadata: &serde_json::Value,
+    ) -> crate::Result<Object>
+    where
+        R: std::io::Read + Send + Sync + Unpin + 'static,
+    {
+        let stream = super::helpers::ReaderStream::new(file);
+
+        self.0.runtime.block_on(
+            self.0
+                .client
+                .object()
+                .create_streamed_with(bucket, stream, filename, mime_type, metadata),
         )
     }
 
