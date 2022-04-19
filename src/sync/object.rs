@@ -2,7 +2,12 @@ use crate::{
     object::{ComposeRequest, ObjectList},
     ListRequest, Object,
 };
+
+use futures_util::io::AllowStdIo;
+use futures_util::StreamExt;
 use futures_util::TryStreamExt;
+use tokio::io::AsyncWriteExt;
+use tokio_util::compat::FuturesAsyncWriteCompatExt;
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
@@ -179,6 +184,43 @@ impl<'a> ObjectClient<'a> {
         self.0
             .runtime
             .block_on(self.0.client.object().download(bucket, file_name))
+    }
+
+    /// Download the content of the object with the specified name in the specified bucket.
+    /// This works in the same way as `ObjectClient::download_streamed`, except it does not
+    /// need to load the entire result in ram.
+    ///
+    /// ### Example
+    /// ```no_run
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::sync::Client;
+    /// use cloud_storage::Object;
+    ///
+    /// let client = Client::new()?;
+    /// let file = File::create("somefile")?;
+    /// let bytes = client.object().download("my_bucket", "path/to/my/file.png", file)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn download_streamed<W>(&self, bucket: &str, file_name: &str, file: W) -> crate::Result<()>
+    where
+        W: std::io::Write, // + Send + Sync + Unpin + 'static,
+    {
+        self.0.runtime.block_on(async {
+            let mut stream = self
+                .0
+                .client
+                .object()
+                .download_streamed(bucket, file_name)
+                .await?;
+
+            let mut writer = tokio::io::BufWriter::new(AllowStdIo::new(file).compat_write());
+            while let Some(byte) = stream.next().await {
+                writer.write_all(&[byte?]).await?;
+            }
+            writer.flush().await?;
+            Ok(())
+        })
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
