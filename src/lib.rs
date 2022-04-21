@@ -133,6 +133,9 @@ pub type Result<T> = std::result::Result<T, crate::Error>;
 
 const BASE_URL: &str = "https://storage.googleapis.com/storage/v1";
 
+const ISO_8601_BASIC_FORMAT: &[::time::format_description::FormatItem<'_>] = time::macros::format_description!("[year][month][day]T[hour][minute][second]Z");
+time::serde::format_description!(rfc3339_date, Date, "[year]-[month]-[day]");
+
 fn from_str<'de, T, D>(deserializer: D) -> std::result::Result<T, D::Error>
 where
     T: std::str::FromStr,

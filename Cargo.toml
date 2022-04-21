@@ -25,7 +25,7 @@ trust-dns = ["reqwest/trust-dns"]
 [dependencies]
 reqwest =          { version = "0.11", default-features = false, features = ["json", "stream"] }
 percent-encoding = { version = "2",    default-features = false }
-jsonwebtoken =     { version = "7",    default-features = false }
+jsonwebtoken =     { version = "8.1",  default-features = false, features = ["use_pem"] }
 serde =            { version = "1",    default-features = false, features = ["derive"] }
 serde_json =       { version = "1",    default-features = false }
 base64 =           { version = "0.13", default-features = false }
@@ -34,7 +34,7 @@ dotenv =           { version = "0.15", default-features = false }
 openssl =          { version = "0.10", default-features = false, optional = true }
 ring =             { version = "0.16", default-features = false, optional = true }
 pem =              { version = "0.8",  default-features = false, optional = true }
-chrono =           { version = "0.4",  default-features = false, features = ["serde"] }
+time =             { version = "0.3",  default-features = false, features = ["serde-well-known", "serde-human-readable", "macros"]}
 hex =              { version = "0.4",  default-features = false, features = ["alloc"] }
 tokio =            { version = "1.0",  default-features = false, features = ["macros", "rt"] }
 futures-util =     { version = "0.3",  default_features = false, features = ["alloc"] }
