@@ -349,7 +349,7 @@ impl<'a> ObjectClient<'a> {
     /// information in `object`.
     ///
     /// Note that if the `name` or `bucket` fields are changed, the object will not be found.
-    /// See [`rewrite`], [`copy`], or [`rename`] for similar operations.
+    /// See [`rewrite`] or [`copy`] for similar operations.
     /// ### Example
     /// ```no_run
     /// # #[tokio::main]
