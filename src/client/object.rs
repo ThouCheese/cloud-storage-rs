@@ -314,6 +314,7 @@ impl<'a> ObjectClient<'a> {
     /// while let Some(byte) = stream.next().await {
     ///     file.write_all(&[byte.unwrap()]).await.unwrap();
     /// }
+    /// file.flush().await?;
     /// # Ok(())
     /// # }
     /// ```
