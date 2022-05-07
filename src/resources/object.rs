@@ -436,7 +436,7 @@ impl Object {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
-    /// use futures::StreamExt;
+    /// use futures_util::stream::StreamExt;
     /// use std::fs::File;
     /// use std::io::{BufWriter, Write};
     ///

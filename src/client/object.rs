@@ -304,7 +304,7 @@ impl<'a> ObjectClient<'a> {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Client;
     /// use cloud_storage::Object;
-    /// use futures::StreamExt;
+    /// use futures_util::stream::StreamExt;
     /// use tokio::fs::File;
     /// use tokio::io::{AsyncWriteExt, BufWriter};
     ///
