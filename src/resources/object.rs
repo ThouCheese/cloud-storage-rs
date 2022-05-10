@@ -39,7 +39,7 @@ pub struct Object {
     pub updated: time::OffsetDateTime,
     /// The deletion time of the object in RFC 3339 format. Returned if and only if this version of
     /// the object is no longer a live version, but remains in the bucket as a noncurrent version.
-    #[serde(with = "time::serde::rfc3339::option")]
+    #[serde(default, with = "time::serde::rfc3339::option")]
     pub time_deleted: Option<time::OffsetDateTime>,
     /// Whether or not the object is subject to a temporary hold.
     pub temporary_hold: Option<bool>,
@@ -47,7 +47,7 @@ pub struct Object {
     pub event_based_hold: Option<bool>,
     /// The earliest time that the object can be deleted, based on a bucket's retention policy, in
     /// RFC 3339 format.
-    #[serde(with = "time::serde::rfc3339::option")]
+    #[serde(default, with = "time::serde::rfc3339::option")]
     pub retention_expiration_time: Option<time::OffsetDateTime>,
     /// Storage class of the object.
     pub storage_class: String,

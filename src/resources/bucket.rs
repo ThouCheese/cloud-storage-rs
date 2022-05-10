@@ -301,7 +301,7 @@ pub struct Condition {
     /// A date in `RFC 3339` format with only the date part (for instance, "2013-01-15"). This
     /// condition is satisfied when an object is created before midnight of the specified date in
     /// UTC.
-    #[serde(with = "crate::rfc3339_date::option")]
+    #[serde(default, with = "crate::rfc3339_date::option")]
     pub created_before: Option<time::Date>,
     /// Relevant only for versioned objects. If the value is true, this condition matches the live
     /// version of objects; if the value is `false`, it matches noncurrent versions of objects.
