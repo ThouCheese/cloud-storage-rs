@@ -38,11 +38,7 @@ impl<'a> BucketAccessControlClient<'a> {
         bucket: &str,
         new_bucket_access_control: &NewBucketAccessControl,
     ) -> crate::Result<BucketAccessControl> {
-        let url = dbg!(format!(
-            "{}/b/{}/acl",
-            crate::BASE_URL,
-            percent_encode(bucket),
-        ));
+        let url = format!("{}/b/{}/acl", crate::BASE_URL, percent_encode(bucket));
         let result: GoogleResponse<BucketAccessControl> = self
             .0
             .client

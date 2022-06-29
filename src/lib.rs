@@ -71,7 +71,7 @@
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = Client::default();
 //! let mut object = client.object().read("mybucket", "myfile").await?;
-//! object.name = "mybetterfile".to_string();
+//! object.content_type = Some("application/xml".to_string());
 //! client.object().update(&object).await?;
 //! # Ok(())
 //! # }

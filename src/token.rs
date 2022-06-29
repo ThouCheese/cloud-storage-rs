@@ -17,7 +17,7 @@ pub trait TokenCache: Sync {
     /// the token.
     async fn get(&self, client: &reqwest::Client) -> crate::Result<String> {
         match self.token_and_exp().await {
-            Some((token, exp)) if now() > exp => Ok(token),
+            Some((token, exp)) if now() + 300 < exp => Ok(token),
             _ => {
                 let (token, exp) = self.fetch_token(client).await?;
                 self.set_token(token, exp).await?;
