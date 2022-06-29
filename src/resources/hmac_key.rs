@@ -39,9 +39,11 @@ pub struct HmacMeta {
     /// The state of the key.
     pub state: HmacState,
     /// The creation time of the HMAC key.
-    pub time_created: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub time_created: time::OffsetDateTime,
     /// The last modification time of the HMAC key metadata.
-    pub updated: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated: time::OffsetDateTime,
     /// HTTP 1.1 Entity tag for the HMAC key.
     pub etag: String,
 }
