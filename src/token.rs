@@ -25,7 +25,7 @@ pub trait TokenCache: Sync {
                 self.token_and_exp()
                     .await
                     .map(|(t, _)| t)
-                    .ok_or(crate::Error::Other("Token is not set".to_string()))
+                    .ok_or_else(|| crate::Error::Other("Token is not set".to_string()))
             }
         }
     }
@@ -105,7 +105,7 @@ impl TokenCache for Token {
 
         let claims = Claims {
             iss: crate::SERVICE_ACCOUNT.client_email.clone(),
-            scope: self.scope().await.into(),
+            scope: self.scope().await,
             aud: "https://www.googleapis.com/oauth2/v4/token".to_string(),
             exp,
             iat: now,
