@@ -23,6 +23,8 @@ pub struct Client {
     client: reqwest::Client,
     /// Static `Token` struct that caches
     token_cache: sync::Arc<dyn crate::TokenCache + Send>,
+    auth_required: bool,
+    custom_url: Option<String>,
 }
 
 impl fmt::Debug for Client {
@@ -39,6 +41,8 @@ impl Default for Client {
         Self {
             client: Default::default(),
             token_cache: sync::Arc::new(crate::Token::default()),
+            auth_required: true,
+            custom_url: None,
         }
     }
 }
@@ -61,6 +65,8 @@ impl Client {
         Self {
             client: Default::default(),
             token_cache: sync::Arc::new(token),
+            auth_required: Default::default(),
+            custom_url: Default::default(),
         }
     }
 
@@ -96,11 +102,36 @@ impl Client {
 
     async fn get_headers(&self) -> crate::Result<reqwest::header::HeaderMap> {
         let mut result = reqwest::header::HeaderMap::new();
+
+        if (!self.auth_required) {
+            return Ok(result);
+        }
+
         let token = self.token_cache.get(&self.client).await?;
         result.insert(
             reqwest::header::AUTHORIZATION,
             format!("Bearer {}", token).parse().unwrap(),
         );
         Ok(result)
+    }
+
+    /// impl for [Allow usage w/ an emulator #96](https://github.com/ThouCheese/cloud-storage-rs/issues/96)
+    pub fn disable_auth(&self) -> Self {
+        Self {
+            client: self.client.clone(),
+            token_cache: self.token_cache.clone(),
+            auth_required: false,
+            custom_url: self.custom_url.clone(),
+        }
+    }
+
+    /// impl for [Allow usage w/ an emulator #96](https://github.com/ThouCheese/cloud-storage-rs/issues/96)
+    pub fn base_url(&self, url: &str) -> Self {
+        Self {
+            client: self.client.clone(),
+            token_cache: self.token_cache.clone(),
+            auth_required: self.auth_required,
+            custom_url: Some(url.to_string()),
+        }
     }
 }
