@@ -10,6 +10,15 @@ use crate::{
 // Object uploads has its own url for some reason
 const BASE_URL: &str = "https://storage.googleapis.com/upload/storage/v1/b";
 
+fn base_url(client: &super::Client) -> String {
+    let base_url = if let Some(url) = client.custom_url.as_ref() {
+        url
+    } else {
+        BASE_URL
+    };
+    base_url.to_string()
+}
+
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
 pub struct ObjectClient<'a>(pub(super) &'a super::Client);
@@ -41,9 +50,11 @@ impl<'a> ObjectClient<'a> {
     ) -> crate::Result<Object> {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
+        let base_url = base_url(&self.0);
+
         let url = &format!(
             "{}/{}/o?uploadType=media&name={}",
-            BASE_URL,
+            base_url,
             percent_encode(bucket),
             percent_encode(filename),
         );
@@ -99,9 +110,11 @@ impl<'a> ObjectClient<'a> {
     {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
+        let base_url = base_url(&self.0);
+
         let url = &format!(
             "{}/{}/o?uploadType=media&name={}",
-            BASE_URL,
+            base_url,
             percent_encode(bucket),
             percent_encode(filename),
         );
@@ -172,7 +185,7 @@ impl<'a> ObjectClient<'a> {
         Ok(stream::unfold(
             ListState::Start(list_request),
             move |mut state| async move {
-                let url = format!("{}/b/{}/o", crate::BASE_URL, percent_encode(bucket));
+                let url = format!("{}/b/{}/o", base_url(&client), percent_encode(bucket));
                 let headers = match client.get_headers().await {
                     Ok(h) => h,
                     Err(e) => return Some((Err(e), state)),
@@ -241,9 +254,10 @@ impl<'a> ObjectClient<'a> {
     /// # }
     /// ```
     pub async fn read(&self, bucket: &str, file_name: &str) -> crate::Result<Object> {
+        let base_url = base_url(&self.0);
         let url = format!(
             "{}/b/{}/o/{}",
-            crate::BASE_URL,
+            base_url,
             percent_encode(bucket),
             percent_encode(file_name),
         );
@@ -276,9 +290,10 @@ impl<'a> ObjectClient<'a> {
     /// # }
     /// ```
     pub async fn download(&self, bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
+        let base_url = base_url(&self.0);
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
-            crate::BASE_URL,
+            base_url,
             percent_encode(bucket),
             percent_encode(file_name),
         );
@@ -324,9 +339,10 @@ impl<'a> ObjectClient<'a> {
         file_name: &str,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
         use futures_util::{StreamExt, TryStreamExt};
+        let base_url = base_url(&self.0);
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
-            crate::BASE_URL,
+            base_url,
             percent_encode(bucket),
             percent_encode(file_name),
         );
@@ -366,9 +382,10 @@ impl<'a> ObjectClient<'a> {
     /// # }
     /// ```
     pub async fn update(&self, object: &Object) -> crate::Result<Object> {
+        let base_url = base_url(&self.0);
         let url = format!(
             "{}/b/{}/o/{}",
-            crate::BASE_URL,
+            base_url,
             percent_encode(&object.bucket),
             percent_encode(&object.name),
         );
@@ -402,9 +419,10 @@ impl<'a> ObjectClient<'a> {
     /// # }
     /// ```
     pub async fn delete(&self, bucket: &str, file_name: &str) -> crate::Result<()> {
+        let base_url = base_url(&self.0);
         let url = format!(
             "{}/b/{}/o/{}",
-            crate::BASE_URL,
+            base_url,
             percent_encode(bucket),
             percent_encode(file_name),
         );
@@ -460,9 +478,10 @@ impl<'a> ObjectClient<'a> {
         req: &ComposeRequest,
         destination_object: &str,
     ) -> crate::Result<Object> {
+        let base_url = base_url(&self.0);
         let url = format!(
             "{}/b/{}/o/{}/compose",
-            crate::BASE_URL,
+            base_url,
             percent_encode(bucket),
             percent_encode(destination_object)
         );
@@ -507,7 +526,7 @@ impl<'a> ObjectClient<'a> {
 
         let url = format!(
             "{base}/b/{sBucket}/o/{sObject}/copyTo/b/{dBucket}/o/{dObject}",
-            base = crate::BASE_URL,
+            base = base_url(&self.0),
             sBucket = percent_encode(&object.bucket),
             sObject = percent_encode(&object.name),
             dBucket = percent_encode(destination_bucket),
@@ -562,7 +581,7 @@ impl<'a> ObjectClient<'a> {
 
         let url = format!(
             "{base}/b/{sBucket}/o/{sObject}/rewriteTo/b/{dBucket}/o/{dObject}",
-            base = crate::BASE_URL,
+            base = base_url(&self.0),
             sBucket = percent_encode(&object.bucket),
             sObject = percent_encode(&object.name),
             dBucket = percent_encode(destination_bucket),
