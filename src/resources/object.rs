@@ -32,24 +32,29 @@ pub struct Object {
     /// as application/octet-stream.
     pub content_type: Option<String>,
     /// The creation time of the object in RFC 3339 format.
-    pub time_created: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub time_created: time::OffsetDateTime,
     /// The modification time of the object metadata in RFC 3339 format.
-    pub updated: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated: time::OffsetDateTime,
     /// The deletion time of the object in RFC 3339 format. Returned if and only if this version of
     /// the object is no longer a live version, but remains in the bucket as a noncurrent version.
-    pub time_deleted: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, with = "time::serde::rfc3339::option")]
+    pub time_deleted: Option<time::OffsetDateTime>,
     /// Whether or not the object is subject to a temporary hold.
     pub temporary_hold: Option<bool>,
     /// Whether or not the object is subject to an event-based hold.
     pub event_based_hold: Option<bool>,
     /// The earliest time that the object can be deleted, based on a bucket's retention policy, in
     /// RFC 3339 format.
-    pub retention_expiration_time: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, with = "time::serde::rfc3339::option")]
+    pub retention_expiration_time: Option<time::OffsetDateTime>,
     /// Storage class of the object.
     pub storage_class: String,
     /// The time at which the object's storage class was last changed. When the object is initially
     /// created, it will be set to timeCreated.
-    pub time_storage_class_updated: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub time_storage_class_updated: time::OffsetDateTime,
     /// Content-Length of the data in bytes.
     #[serde(deserialize_with = "crate::from_str")]
     pub size: u64,
@@ -782,7 +787,7 @@ impl Object {
             .join(";");
 
         // 1 construct the canonical request
-        let issue_date = chrono::Utc::now();
+        let issue_date = time::OffsetDateTime::now_utc();
         let file_path = self.path_to_resource(file_path);
         let query_string = Self::get_canonical_query_string(
             &issue_date,
@@ -808,7 +813,7 @@ impl Object {
             {credential_scope}\n\
             {hashed_canonical_request}",
             signing_algorithm = "GOOG4-RSA-SHA256",
-            current_datetime = issue_date.format("%Y%m%dT%H%M%SZ"),
+            current_datetime = issue_date.format(crate::ISO_8601_BASIC_FORMAT).unwrap(),
             credential_scope = Self::get_credential_scope(&issue_date),
             hashed_canonical_request = hex_hash,
         );
@@ -855,7 +860,7 @@ impl Object {
 
     #[inline(always)]
     fn get_canonical_query_string(
-        date: &chrono::DateTime<chrono::Utc>,
+        date: &time::OffsetDateTime,
         exp: u32,
         headers: &str,
         content_disposition: Option<String>,
@@ -873,7 +878,7 @@ impl Object {
             X-Goog-SignedHeaders={signed}",
             algo = "GOOG4-RSA-SHA256",
             cred = percent_encode(&credential),
-            date = date.format("%Y%m%dT%H%M%SZ"),
+            date = date.format(crate::ISO_8601_BASIC_FORMAT).unwrap(),
             exp = exp,
             signed = percent_encode(headers),
         );
@@ -895,8 +900,8 @@ impl Object {
     }
 
     #[inline(always)]
-    fn get_credential_scope(date: &chrono::DateTime<chrono::Utc>) -> String {
-        format!("{}/henk/storage/goog4_request", date.format("%Y%m%d"))
+    fn get_credential_scope(date: &time::OffsetDateTime) -> String {
+        format!("{}/henk/storage/goog4_request", date.format(time::macros::format_description!("[year][month][day]")).unwrap())
     }
 }
 

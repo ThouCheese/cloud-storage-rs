@@ -150,7 +150,7 @@ impl<'a> BucketClient<'a> {
     /// let mut bucket = client.bucket().read("cloud-storage-rs-doc-3").await?;
     /// bucket.retention_policy = Some(RetentionPolicy {
     ///     retention_period: 50,
-    ///     effective_time: chrono::Utc::now() + chrono::Duration::seconds(50),
+    ///     effective_time: time::OffsetDateTime::now_utc() + std::time::Duration::from_secs(50),
     ///     is_locked: Some(false),
     /// });
     /// client.bucket().update(&bucket).await?;

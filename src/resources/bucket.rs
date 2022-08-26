@@ -30,9 +30,11 @@ pub struct Bucket {
     /// The name of the bucket.
     pub name: String,
     /// The creation time of the bucket in RFC 3339 format.
-    pub time_created: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub time_created: time::OffsetDateTime,
     /// The modification time of the bucket in RFC 3339 format.
-    pub updated: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated: time::OffsetDateTime,
     /// Whether or not to automatically apply an eventBasedHold to new objects added to the bucket.
     pub default_event_based_hold: Option<bool>,
     /// The bucket's retention policy, which defines the minimum age an object in the bucket must
@@ -147,7 +149,8 @@ pub struct RetentionPolicy {
     #[serde(deserialize_with = "crate::from_str")]
     pub retention_period: u64,
     /// The time from which the retentionPolicy was effective, in RFC 3339 format.
-    pub effective_time: chrono::DateTime<chrono::Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub effective_time: time::OffsetDateTime,
     /// Whether or not the retentionPolicy is locked. If true, the retentionPolicy cannot be removed
     /// and the retention period cannot be reduced.
     pub is_locked: Option<bool>,
@@ -177,7 +180,8 @@ pub struct UniformBucketLevelAccess {
     ///
     /// iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until
     /// the locked time, after which the field is immutable.
-    pub locked_time: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub locked_time: Option<time::OffsetDateTime>,
 }
 
 /// Contains information about the encryption used for data in this Bucket.
@@ -300,7 +304,8 @@ pub struct Condition {
     /// A date in `RFC 3339` format with only the date part (for instance, "2013-01-15"). This
     /// condition is satisfied when an object is created before midnight of the specified date in
     /// UTC.
-    pub created_before: Option<chrono::NaiveDate>,
+    #[serde(default, with = "crate::rfc3339_date::option")]
+    pub created_before: Option<time::Date>,
     /// Relevant only for versioned objects. If the value is true, this condition matches the live
     /// version of objects; if the value is `false`, it matches noncurrent versions of objects.
     pub is_live: Option<bool>,
@@ -652,7 +657,7 @@ impl Bucket {
     /// let mut bucket = Bucket::read("cloud-storage-rs-doc-3").await?;
     /// bucket.retention_policy = Some(RetentionPolicy {
     ///     retention_period: 50,
-    ///     effective_time: chrono::Utc::now() + chrono::Duration::seconds(50),
+    ///     effective_time: time::OffsetDateTime::now_utc() + std::time::Duration::from_secs(50),
     ///     is_locked: Some(false),
     /// });
     /// bucket.update().await?;
@@ -865,7 +870,7 @@ mod tests {
         let mut bucket = crate::create_test_bucket("test-update").await;
         bucket.retention_policy = Some(RetentionPolicy {
             retention_period: 50,
-            effective_time: chrono::Utc::now() + chrono::Duration::seconds(50),
+            effective_time: time::OffsetDateTime::now_utc() + std::time::Duration::from_secs(50),
             is_locked: Some(false),
         });
         bucket.update().await?;
@@ -971,7 +976,7 @@ mod tests {
             let mut bucket = crate::create_test_bucket_sync("test-update");
             bucket.retention_policy = Some(RetentionPolicy {
                 retention_period: 50,
-                effective_time: chrono::Utc::now() + chrono::Duration::seconds(50),
+                effective_time: time::OffsetDateTime::now_utc() + std::time::Duration::from_secs(50),
                 is_locked: Some(false),
             });
             bucket.update_sync()?;
