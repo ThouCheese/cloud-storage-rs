@@ -65,6 +65,68 @@ impl<'a> ObjectClient<'a> {
         }
     }
 
+    /// Create a new object. This works in the same way as `ObjectClient::create` but allows setting of metadata for this object.
+    /// Upload a file as that is loaded in memory to google cloud storage, where it will be
+    /// interpreted according to the mime type you specified. The metadata will be set at the time of creation.
+    /// ## Example
+    /// ```rust,no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
+    /// use cloud_storage::Client;
+    /// use cloud_storage::Object;
+    ///
+    /// let file: Vec<u8> = read_cute_cat("cat.png");
+    /// let client = Client::default();
+    /// let metadata = serde_json::json!({
+    ///     "metadata": {
+    ///         "custom_id": "1234"
+    ///     }
+    /// });
+    /// client.object().create_with("cat-photos", file, "recently read cat.png", "image/png", &metadata).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn create_with(
+        &self,
+        bucket: &str,
+        file: Vec<u8>,
+        filename: &str,
+        mime_type: &str,
+        metadata: &serde_json::Value,
+    ) -> crate::Result<Object> {
+        let url = &format!(
+            "{}/{}/o?uploadType=multipart&name={}",
+            BASE_URL,
+            percent_encode(bucket),
+            percent_encode(filename),
+        );
+
+        // single-request upload that includes metadata require a mutlipart request where
+        // part 1 is metadata, and part2 is the file to upload
+        let metadata_part = reqwest::multipart::Part::text(metadata.to_string())
+            .mime_str("application/json")?;
+        let file_part = reqwest::multipart::Part::bytes(file).mime_str(mime_type)?;
+        let form = reqwest::multipart::Form::new()
+            .part("metadata", metadata_part)
+            .part("file", file_part);
+        let headers = self.0.get_headers().await?;
+        let response = self
+            .0
+            .client
+            .post(url)
+            .headers(headers)
+            .multipart(form)
+            .send()
+            .await?;
+
+        if response.status() == 200 {
+            Ok(serde_json::from_str(&response.text().await?)?)
+        } else {
+            Err(crate::Error::new(&response.text().await?))
+        }
+    }
+
     /// Create a new object. This works in the same way as `ObjectClient::create`, except it does not need
     /// to load the entire file in ram.
     /// ## Example
