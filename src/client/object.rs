@@ -1,4 +1,5 @@
 use futures_util::{stream, Stream, TryStream};
+use std::{fmt, sync};
 use reqwest::StatusCode;
 
 use crate::{
@@ -335,6 +336,102 @@ impl<'a> ObjectClient<'a> {
             .client
             .get(&url)
             .headers(self.0.get_headers().await?)
+            .send()
+            .await?
+            .error_for_status()?;
+        let size = response.content_length();
+        let bytes = response
+            .bytes_stream()
+            .map(|chunk| chunk.map(|c| futures_util::stream::iter(c.into_iter().map(Ok))))
+            .try_flatten();
+        Ok(SizedByteStream::new(bytes, size))
+    }
+
+    /// Download the range of content of the object with the specified name in the specified bucket.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Client;
+    /// use cloud_storage::Object;
+    ///
+    /// let client = Client::default();
+    /// let bytes = client.object().download("my_bucket", "path/to/my/file.png").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn download_range(&self, bucket: &str, file_name: &str, start: u64, length: usize) -> crate::Result<Vec<u8>> {
+        let url = format!(
+            "{}/b/{}/o/{}?alt=media",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(file_name),
+        );
+        let resp = self
+            .0
+            .client
+            .get(&url)
+            .headers({ let mut h = self.0.get_headers().await?;
+                          h.insert(
+                              reqwest::header::RANGE, 
+                              format!("bytes={}-{}", start, start + (length - 1) as u64).parse().unwrap());
+                          h
+                      })
+            .send()
+            .await?;
+        if resp.status() == StatusCode::NOT_FOUND {
+            Err(crate::Error::Other(resp.text().await?))
+        } else {
+            Ok(resp.error_for_status()?.bytes().await?.to_vec())
+        }
+    }
+
+    /// Download the range of content of the object with the specified name in the specified bucket, without
+    /// allocating the whole file into a vector.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Client;
+    /// use cloud_storage::Object;
+    /// use futures_util::stream::StreamExt;
+    /// use tokio::fs::File;
+    /// use tokio::io::{AsyncWriteExt, BufWriter};
+    ///
+    /// let client = Client::default();
+    /// let mut stream = client.object().download_streamed("my_bucket", "path/to/my/file.png").await?;
+    /// let mut file = BufWriter::new(File::create("file.png").await.unwrap());
+    /// while let Some(byte) = stream.next().await {
+    ///     file.write_all(&[byte.unwrap()]).await.unwrap();
+    /// }
+    /// file.flush().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn download_range_streamed(
+        &self,
+        bucket: &str,
+        file_name: &str,
+        start: u64,
+        length: usize,
+    ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
+        use futures_util::{StreamExt, TryStreamExt};
+        let url = format!(
+            "{}/b/{}/o/{}?alt=media",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(file_name),
+        );
+        let response = self
+            .0
+            .client
+            .get(&url)
+            .headers({ let mut h = self.0.get_headers().await?;
+                          h.insert(
+                              reqwest::header::RANGE, 
+                              format!("bytes={}-{}", start, start + (length - 1) as u64).parse().unwrap());
+                          h
+                      })
             .send()
             .await?
             .error_for_status()?;
