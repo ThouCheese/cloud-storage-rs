@@ -276,24 +276,7 @@ impl<'a> ObjectClient<'a> {
     /// # }
     /// ```
     pub async fn download(&self, bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
-        let url = format!(
-            "{}/b/{}/o/{}?alt=media",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(file_name),
-        );
-        let resp = self
-            .0
-            .client
-            .get(&url)
-            .headers(self.0.get_headers().await?)
-            .send()
-            .await?;
-        if resp.status() == StatusCode::NOT_FOUND {
-            Err(crate::Error::Other(resp.text().await?))
-        } else {
-            Ok(resp.error_for_status()?.bytes().await?.to_vec())
-        }
+        self.download_range(bucket, file_name, 0, 0).await
     }
 
     /// Download the content of the object with the specified name in the specified bucket, without
@@ -323,6 +306,79 @@ impl<'a> ObjectClient<'a> {
         bucket: &str,
         file_name: &str,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
+        self.download_range_streamed(bucket, file_name, 0, 0).await
+    }
+
+    /// Download the range of content of the object with the specified name in the specified bucket.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Client;
+    /// use cloud_storage::Object;
+    ///
+    /// let client = Client::default();
+    /// let bytes = client.object().download_range("my_bucket", "path/to/my/file.png", 0, 100).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn download_range(
+        &self,
+        bucket: &str,
+        file_name: &str,
+        start: u64,
+        length: usize,
+    ) -> crate::Result<Vec<u8>> {
+        let url = format!(
+            "{}/b/{}/o/{}?alt=media",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(file_name),
+        );
+        let mut headers = self.0.get_headers().await?;
+        if length > 0 {
+            headers.insert(
+                reqwest::header::RANGE,
+                format!("bytes={}-{}", start, start + (length - 1) as u64).parse()?,
+            );
+        }
+        let resp = self.0.client.get(&url).headers(headers).send().await?;
+        if resp.status() == StatusCode::NOT_FOUND {
+            Err(crate::Error::Other(resp.text().await?))
+        } else {
+            Ok(resp.error_for_status()?.bytes().await?.to_vec())
+        }
+    }
+
+    /// Download the range of content of the object with the specified name in the specified bucket, without
+    /// allocating the whole file into a vector.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Client;
+    /// use cloud_storage::Object;
+    /// use futures_util::stream::StreamExt;
+    /// use tokio::fs::File;
+    /// use tokio::io::{AsyncWriteExt, BufWriter};
+    ///
+    /// let client = Client::default();
+    /// let mut stream = client.object().download_range_streamed("my_bucket", "path/to/my/file.png", 0, 100).await?;
+    /// let mut file = BufWriter::new(File::create("file.png").await.unwrap());
+    /// while let Some(byte) = stream.next().await {
+    ///     file.write_all(&[byte.unwrap()]).await.unwrap();
+    /// }
+    /// file.flush().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn download_range_streamed(
+        &self,
+        bucket: &str,
+        file_name: &str,
+        start: u64,
+        length: usize,
+    ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
         use futures_util::{StreamExt, TryStreamExt};
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
@@ -330,11 +386,18 @@ impl<'a> ObjectClient<'a> {
             percent_encode(bucket),
             percent_encode(file_name),
         );
+        let mut headers = self.0.get_headers().await?;
+        if length > 0 {
+            headers.insert(
+                reqwest::header::RANGE,
+                format!("bytes={}-{}", start, start + (length - 1) as u64).parse()?,
+            );
+        }
         let response = self
             .0
             .client
             .get(&url)
-            .headers(self.0.get_headers().await?)
+            .headers(headers)
             .send()
             .await?
             .error_for_status()?;
