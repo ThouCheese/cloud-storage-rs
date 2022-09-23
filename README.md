@@ -17,14 +17,14 @@ let new_bucket = NewBucket { name: "mybucket", ..Default::default() }
 let bucket = Bucket::create(new_bucket).await?;
 // upload a file to our new bucket
 let content = b"Your file is now on google cloud storage!";
-bucket.upload(content, "folder/filename.txt", "application/text").await?;
-let mut object = Object::create("mybucket", content, "folder/filename.txt", "application/text").await?;
+bucket.upload(content, "folder/filename.txt", "application/text", None).await?;
+let mut object = Object::create("mybucket", content, "folder/filename.txt", "application/text", None).await?;
 // let's copy the file
-object.copy("mybucket2: electric boogaloo", "otherfolder/filename.txt").await?;
+object.copy("mybucket2: electric boogaloo", "otherfolder/filename.txt", None).await?;
 // print a link to the file
 println!("{}", object.download_url(1000)); // download link for 1000 seconds
 // remove the file from the bucket
-object.delete().await?;
+object.delete(None).await?;
 ```
 
 Authorization can be granted using the `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS` environment variable, which should contain path to the `service-account-*******.json` file that contains the Google credentials. Alternatively, the service account credentials can be provided as JSON directly through the `SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_JSON` environment variable, which is useful when providing secrets in CI or k8s.
