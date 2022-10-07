@@ -449,13 +449,45 @@ impl Object {
     /// # }
     /// ```
     #[cfg(feature = "global-client")]
+    #[deprecated = "Streaming u8 is inefficient, use download_bytes_stream instead"]
     pub async fn download_streamed(
         bucket: &str,
         file_name: &str,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
+        #[allow(deprecated)] // this calling function is deprecated as well
         crate::CLOUD_CLIENT
             .object()
             .download_streamed(bucket, file_name)
+            .await
+    }
+
+    /// Download the content of the object with the specified name in the specified bucket, without
+    /// allocating the whole file into a vector.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Object;
+    /// use futures_util::stream::StreamExt;
+    /// use std::fs::File;
+    /// use std::io::{BufWriter, Write};
+    ///
+    /// let mut stream = Object::download_bytes_stream("my_bucket", "path/to/my/file.png").await?;
+    /// let mut file = BufWriter::new(File::create("file.png")?);
+    /// while let Some(bytes) = stream.next().await {
+    ///     file.write_all(&bytes?)?;
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "global-client")]
+    pub async fn download_bytes_stream(
+        bucket: &str,
+        file_name: &str,
+    ) -> crate::Result<impl Stream<Item = crate::Result<crate::Bytes>> + Unpin> {
+        crate::CLOUD_CLIENT
+            .object()
+            .download_bytes_stream(bucket, file_name)
             .await
     }
 
