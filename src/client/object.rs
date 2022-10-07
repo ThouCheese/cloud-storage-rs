@@ -1,5 +1,5 @@
-use futures_util::{stream, Stream, TryStream};
-use reqwest::StatusCode;
+use futures_util::{stream, Stream, StreamExt, TryStream, TryStreamExt};
+use reqwest::{Response, StatusCode};
 
 use crate::{
     error::GoogleResponse,
@@ -262,6 +262,28 @@ impl<'a> ObjectClient<'a> {
         }
     }
 
+    async fn download_response(&self, bucket: &str, file_name: &str) -> crate::Result<Response> {
+        let url = format!(
+            "{}/b/{}/o/{}?alt=media",
+            crate::BASE_URL,
+            percent_encode(bucket),
+            percent_encode(file_name),
+        );
+        let resp = self
+            .0
+            .client
+            .get(&url)
+            .headers(self.0.get_headers().await?)
+            .send()
+            .await?;
+
+        if resp.status() == StatusCode::NOT_FOUND {
+            Err(crate::Error::Other(resp.text().await?))
+        } else {
+            Ok(resp.error_for_status()?)
+        }
+    }
+
     /// Download the content of the object with the specified name in the specified bucket.
     /// ### Example
     /// ```no_run
@@ -276,24 +298,44 @@ impl<'a> ObjectClient<'a> {
     /// # }
     /// ```
     pub async fn download(&self, bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
-        let url = format!(
-            "{}/b/{}/o/{}?alt=media",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(file_name),
-        );
-        let resp = self
-            .0
-            .client
-            .get(&url)
-            .headers(self.0.get_headers().await?)
-            .send()
-            .await?;
-        if resp.status() == StatusCode::NOT_FOUND {
-            Err(crate::Error::Other(resp.text().await?))
-        } else {
-            Ok(resp.error_for_status()?.bytes().await?.to_vec())
-        }
+        Ok(self
+            .download_response(bucket, file_name)
+            .await?
+            .bytes()
+            .await?
+            .into())
+    }
+
+    /// Download the content of the object with the specified name in the specified bucket, without
+    /// allocating the whole file into a vector.
+    /// ### Example
+    /// ```no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use cloud_storage::Client;
+    /// use cloud_storage::Object;
+    /// use futures_util::stream::StreamExt;
+    /// use tokio::fs::File;
+    /// use tokio::io::{AsyncWriteExt, BufWriter};
+    ///
+    /// let client = Client::default();
+    /// let mut stream = client.object().download_bytes_stream("my_bucket", "path/to/my/file.png").await?;
+    /// let mut file = BufWriter::new(File::create("file.png").await?);
+    /// while let Some(bytes) = stream.next().await {
+    ///     file.write_all(&bytes?).await?;
+    /// }
+    /// file.flush().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn download_bytes_stream(
+        &self,
+        bucket: &str,
+        file_name: &str,
+    ) -> crate::Result<impl Stream<Item = crate::Result<crate::Bytes>> + Unpin> {
+        let response = self.download_response(bucket, file_name).await?;
+        let bytes = response.bytes_stream().map_err(crate::Error::from);
+        Ok(bytes)
     }
 
     /// Download the content of the object with the specified name in the specified bucket, without
@@ -318,26 +360,13 @@ impl<'a> ObjectClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
+    #[deprecated = "Streaming u8 is inefficient, use download_bytes_stream instead"]
     pub async fn download_streamed(
         &self,
         bucket: &str,
         file_name: &str,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
-        use futures_util::{StreamExt, TryStreamExt};
-        let url = format!(
-            "{}/b/{}/o/{}?alt=media",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(file_name),
-        );
-        let response = self
-            .0
-            .client
-            .get(&url)
-            .headers(self.0.get_headers().await?)
-            .send()
-            .await?
-            .error_for_status()?;
+        let response = self.download_response(bucket, file_name).await?;
         let size = response.content_length();
         let bytes = response
             .bytes_stream()

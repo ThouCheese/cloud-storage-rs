@@ -98,6 +98,9 @@ mod error;
 mod resources;
 mod token;
 
+/// re-exported type that appears in public api
+pub use bytes::Bytes;
+
 use crate::resources::service_account::ServiceAccount;
 pub use crate::{
     client::Client,
