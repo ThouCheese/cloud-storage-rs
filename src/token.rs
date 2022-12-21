@@ -1,3 +1,4 @@
+use gcp_auth::AuthenticationManager;
 use std::fmt::{Display, Formatter};
 
 /// Trait that refreshes a token when it is expired
@@ -43,14 +44,6 @@ struct Claims {
     iat: u64,
 }
 
-#[derive(serde::Deserialize, Debug)]
-// #[allow(dead_code)]
-struct TokenResponse {
-    access_token: String,
-    expires_in: u64,
-    // token_type: String,
-}
-
 /// This struct contains a token, an expiry, and an access scope.
 pub struct Token {
     // this field contains the JWT and the expiry thereof. They are in the same Option because if
@@ -71,7 +64,7 @@ impl Display for DefaultTokenData {
 
 impl Default for Token {
     fn default() -> Self {
-        Token::new("https://www.googleapis.com/auth/devstorage.full_control")
+        Token::new("https://www.googleapis.com/auth/cloud-platform")
     }
 }
 
@@ -99,36 +92,11 @@ impl TokenCache for Token {
         Ok(())
     }
 
-    async fn fetch_token(&self, client: &reqwest::Client) -> crate::Result<(String, u64)> {
-        let now = now();
-        let exp = now + 3600;
-
-        let claims = Claims {
-            iss: crate::SERVICE_ACCOUNT.client_email.clone(),
-            scope: self.scope().await,
-            aud: "https://www.googleapis.com/oauth2/v4/token".to_string(),
-            exp,
-            iat: now,
-        };
-        let header = jsonwebtoken::Header {
-            alg: jsonwebtoken::Algorithm::RS256,
-            ..Default::default()
-        };
-        let private_key_bytes = crate::SERVICE_ACCOUNT.private_key.as_bytes();
-        let private_key = jsonwebtoken::EncodingKey::from_rsa_pem(private_key_bytes)?;
-        let jwt = jsonwebtoken::encode(&header, &claims, &private_key)?;
-        let body = [
-            ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
-            ("assertion", &jwt),
-        ];
-        let response: TokenResponse = client
-            .post("https://www.googleapis.com/oauth2/v4/token")
-            .form(&body)
-            .send()
-            .await?
-            .json()
-            .await?;
-        Ok((response.access_token, now + response.expires_in))
+    async fn fetch_token(&self, _client: &reqwest::Client) -> crate::Result<(String, u64)> {
+        let authentication_manager = AuthenticationManager::new().await.unwrap();
+        let scopes = &[self.access_scope.as_str()];
+        let token = authentication_manager.get_token(scopes).await.unwrap();
+        Ok((token.as_str().to_string(), token.expires_at().unwrap().unix_timestamp() as u64))
     }
 }
 
