@@ -86,6 +86,18 @@ pub enum EuropeLocation {
     /// Store the files in Zurich.
     #[serde(rename = "EUROPE-WEST6")]
     Zurich,
+    /// Store the files in Milan.
+    #[serde(rename = "EUROPE-WEST8")]
+    Milan,
+    /// Store the files in Paris.
+    #[serde(rename = "EUROPE-WEST9")]
+    Paris,
+    /// Store the files in Warsaw.
+    #[serde(rename = "EUROPE-CENTRAL2")]
+    Warsaw,
+    /// Store the files in Madrid.
+    #[serde(rename = "EUROPE-SOUTHWEST1")]
+    Madrid,
 }
 
 /// ALl options in Asia.
