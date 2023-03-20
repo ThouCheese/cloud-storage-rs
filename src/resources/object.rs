@@ -788,7 +788,7 @@ impl Object {
         let url = self.sign(&self.name, duration, "PUT", None, &custom_metadata)?;
         let mut headers = HashMap::new();
         for (k, v) in custom_metadata.iter() {
-            headers.insert(format!("x-goog-meta-{}", k.to_string()), v.to_string());
+            headers.insert(format!("x-goog-meta-{}", k), v.to_string());
         }
         Ok((url, headers))
     }
@@ -821,7 +821,7 @@ impl Object {
         let mut headers = vec![("host".to_string(), "storage.googleapis.com".to_string())];
         // Add custom metadata headers, guaranteed unique by HashMap input
         for (k, v) in custom_metadata.iter() {
-            headers.push((format!("x-goog-meta-{}", k.to_string()), v.to_string()));
+            headers.push((format!("x-goog-meta-{}", k), v.to_string()));
         }
         headers.sort_unstable_by(|(k1, _), (k2, _)| k1.cmp(k2));
         let canonical_headers: String = headers
@@ -932,7 +932,9 @@ impl Object {
             signed = percent_encode(headers),
         );
         if let Some(cd) = content_disposition {
-            s.push_str(&format!("&response-content-disposition={}", cd));
+            use std::fmt::Write;
+            write!(s, "&response-content-disposition={}", cd).unwrap();
+            // ^writing into string is infallible
         }
         s
     }

@@ -73,20 +73,9 @@ impl<'a> BucketClient<'a> {
     /// # }
     /// ```
     pub async fn list(&self) -> crate::Result<Vec<Bucket>> {
-        let url = dbg!(format!("{}/b/", crate::BASE_URL));
+        let url = format!("{}/b/", crate::BASE_URL);
         let project = &crate::SERVICE_ACCOUNT.project_id;
         let query = [("project", project)];
-        dbg!(
-            self.0
-                .client
-                .get(&url)
-                .headers(self.0.get_headers().await?)
-                .query(&query)
-                .send()
-                .await?
-                .text()
-                .await
-        )?;
         let result: GoogleResponse<ListResponse<Bucket>> = self
             .0
             .client
