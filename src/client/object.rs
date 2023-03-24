@@ -3,7 +3,11 @@ use reqwest::StatusCode;
 
 use crate::{
     error::GoogleResponse,
-    object::{percent_encode, ComposeRequest, ObjectList, RewriteResponse, SizedByteStream},
+    object::{
+        percent_encode, ComposeParameters, ComposeRequest, CopyParameters, CreateParameters,
+        DeleteParameters, ObjectList, ReadParameters, RewriteParameters, RewriteResponse,
+        SizedByteStream, UpdateParameters,
+    },
     ListRequest, Object,
 };
 
@@ -28,7 +32,7 @@ impl<'a> ObjectClient<'a> {
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
     /// let client = Client::default();
-    /// client.object().create("cat-photos", file, "recently read cat.png", "image/png").await?;
+    /// client.object().create("cat-photos", file, "recently read cat.png", "image/png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -38,6 +42,7 @@ impl<'a> ObjectClient<'a> {
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
+        parameters: Option<CreateParameters>,
     ) -> crate::Result<Object> {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
@@ -54,6 +59,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .post(url)
+            .query(&parameters)
             .headers(headers)
             .body(file)
             .send()
@@ -80,7 +86,7 @@ impl<'a> ObjectClient<'a> {
     ///     .send()
     ///     .await?
     ///     .bytes_stream();
-    /// client.object().create_streamed("cat-photos", file, 10, "recently read cat.png", "image/png").await?;
+    /// client.object().create_streamed("cat-photos", file, 10, "recently read cat.png", "image/png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -91,6 +97,7 @@ impl<'a> ObjectClient<'a> {
         length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
+        parameters: Option<CreateParameters>,
     ) -> crate::Result<Object>
     where
         S: TryStream + Send + Sync + 'static,
@@ -116,6 +123,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .post(url)
+            .query(&parameters)
             .headers(headers)
             .body(body)
             .send()
@@ -236,11 +244,17 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::default();
-    /// let object = client.object().read("my_bucket", "path/to/my/file.png").await?;
+    /// let object = client.object().read("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn read(&self, bucket: &str, file_name: &str) -> crate::Result<Object> {
+    pub async fn read(
+        &self,
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<ReadParameters>,
+    ) -> crate::Result<Object> {
+        //let paramters = qs::
         let url = format!(
             "{}/b/{}/o/{}",
             crate::BASE_URL,
@@ -251,6 +265,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .get(&url)
+            .query(&parameters)
             .headers(self.0.get_headers().await?)
             .send()
             .await?
@@ -271,11 +286,16 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::default();
-    /// let bytes = client.object().download("my_bucket", "path/to/my/file.png").await?;
+    /// let bytes = client.object().download("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn download(&self, bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
+    pub async fn download(
+        &self,
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<ReadParameters>,
+    ) -> crate::Result<Vec<u8>> {
         let url = format!(
             "{}/b/{}/o/{}?alt=media",
             crate::BASE_URL,
@@ -286,6 +306,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .get(&url)
+            .query(&parameters)
             .headers(self.0.get_headers().await?)
             .send()
             .await?;
@@ -309,7 +330,7 @@ impl<'a> ObjectClient<'a> {
     /// use tokio::io::{AsyncWriteExt, BufWriter};
     ///
     /// let client = Client::default();
-    /// let mut stream = client.object().download_streamed("my_bucket", "path/to/my/file.png").await?;
+    /// let mut stream = client.object().download_streamed("my_bucket", "path/to/my/file.png", None).await?;
     /// let mut file = BufWriter::new(File::create("file.png").await.unwrap());
     /// while let Some(byte) = stream.next().await {
     ///     file.write_all(&[byte.unwrap()]).await.unwrap();
@@ -322,6 +343,7 @@ impl<'a> ObjectClient<'a> {
         &self,
         bucket: &str,
         file_name: &str,
+        parameters: Option<ReadParameters>,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
         use futures_util::{StreamExt, TryStreamExt};
         let url = format!(
@@ -334,6 +356,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .get(&url)
+            .query(&parameters)
             .headers(self.0.get_headers().await?)
             .send()
             .await?
@@ -359,13 +382,17 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::default();
-    /// let mut object = client.object().read("my_bucket", "path/to/my/file.png").await?;
+    /// let mut object = client.object().read("my_bucket", "path/to/my/file.png", None).await?;
     /// object.content_type = Some("application/xml".to_string());
-    /// client.object().update(&object).await?;
+    /// client.object().update(&object, None).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn update(&self, object: &Object) -> crate::Result<Object> {
+    pub async fn update(
+        &self,
+        object: &Object,
+        parameters: Option<UpdateParameters>,
+    ) -> crate::Result<Object> {
         let url = format!(
             "{}/b/{}/o/{}",
             crate::BASE_URL,
@@ -376,6 +403,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .put(&url)
+            .query(&parameters)
             .headers(self.0.get_headers().await?)
             .json(&object)
             .send()
@@ -397,11 +425,16 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::default();
-    /// client.object().delete("my_bucket", "path/to/my/file.png").await?;
+    /// client.object().delete("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn delete(&self, bucket: &str, file_name: &str) -> crate::Result<()> {
+    pub async fn delete(
+        &self,
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<DeleteParameters>,
+    ) -> crate::Result<()> {
         let url = format!(
             "{}/b/{}/o/{}",
             crate::BASE_URL,
@@ -412,6 +445,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .delete(&url)
+            .query(&parameters)
             .headers(self.0.get_headers().await?)
             .send()
             .await?;
@@ -431,8 +465,8 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::object::{Object, ComposeRequest, SourceObject};
     ///
     /// let client = Client::default();
-    /// let obj1 = client.object().read("my_bucket", "file1").await?;
-    /// let obj2 = client.object().read("my_bucket", "file2").await?;
+    /// let obj1 = client.object().read("my_bucket", "file1", None).await?;
+    /// let obj2 = client.object().read("my_bucket", "file2", None).await?;
     /// let compose_request = ComposeRequest {
     ///     kind: "storage#composeRequest".to_string(),
     ///     source_objects: vec![
@@ -449,7 +483,7 @@ impl<'a> ObjectClient<'a> {
     ///     ],
     ///     destination: None,
     /// };
-    /// let obj3 = client.object().compose("my_bucket", &compose_request, "test-concatted-file").await?;
+    /// let obj3 = client.object().compose("my_bucket", &compose_request, "test-concatted-file", None).await?;
     /// // obj3 is now a file with the content of obj1 and obj2 concatted together.
     /// # Ok(())
     /// # }
@@ -459,6 +493,7 @@ impl<'a> ObjectClient<'a> {
         bucket: &str,
         req: &ComposeRequest,
         destination_object: &str,
+        parameters: Option<ComposeParameters>,
     ) -> crate::Result<Object> {
         let url = format!(
             "{}/b/{}/o/{}/compose",
@@ -470,6 +505,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .post(&url)
+            .query(&parameters)
             .headers(self.0.get_headers().await?)
             .json(req)
             .send()
@@ -491,8 +527,8 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::object::{Object, ComposeRequest};
     ///
     /// let client = Client::default();
-    /// let obj1 = client.object().read("my_bucket", "file1").await?;
-    /// let obj2 = client.object().copy(&obj1, "my_other_bucket", "file2").await?;
+    /// let obj1 = client.object().read("my_bucket", "file1", None).await?;
+    /// let obj2 = client.object().copy(&obj1, "my_other_bucket", "file2", None).await?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
@@ -502,6 +538,7 @@ impl<'a> ObjectClient<'a> {
         object: &Object,
         destination_bucket: &str,
         path: &str,
+        parameters: Option<CopyParameters>,
     ) -> crate::Result<Object> {
         use reqwest::header::CONTENT_LENGTH;
 
@@ -519,6 +556,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .post(&url)
+            .query(&parameters)
             .headers(headers)
             .send()
             .await?
@@ -546,8 +584,8 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::object::Object;
     ///
     /// let client = Client::default();
-    /// let obj1 = client.object().read("my_bucket", "file1").await?;
-    /// let obj2 = client.object().rewrite(&obj1, "my_other_bucket", "file2").await?;
+    /// let obj1 = client.object().read("my_bucket", "file1", None).await?;
+    /// let obj2 = client.object().rewrite(&obj1, "my_other_bucket", "file2", None).await?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
@@ -557,6 +595,7 @@ impl<'a> ObjectClient<'a> {
         object: &Object,
         destination_bucket: &str,
         path: &str,
+        parameters: Option<RewriteParameters>,
     ) -> crate::Result<Object> {
         use reqwest::header::CONTENT_LENGTH;
 
@@ -574,6 +613,7 @@ impl<'a> ObjectClient<'a> {
             .0
             .client
             .post(&url)
+            .query(&parameters)
             .headers(headers)
             .send()
             .await?
