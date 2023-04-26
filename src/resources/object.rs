@@ -192,6 +192,304 @@ pub struct ListRequest {
     pub versions: Option<bool>,
 }
 
+/// The parameters that are optionally supplied when creating an object.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateParameters {
+    /// Setting this value is equivalent of setting the `contentEncoding` metadata property of the object.
+    /// This can be useful when uploading an object with `uploadType=media` to indicate the encoding of the content being uploaded.
+    pub content_encoding: Option<String>,
+
+    /// Makes the operation conditional on whether the object's current generation matches the given value.
+    /// Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    pub if_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current generation does not match the given value.
+    /// If no live object exists, the precondition fails.
+    /// Setting to 0 makes the operation succeed only if there is a live version of the object.
+    pub if_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current metageneration matches the given value.
+    pub if_metageneration_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    pub if_metageneration_not_match: Option<usize>,
+
+    /// Resource name of the Cloud KMS key that will be used to encrypt the object.
+    /// If not specified, the request uses the bucket's default Cloud KMS key, if any, or a Google-managed encryption key.
+    pub kms_key_name: Option<String>,
+
+    /// Apply a predefined set of access controls to this object.
+    ///
+    /// Acceptable values are:
+    /// `authenticatedRead`: Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// `bucketOwnerFullControl`: Object owner gets OWNER access, and project team owners get OWNER access.
+    /// `bucketOwnerRead`: Object owner gets OWNER access, and project team owners get READER access.
+    /// `private`: Object owner gets OWNER access.
+    /// `projectPrivate`: Object owner gets OWNER access, and project team members get access according to their roles.
+    /// `publicRead`: Object owner gets OWNER access, and allUsers get READER access.
+    /// If `iamConfiguration.uniformBucketLevelAccess.enabled` is set to `true`, requests that include this parameter fail with a 400 Bad Request response.
+    pub predefined_acl: Option<String>,
+
+    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Acceptable values are:
+    /// `full`: Include all properties.
+    /// `noAcl`: Omit the owner, acl property.
+    pub projection: Option<String>,
+}
+
+/// The parameters that are optionally supplied when reading an object.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadParameters {
+    /// If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    pub generation: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current generation matches the given value.
+    /// Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    pub if_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current generation does not match the given value.
+    /// If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.
+    pub if_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current metageneration matches the given value.
+    pub if_metageneration_match: Option<usize>,
+
+    ///	Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    pub if_metageneration_not_match: Option<usize>,
+
+    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Acceptable values are:
+    /// `full`: Include all properties.
+    /// `noAcl`: Omit the owner, acl property.
+    pub projection: Option<String>,
+}
+
+/// The parameters that are optionally supplied when composing an object.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ComposeParameters {
+    /// Apply a predefined set of access controls to the destination object.
+    ///
+    /// Acceptable values are:
+    /// `authenticatedRead`: Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// `bucketOwnerFullControl`: Object owner gets OWNER access, and project team owners get OWNER access.
+    /// `bucketOwnerRead`: Object owner gets OWNER access, and project team owners get READER access.
+    /// `private`: Object owner gets OWNER access.
+    /// `projectPrivate`: Object owner gets OWNER access, and project team members get access according to their roles.
+    /// `publicRead`: Object owner gets OWNER access, and allUsers get READER access.
+    /// If `iamConfiguration.uniformBucketLevelAccess.enabled` is set to `true`, requests that include this parameter fail with a 400 Bad Request response.
+    pub destination_predefined_acl: Option<String>,
+
+    /// Makes the operation conditional on there being a live destination object with a generation number that matches the given value.
+    /// Setting `ifGenerationMatch` to 0 makes the operation succeed only if there is no live destination object.
+    pub if_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on there being a live destination object with a metageneration number that matches the given value.
+    pub if_metageneration_match: Option<usize>,
+
+    /// Resource name of the Cloud KMS key that will be used to encrypt the composed object.
+    /// If not specified, the request uses the bucket's default Cloud KMS key, if any, or a Google-managed encryption key.
+    pub kms_key_name: Option<String>,
+}
+
+/// The parameters that are optionally supplied when copying an object.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CopyParameters {
+    /// Resource name of the Cloud KMS key that will be used to encrypt the object.
+    /// The Cloud KMS key must be located in same location as the object.
+    //
+    // If the parameter is not specified, the request uses the destination bucket's default encryption key, if any, or the Google-managed encryption key.
+    //
+    // If the object is large, re-encryption with the key may take too long and result in a Deadline exceeded error.
+    // For large objects, consider using the rewrite method instead.
+    pub destination_kms_key_name: Option<String>,
+
+    /// Apply a predefined set of access controls to the destination object.
+    ///
+    /// Acceptable values are:
+    /// `authenticatedRead`: Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// `bucketOwnerFullControl`: Object owner gets OWNER access, and project team owners get OWNER access.
+    /// `bucketOwnerRead`: Object owner gets OWNER access, and project team owners get READER access.
+    /// `private`: Object owner gets OWNER access.
+    /// `projectPrivate`: Object owner gets OWNER access, and project team members get access according to their roles.
+    /// `publicRead`: Object owner gets OWNER access, and allUsers get READER access.
+    /// If `iamConfiguration.uniformBucketLevelAccess.enabled` is set to `true`, requests that include this parameter fail with a 400 Bad Request response.
+    pub destination_predefined_acl: Option<String>,
+
+    /// Makes the operation conditional on there being a live destination object with a generation number that matches the given value.
+    /// Setting `ifGenerationMatch` to 0 makes the operation succeed only if there is no live destination object.
+    pub if_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on there being a live destination object with a generation number that does not match the given value.
+    /// If no live destination object exists, the precondition fails.
+    /// Setting `ifGenerationNotMatch` to 0 makes the operation succeed if there is a live version of the object.
+    pub if_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on there being a live destination object with a metageneration number that matches the given value.
+    pub if_metageneration_match: Option<usize>,
+
+    /// Makes the operation conditional on there being a live destination object with a metageneration number that does not match the given value.
+    pub if_metageneration_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's generation matches the given value.
+    pub if_source_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's generation does not match the given value.
+    pub if_source_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's current metageneration matches the given value.
+    pub if_source_metageneration_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's current metageneration does not match the given value.
+    pub if_source_metageneration_not_match: Option<usize>,
+
+    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Acceptable values are:
+    /// full: Include all properties.
+    /// noAcl: Omit the owner, acl property.
+    pub projection: Option<String>,
+
+    /// If present, selects a specific revision of the source object (as opposed to the latest version, the default).
+    pub source_generation: Option<usize>,
+}
+
+/// The parameters that are optionally supplied when rewriting an object.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RewriteParameters {
+    ///Resource name of the Cloud KMS key that will be used to encrypt the object.
+    /// The Cloud KMS key must be located in same location as the object.
+    //
+    // If the parameter is not specified, the request uses the destination bucket's default encryption key, if any, or the Google-managed encryption key.
+    pub destination_kms_key_name: Option<String>,
+
+    /// Apply a predefined set of access controls to the destination object.
+    ///
+    /// Acceptable values are:
+    /// `authenticatedRead`: Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// `bucketOwnerFullControl`: Object owner gets OWNER access, and project team owners get OWNER access.
+    /// `bucketOwnerRead`: Object owner gets OWNER access, and project team owners get READER access.
+    /// `private`: Object owner gets OWNER access.
+    /// `projectPrivate`: Object owner gets OWNER access, and project team members get access according to their roles.
+    /// `publicRead`: Object owner gets OWNER access, and allUsers get READER access.
+    /// If `iamConfiguration.uniformBucketLevelAccess.enabled` is set to `true`, requests that include this parameter fail with a 400 Bad Request response.
+    pub destination_predefined_acl: Option<String>,
+
+    /// Makes the operation conditional on there being a live destination object with a generation number that matches the given value.
+    /// Setting `ifGenerationMatch` to 0 makes the operation succeed only if there is no live destination object.
+    pub if_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on there being a live destination object with a generation number that does not match the given value.
+    /// If no live destination object exists, the precondition fails.
+    /// Setting `ifGenerationNotMatch` to 0 makes the operation succeed if there is a live version of the object.
+    pub if_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on there being a live destination object with a metageneration number that matches the given value.
+    pub if_metageneration_match: Option<usize>,
+
+    /// Makes the operation conditional on there being a live destination object with a metageneration number that does not match the given value.
+    pub if_metageneration_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's generation matches the given value.
+    pub if_source_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's generation does not match the given value.
+    pub if_source_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's current metageneration matches the given value.
+    pub if_source_metageneration_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the source object's current metageneration does not match the given value.
+    pub if_source_metageneration_not_match: Option<usize>,
+
+    /// The maximum number of bytes that will be rewritten per rewrite request.
+    /// Most callers shouldn't need to specify this parameter - it is primarily in place to support testing.
+    /// If specified the value must be an integral multiple of 1 MiB (1048576).
+    /// Also, this only applies to requests where the source and destination span locations and/or storage classes.
+    /// Finally, this value must not change across rewrite calls else you'll get an error that the `rewriteToken` is invalid.
+    pub max_bytes_rewritten_per_call: Option<usize>,
+
+    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Acceptable values are:
+    /// `full`: Include all properties.
+    /// `noAcl`: Omit the owner, acl property.
+    pub projection: Option<String>,
+
+    /// Include this field (from the previous rewrite response) on each rewrite request after the first one, until the rewrite response 'done' flag is true.
+    /// Calls that provide a `rewriteToken` can omit all other request fields, but if included those fields must match the values provided in the first rewrite request.
+    pub rewrite_token: Option<String>,
+
+    /// If present, selects a specific revision of the source object (as opposed to the latest version, the default).
+    pub source_generation: Option<usize>,
+}
+
+/// The parameters that are optionally supplied when deleting an object.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteParameters {
+    /// If present, permanently deletes a specific revision of this object (as opposed to the latest version, the default).
+    pub generation: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current generation matches the given value.
+    /// Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    pub if_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current generation does not match the given value.
+    /// If no live object exists, the precondition fails.
+    /// Setting to 0 makes the operation succeed only if there is a live version of the object.
+    pub if_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current metageneration matches the given value.
+    pub if_metageneration_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    pub if_metageneration_not_match: Option<usize>,
+}
+
+/// The parameters that are optionally supplied when updating an object.
+#[derive(Debug, PartialEq, serde::Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateParameters {
+    /// If present, selects a specific revision of this object (as opposed to the latest version, the default).
+    pub generation: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current generation matches the given value.
+    /// Setting to 0 makes the operation succeed only if there are no live versions of the object.
+    pub if_generation_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current generation does not match the given value.
+    /// If no live object exists, the precondition fails.
+    /// Setting to 0 makes the operation succeed only if there is a live version of the object.
+    pub if_generation_not_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current metageneration matches the given value.
+    pub if_metageneration_match: Option<usize>,
+
+    /// Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    pub if_metageneration_not_match: Option<usize>,
+
+    /// Apply a predefined set of access controls to this object.
+    ///
+    /// Acceptable values are:
+    /// `authenticatedRead`: Object owner gets OWNER access, and allAuthenticatedUsers get READER access.
+    /// `bucketOwnerFullControl`: Object owner gets OWNER access, and project team owners get OWNER access.
+    /// `bucketOwnerRead`: Object owner gets OWNER access, and project team owners get READER access.
+    /// `private`: Object owner gets OWNER access.
+    /// `projectPrivate`: Object owner gets OWNER access, and project team members get access according to their roles.
+    /// `publicRead`: Object owner gets OWNER access, and allUsers get READER access.
+    /// If `iamConfiguration.uniformBucketLevelAccess.enabled` is set to `true`, requests that include this parameter fail with a 400 Bad Request response.
+    pub predefined_acl: Option<String>,
+
+    /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.
+    /// Acceptable values are:
+    /// `full`: Include all properties.
+    /// `noAcl`: Omit the owner, acl property.
+    pub projection: Option<String>,
+}
+
 /// Acceptable values of `projection` properties to return from `Object::list` requests.
 #[derive(Debug, PartialEq, serde::Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -248,7 +546,7 @@ impl Object {
     /// use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
-    /// Object::create("cat-photos", file, "recently read cat.png", "image/png").await?;
+    /// Object::create("cat-photos", file, "recently read cat.png", "image/png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -258,10 +556,11 @@ impl Object {
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
+        parameters: Option<CreateParameters>,
     ) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .object()
-            .create(bucket, file, filename, mime_type)
+            .create(bucket, file, filename, mime_type, parameters)
             .await
     }
 
@@ -275,8 +574,9 @@ impl Object {
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
+        parameters: Option<CreateParameters>,
     ) -> crate::Result<Self> {
-        crate::runtime()?.block_on(Self::create(bucket, file, filename, mime_type))
+        crate::runtime()?.block_on(Self::create(bucket, file, filename, mime_type, parameters))
     }
 
     /// Create a new object. This works in the same way as `Object::create`, except it does not need
@@ -292,7 +592,7 @@ impl Object {
     ///     .send()
     ///     .await?
     ///     .bytes_stream();
-    /// Object::create_streamed("cat-photos", file, 10, "recently read cat.png", "image/png").await?;
+    /// Object::create_streamed("cat-photos", file, 10, "recently read cat.png", "image/png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -303,6 +603,7 @@ impl Object {
         length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
+        parameters: Option<CreateParameters>,
     ) -> crate::Result<Self>
     where
         S: TryStream + Send + Sync + 'static,
@@ -311,7 +612,7 @@ impl Object {
     {
         crate::CLOUD_CLIENT
             .object()
-            .create_streamed(bucket, stream, length, filename, mime_type)
+            .create_streamed(bucket, stream, length, filename, mime_type, parameters)
             .await
     }
 
@@ -326,6 +627,7 @@ impl Object {
         length: impl Into<Option<u64>>,
         filename: &str,
         mime_type: &str,
+        parameters: Option<CreateParameters>,
     ) -> crate::Result<Self> {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
@@ -334,7 +636,7 @@ impl Object {
         let stream = futures_util::stream::once(async { Ok::<_, crate::Error>(buffer) });
 
         crate::runtime()?.block_on(Self::create_streamed(
-            bucket, stream, length, filename, mime_type,
+            bucket, stream, length, filename, mime_type, parameters,
         ))
     }
 
@@ -383,13 +685,20 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
-    /// let object = Object::read("my_bucket", "path/to/my/file.png").await?;
+    /// let object = Object::read("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "global-client")]
-    pub async fn read(bucket: &str, file_name: &str) -> crate::Result<Self> {
-        crate::CLOUD_CLIENT.object().read(bucket, file_name).await
+    pub async fn read(
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<ReadParameters>,
+    ) -> crate::Result<Self> {
+        crate::CLOUD_CLIENT
+            .object()
+            .read(bucket, file_name, parameters)
+            .await
     }
 
     /// The synchronous equivalent of `Object::read`.
@@ -397,8 +706,12 @@ impl Object {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(all(feature = "global-client", feature = "sync"))]
-    pub fn read_sync(bucket: &str, file_name: &str) -> crate::Result<Self> {
-        crate::runtime()?.block_on(Self::read(bucket, file_name))
+    pub fn read_sync(
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<ReadParameters>,
+    ) -> crate::Result<Self> {
+        crate::runtime()?.block_on(Self::read(bucket, file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket.
@@ -408,15 +721,19 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
-    /// let bytes = Object::download("my_bucket", "path/to/my/file.png").await?;
+    /// let bytes = Object::download("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "global-client")]
-    pub async fn download(bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
+    pub async fn download(
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<ReadParameters>,
+    ) -> crate::Result<Vec<u8>> {
         crate::CLOUD_CLIENT
             .object()
-            .download(bucket, file_name)
+            .download(bucket, file_name, parameters)
             .await
     }
 
@@ -425,8 +742,12 @@ impl Object {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(all(feature = "global-client", feature = "sync"))]
-    pub fn download_sync(bucket: &str, file_name: &str) -> crate::Result<Vec<u8>> {
-        crate::runtime()?.block_on(Self::download(bucket, file_name))
+    pub fn download_sync(
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<ReadParameters>,
+    ) -> crate::Result<Vec<u8>> {
+        crate::runtime()?.block_on(Self::download(bucket, file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket, without
@@ -440,7 +761,7 @@ impl Object {
     /// use std::fs::File;
     /// use std::io::{BufWriter, Write};
     ///
-    /// let mut stream = Object::download_streamed("my_bucket", "path/to/my/file.png").await?;
+    /// let mut stream = Object::download_streamed("my_bucket", "path/to/my/file.png", None).await?;
     /// let mut file = BufWriter::new(File::create("file.png").unwrap());
     /// while let Some(byte) = stream.next().await {
     ///     file.write_all(&[byte.unwrap()]).unwrap();
@@ -452,10 +773,11 @@ impl Object {
     pub async fn download_streamed(
         bucket: &str,
         file_name: &str,
+        parameters: Option<ReadParameters>,
     ) -> crate::Result<impl Stream<Item = crate::Result<u8>> + Unpin> {
         crate::CLOUD_CLIENT
             .object()
-            .download_streamed(bucket, file_name)
+            .download_streamed(bucket, file_name, parameters)
             .await
     }
 
@@ -466,15 +788,15 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
-    /// let mut object = Object::read("my_bucket", "path/to/my/file.png").await?;
+    /// let mut object = Object::read("my_bucket", "path/to/my/file.png", None).await?;
     /// object.content_type = Some("application/xml".to_string());
-    /// object.update().await?;
+    /// object.update(None).await?;
     /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "global-client")]
-    pub async fn update(&self) -> crate::Result<Self> {
-        crate::CLOUD_CLIENT.object().update(self).await
+    pub async fn update(&self, parameters: Option<UpdateParameters>) -> crate::Result<Self> {
+        crate::CLOUD_CLIENT.object().update(self, parameters).await
     }
 
     /// The synchronous equivalent of `Object::download`.
@@ -482,8 +804,8 @@ impl Object {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(all(feature = "global-client", feature = "sync"))]
-    pub fn update_sync(&self) -> crate::Result<Self> {
-        crate::runtime()?.block_on(self.update())
+    pub fn update_sync(&self, parameters: Option<UpdateParameters>) -> crate::Result<Self> {
+        crate::runtime()?.block_on(self.update(parameters))
     }
 
     /// Deletes a single object with the specified name in the specified bucket.
@@ -493,13 +815,20 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Object;
     ///
-    /// Object::delete("my_bucket", "path/to/my/file.png").await?;
+    /// Object::delete("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "global-client")]
-    pub async fn delete(bucket: &str, file_name: &str) -> crate::Result<()> {
-        crate::CLOUD_CLIENT.object().delete(bucket, file_name).await
+    pub async fn delete(
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<DeleteParameters>,
+    ) -> crate::Result<()> {
+        crate::CLOUD_CLIENT
+            .object()
+            .delete(bucket, file_name, parameters)
+            .await
     }
 
     /// The synchronous equivalent of `Object::delete`.
@@ -507,8 +836,12 @@ impl Object {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(all(feature = "global-client", feature = "sync"))]
-    pub fn delete_sync(bucket: &str, file_name: &str) -> crate::Result<()> {
-        crate::runtime()?.block_on(Self::delete(bucket, file_name))
+    pub fn delete_sync(
+        bucket: &str,
+        file_name: &str,
+        parameters: Option<DeleteParameters>,
+    ) -> crate::Result<()> {
+        crate::runtime()?.block_on(Self::delete(bucket, file_name, parameters))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -518,8 +851,8 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::{Object, ComposeRequest, SourceObject};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
-    /// let obj2 = Object::read("my_bucket", "file2").await?;
+    /// let obj1 = Object::read("my_bucket", "file1", None).await?;
+    /// let obj2 = Object::read("my_bucket", "file2", None).await?;
     /// let compose_request = ComposeRequest {
     ///     kind: "storage#composeRequest".to_string(),
     ///     source_objects: vec![
@@ -536,7 +869,7 @@ impl Object {
     ///     ],
     ///     destination: None,
     /// };
-    /// let obj3 = Object::compose("my_bucket", &compose_request, "test-concatted-file").await?;
+    /// let obj3 = Object::compose("my_bucket", &compose_request, "test-concatted-file", None).await?;
     /// // obj3 is now a file with the content of obj1 and obj2 concatted together.
     /// # Ok(())
     /// # }
@@ -546,10 +879,11 @@ impl Object {
         bucket: &str,
         req: &ComposeRequest,
         destination_object: &str,
+        parameters: Option<ComposeParameters>,
     ) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .object()
-            .compose(bucket, req, destination_object)
+            .compose(bucket, req, destination_object, parameters)
             .await
     }
 
@@ -562,8 +896,9 @@ impl Object {
         bucket: &str,
         req: &ComposeRequest,
         destination_object: &str,
+        parameters: Option<ComposeParameters>,
     ) -> crate::Result<Self> {
-        crate::runtime()?.block_on(Self::compose(bucket, req, destination_object))
+        crate::runtime()?.block_on(Self::compose(bucket, req, destination_object, parameters))
     }
 
     /// Copy this object to the target bucket and path
@@ -573,17 +908,22 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::{Object, ComposeRequest};
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
-    /// let obj2 = obj1.copy("my_other_bucket", "file2").await?;
+    /// let obj1 = Object::read("my_bucket", "file1", None).await?;
+    /// let obj2 = obj1.copy("my_other_bucket", "file2", None).await?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "global-client")]
-    pub async fn copy(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
+    pub async fn copy(
+        &self,
+        destination_bucket: &str,
+        path: &str,
+        parameters: Option<CopyParameters>,
+    ) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .object()
-            .copy(self, destination_bucket, path)
+            .copy(self, destination_bucket, path, parameters)
             .await
     }
 
@@ -592,8 +932,13 @@ impl Object {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(all(feature = "global-client", feature = "sync"))]
-    pub fn copy_sync(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
-        crate::runtime()?.block_on(self.copy(destination_bucket, path))
+    pub fn copy_sync(
+        &self,
+        destination_bucket: &str,
+        path: &str,
+        parameters: Option<CopyParameters>,
+    ) -> crate::Result<Self> {
+        crate::runtime()?.block_on(self.copy(destination_bucket, path, parameters))
     }
 
     /// Moves a file from the current location to the target bucket and path.
@@ -610,17 +955,22 @@ impl Object {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::object::Object;
     ///
-    /// let obj1 = Object::read("my_bucket", "file1").await?;
-    /// let obj2 = obj1.rewrite("my_other_bucket", "file2").await?;
+    /// let obj1 = Object::read("my_bucket", "file1", None).await?;
+    /// let obj2 = obj1.rewrite("my_other_bucket", "file2", None).await?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
     /// ```
     #[cfg(feature = "global-client")]
-    pub async fn rewrite(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
+    pub async fn rewrite(
+        &self,
+        destination_bucket: &str,
+        path: &str,
+        parameters: Option<RewriteParameters>,
+    ) -> crate::Result<Self> {
         crate::CLOUD_CLIENT
             .object()
-            .rewrite(self, destination_bucket, path)
+            .rewrite(self, destination_bucket, path, parameters)
             .await
     }
 
@@ -629,8 +979,13 @@ impl Object {
     /// ### Features
     /// This function requires that the feature flag `sync` is enabled in `Cargo.toml`.
     #[cfg(all(feature = "global-client", feature = "sync"))]
-    pub fn rewrite_sync(&self, destination_bucket: &str, path: &str) -> crate::Result<Self> {
-        crate::runtime()?.block_on(self.rewrite(destination_bucket, path))
+    pub fn rewrite_sync(
+        &self,
+        destination_bucket: &str,
+        path: &str,
+        parameters: Option<RewriteParameters>,
+    ) -> crate::Result<Self> {
+        crate::runtime()?.block_on(self.rewrite(destination_bucket, path, parameters))
     }
 
     /// Creates a [Signed Url](https://cloud.google.com/storage/docs/access-control/signed-urls)
@@ -643,7 +998,7 @@ impl Object {
     /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
     /// let client = Client::default();
-    /// let obj1 = client.object().read("my_bucket", "file1").await?;
+    /// let obj1 = client.object().read("my_bucket", "file1", None).await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
     /// // for 50 seconds.
@@ -664,7 +1019,7 @@ impl Object {
     /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
     /// let client = Client::default();
-    /// let obj1 = client.object().read("my_bucket", "file1").await?;
+    /// let obj1 = client.object().read("my_bucket", "file1", None).await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
     /// // for 50 seconds.
@@ -695,7 +1050,7 @@ impl Object {
     /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
     ///
     /// let client = Client::default();
-    /// let obj1 = client.object().read("my_bucket", "file1").await?;
+    /// let obj1 = client.object().read("my_bucket", "file1", None).await?;
     /// let url = obj1.upload_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
     /// // for 50 seconds.
@@ -717,7 +1072,7 @@ impl Object {
     /// use std::collections::HashMap;
     ///
     /// let client = Client::default();
-    /// let obj1 = client.object().read("my_bucket", "file1").await?;
+    /// let obj1 = client.object().read("my_bucket", "file1", None).await?;
     /// let mut custom_metadata = HashMap::new();
     /// custom_metadata.insert(String::from("field"), String::from("value"));
     /// let (url, headers) = obj1.upload_url_with(50, custom_metadata)?;
@@ -978,7 +1333,7 @@ mod tests {
     #[tokio::test]
     async fn create() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        Object::create(&bucket.name, vec![0, 1], "test-create", "text/plain").await?;
+        Object::create(&bucket.name, vec![0, 1], "test-create", "text/plain", None).await?;
         Ok(())
     }
 
@@ -994,6 +1349,7 @@ mod tests {
             2,
             "test-create-streamed",
             "text/plain",
+            None,
         )
         .await?;
         Ok(())
@@ -1037,7 +1393,7 @@ mod tests {
         ];
 
         for name in &prefix_names {
-            Object::create(&test_bucket.name, vec![0, 1], name, "text/plain").await?;
+            Object::create(&test_bucket.name, vec![0, 1], name, "text/plain", None).await?;
         }
 
         let list = flattened_list_prefix_stream(&test_bucket.name, "test-list-prefix/").await?;
@@ -1050,8 +1406,8 @@ mod tests {
     #[tokio::test]
     async fn read() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        Object::create(&bucket.name, vec![0, 1], "test-read", "text/plain").await?;
-        Object::read(&bucket.name, "test-read").await?;
+        Object::create(&bucket.name, vec![0, 1], "test-read", "text/plain", None).await?;
+        Object::read(&bucket.name, "test-read", None).await?;
         Ok(())
     }
 
@@ -1064,10 +1420,11 @@ mod tests {
             content.to_vec(),
             "test-download",
             "application/octet-stream",
+            None,
         )
         .await?;
 
-        let data = Object::download(&bucket.name, "test-download").await?;
+        let data = Object::download(&bucket.name, "test-download", None).await?;
         assert_eq!(data, content);
 
         Ok(())
@@ -1082,10 +1439,11 @@ mod tests {
             content.to_vec(),
             "test-download",
             "application/octet-stream",
+            None,
         )
         .await?;
 
-        let result = Object::download_streamed(&bucket.name, "test-download").await?;
+        let result = Object::download_streamed(&bucket.name, "test-download", None).await?;
         let data = result.try_collect::<Vec<_>>().await?;
         assert_eq!(data, content);
 
@@ -1101,10 +1459,12 @@ mod tests {
             content.to_vec(),
             "test-download-large",
             "application/octet-stream",
+            None,
         )
         .await?;
 
-        let mut result = Object::download_streamed(&bucket.name, "test-download-large").await?;
+        let mut result =
+            Object::download_streamed(&bucket.name, "test-download-large", None).await?;
         let mut data: Vec<u8> = Vec::new();
         while let Some(part) = result.next().await {
             data.push(part?);
@@ -1117,18 +1477,19 @@ mod tests {
     #[tokio::test]
     async fn update() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let mut obj = Object::create(&bucket.name, vec![0, 1], "test-update", "text/plain").await?;
+        let mut obj =
+            Object::create(&bucket.name, vec![0, 1], "test-update", "text/plain", None).await?;
         obj.content_type = Some("application/xml".to_string());
-        obj.update().await?;
+        obj.update(None).await?;
         Ok(())
     }
 
     #[tokio::test]
     async fn delete() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        Object::create(&bucket.name, vec![0, 1], "test-delete", "text/plain").await?;
+        Object::create(&bucket.name, vec![0, 1], "test-delete", "text/plain", None).await?;
 
-        Object::delete(&bucket.name, "test-delete").await?;
+        Object::delete(&bucket.name, "test-delete", None).await?;
 
         let list: Vec<_> = flattened_list_prefix_stream(&bucket.name, "test-delete").await?;
         assert!(list.is_empty());
@@ -1142,7 +1503,7 @@ mod tests {
 
         let nonexistent_object = "test-delete-nonexistent";
 
-        let delete_result = Object::delete(&bucket.name, nonexistent_object).await;
+        let delete_result = Object::delete(&bucket.name, nonexistent_object, None).await;
 
         if let Err(Error::Google(google_error_response)) = delete_result {
             assert!(google_error_response.to_string().contains(&format!(
@@ -1159,8 +1520,22 @@ mod tests {
     #[tokio::test]
     async fn compose() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let obj1 = Object::create(&bucket.name, vec![0, 1], "test-compose-1", "text/plain").await?;
-        let obj2 = Object::create(&bucket.name, vec![2, 3], "test-compose-2", "text/plain").await?;
+        let obj1 = Object::create(
+            &bucket.name,
+            vec![0, 1],
+            "test-compose-1",
+            "text/plain",
+            None,
+        )
+        .await?;
+        let obj2 = Object::create(
+            &bucket.name,
+            vec![2, 3],
+            "test-compose-2",
+            "text/plain",
+            None,
+        )
+        .await?;
         let compose_request = ComposeRequest {
             kind: "storage#composeRequest".to_string(),
             source_objects: vec![
@@ -1177,7 +1552,8 @@ mod tests {
             ],
             destination: None,
         };
-        let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file").await?;
+        let obj3 =
+            Object::compose(&bucket.name, &compose_request, "test-concatted-file", None).await?;
         let url = obj3.download_url(100)?;
         let content = reqwest::get(&url).await?.text().await?;
         assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
@@ -1187,16 +1563,20 @@ mod tests {
     #[tokio::test]
     async fn copy() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let original = Object::create(&bucket.name, vec![2, 3], "test-copy", "text/plain").await?;
-        original.copy(&bucket.name, "test-copy - copy").await?;
+        let original =
+            Object::create(&bucket.name, vec![2, 3], "test-copy", "text/plain", None).await?;
+        original
+            .copy(&bucket.name, "test-copy - copy", None)
+            .await?;
         Ok(())
     }
 
     #[tokio::test]
     async fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
-        let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
-        let obj = obj.rewrite(&bucket.name, "test-rewritten").await?;
+        let obj =
+            Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain", None).await?;
+        let obj = obj.rewrite(&bucket.name, "test-rewritten", None).await?;
         let url = obj.download_url(100)?;
         let client = reqwest::Client::default();
         let download = client.head(&url).send().await?;
@@ -1216,8 +1596,8 @@ mod tests {
             "测试很重要",
         ];
         for name in &complicated_names {
-            let _obj = Object::create(&bucket.name, vec![0, 1], name, "text/plain").await?;
-            let obj = Object::read(&bucket.name, &name).await.unwrap();
+            let _obj = Object::create(&bucket.name, vec![0, 1], name, "text/plain", None).await?;
+            let obj = Object::read(&bucket.name, &name, None).await.unwrap();
             let url = obj.download_url(100)?;
             let client = reqwest::Client::default();
             let download = client.head(&url).send().await?;
@@ -1230,7 +1610,8 @@ mod tests {
     async fn test_download_url_with() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::read_test_bucket().await;
         let client = reqwest::Client::new();
-        let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain").await?;
+        let obj =
+            Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain", None).await?;
 
         let opts1 = crate::DownloadOptions::new().content_disposition("attachment");
         let download_url1 = obj.download_url_with(100, opts1)?;
@@ -1244,7 +1625,7 @@ mod tests {
         let bucket = crate::read_test_bucket().await;
         let client = reqwest::Client::new();
         let blob_name = "test-upload-url";
-        let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain").await?;
+        let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain", None).await?;
 
         let url = obj.upload_url(100).unwrap();
         let updated_content = vec![2, 3];
@@ -1254,7 +1635,7 @@ mod tests {
             .send()
             .await?;
         assert!(response.status().is_success());
-        let data = Object::download(&bucket.name, blob_name).await?;
+        let data = Object::download(&bucket.name, blob_name, None).await?;
         assert_eq!(data, updated_content);
         Ok(())
     }
@@ -1264,7 +1645,7 @@ mod tests {
         let bucket = crate::read_test_bucket().await;
         let client = reqwest::Client::new();
         let blob_name = "test-upload-url";
-        let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain").await?;
+        let obj = Object::create(&bucket.name, vec![0, 1], blob_name, "text/plain", None).await?;
         let mut custom_metadata = HashMap::new();
         custom_metadata.insert(String::from("field"), String::from("value"));
 
@@ -1276,7 +1657,7 @@ mod tests {
         }
         let response = request.send().await?;
         assert!(response.status().is_success());
-        let updated_obj = Object::read(&bucket.name, blob_name).await?;
+        let updated_obj = Object::read(&bucket.name, blob_name, None).await?;
         let obj_metadata = updated_obj.metadata.unwrap();
         assert_eq!(obj_metadata.get("field").unwrap(), "value");
         Ok(())
@@ -1303,7 +1684,7 @@ mod tests {
         #[test]
         fn create() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            Object::create_sync(&bucket.name, vec![0, 1], "test-create", "text/plain")?;
+            Object::create_sync(&bucket.name, vec![0, 1], "test-create", "text/plain", None)?;
             Ok(())
         }
 
@@ -1317,6 +1698,7 @@ mod tests {
                 2,
                 "test-create-streamed",
                 "text/plain",
+                None,
             )?;
             Ok(())
         }
@@ -1340,7 +1722,7 @@ mod tests {
             ];
 
             for name in &prefix_names {
-                Object::create_sync(&test_bucket.name, vec![0, 1], name, "text/plain")?;
+                Object::create_sync(&test_bucket.name, vec![0, 1], name, "text/plain", None)?;
             }
 
             let request = ListRequest {
@@ -1371,7 +1753,7 @@ mod tests {
             ];
 
             for name in &prefix_names {
-                Object::create_sync(&test_bucket.name, vec![0, 1], name, "text/plain")?;
+                Object::create_sync(&test_bucket.name, vec![0, 1], name, "text/plain", None)?;
             }
 
             let request = ListRequest {
@@ -1388,8 +1770,8 @@ mod tests {
         #[test]
         fn read() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            Object::create_sync(&bucket.name, vec![0, 1], "test-read", "text/plain")?;
-            Object::read_sync(&bucket.name, "test-read")?;
+            Object::create_sync(&bucket.name, vec![0, 1], "test-read", "text/plain", None)?;
+            Object::read_sync(&bucket.name, "test-read", None)?;
             Ok(())
         }
 
@@ -1402,9 +1784,10 @@ mod tests {
                 content.to_vec(),
                 "test-download",
                 "application/octet-stream",
+                None,
             )?;
 
-            let data = Object::download_sync(&bucket.name, "test-download")?;
+            let data = Object::download_sync(&bucket.name, "test-download", None)?;
             assert_eq!(data, content);
 
             Ok(())
@@ -1414,18 +1797,18 @@ mod tests {
         fn update() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
             let mut obj =
-                Object::create_sync(&bucket.name, vec![0, 1], "test-update", "text/plain")?;
+                Object::create_sync(&bucket.name, vec![0, 1], "test-update", "text/plain", None)?;
             obj.content_type = Some("application/xml".to_string());
-            obj.update_sync()?;
+            obj.update_sync(None)?;
             Ok(())
         }
 
         #[test]
         fn delete() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            Object::create_sync(&bucket.name, vec![0, 1], "test-delete", "text/plain")?;
+            Object::create_sync(&bucket.name, vec![0, 1], "test-delete", "text/plain", None)?;
 
-            Object::delete_sync(&bucket.name, "test-delete")?;
+            Object::delete_sync(&bucket.name, "test-delete", None)?;
 
             let request = ListRequest {
                 prefix: Some("test-delete".into()),
@@ -1444,7 +1827,7 @@ mod tests {
 
             let nonexistent_object = "test-delete-nonexistent";
 
-            let delete_result = Object::delete_sync(&bucket.name, nonexistent_object);
+            let delete_result = Object::delete_sync(&bucket.name, nonexistent_object, None);
 
             if let Err(Error::Google(google_error_response)) = delete_result {
                 assert!(google_error_response.to_string().contains(&format!(
@@ -1461,10 +1844,20 @@ mod tests {
         #[test]
         fn compose() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            let obj1 =
-                Object::create_sync(&bucket.name, vec![0, 1], "test-compose-1", "text/plain")?;
-            let obj2 =
-                Object::create_sync(&bucket.name, vec![2, 3], "test-compose-2", "text/plain")?;
+            let obj1 = Object::create_sync(
+                &bucket.name,
+                vec![0, 1],
+                "test-compose-1",
+                "text/plain",
+                None,
+            )?;
+            let obj2 = Object::create_sync(
+                &bucket.name,
+                vec![2, 3],
+                "test-compose-2",
+                "text/plain",
+                None,
+            )?;
             let compose_request = ComposeRequest {
                 kind: "storage#composeRequest".to_string(),
                 source_objects: vec![
@@ -1481,7 +1874,8 @@ mod tests {
                 ],
                 destination: None,
             };
-            let obj3 = Object::compose_sync(&bucket.name, &compose_request, "test-concatted-file")?;
+            let obj3 =
+                Object::compose_sync(&bucket.name, &compose_request, "test-concatted-file", None)?;
             let url = obj3.download_url(100)?;
             let content = reqwest::blocking::get(&url)?.text()?;
             assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
@@ -1492,16 +1886,17 @@ mod tests {
         fn copy() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
             let original =
-                Object::create_sync(&bucket.name, vec![2, 3], "test-copy", "text/plain")?;
-            original.copy_sync(&bucket.name, "test-copy - copy")?;
+                Object::create_sync(&bucket.name, vec![2, 3], "test-copy", "text/plain", None)?;
+            original.copy_sync(&bucket.name, "test-copy - copy", None)?;
             Ok(())
         }
 
         #[test]
         fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
             let bucket = crate::read_test_bucket_sync();
-            let obj = Object::create_sync(&bucket.name, vec![0, 1], "test-rewrite", "text/plain")?;
-            let obj = obj.rewrite_sync(&bucket.name, "test-rewritten")?;
+            let obj =
+                Object::create_sync(&bucket.name, vec![0, 1], "test-rewrite", "text/plain", None)?;
+            let obj = obj.rewrite_sync(&bucket.name, "test-rewritten", None)?;
             let url = obj.download_url(100)?;
             let client = reqwest::blocking::Client::new();
             let download = client.head(&url).send()?;
@@ -1521,8 +1916,8 @@ mod tests {
                 "测试很重要",
             ];
             for name in &complicated_names {
-                let _obj = Object::create_sync(&bucket.name, vec![0, 1], name, "text/plain")?;
-                let obj = Object::read_sync(&bucket.name, &name).unwrap();
+                let _obj = Object::create_sync(&bucket.name, vec![0, 1], name, "text/plain", None)?;
+                let obj = Object::read_sync(&bucket.name, &name, None).unwrap();
                 let url = obj.download_url(100)?;
                 let client = reqwest::blocking::Client::new();
                 let download = client.head(&url).send()?;
