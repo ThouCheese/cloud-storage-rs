@@ -64,6 +64,11 @@ impl Client {
         }
     }
 
+    /// Creates a new [ClientBuilder]
+    pub fn builder() -> ClientBuilder {
+        ClientBuilder::new()
+    }
+
     /// Operations on [`Bucket`](crate::bucket::Bucket)s.
     pub fn bucket(&self) -> BucketClient<'_> {
         BucketClient(self)
@@ -102,5 +107,46 @@ impl Client {
             format!("Bearer {}", token).parse().unwrap(),
         );
         Ok(result)
+    }
+}
+
+/// A ClientBuilder can be used to create a Client with custom configuration.
+#[derive(Default)]
+pub struct ClientBuilder {
+    client: Option<reqwest::Client>,
+    /// Static `Token` struct that caches
+    token_cache: Option<sync::Arc<dyn crate::TokenCache + Send>>,
+}
+
+impl ClientBuilder {
+    /// Constructs a new ClientBuilder
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// Returns a `Client` that uses this `ClientBuilder` configuration.
+    pub fn build(self) -> Client {
+        Client {
+            client: self.client.unwrap_or_default(),
+            token_cache: self
+                .token_cache
+                .unwrap_or(sync::Arc::new(crate::Token::default())),
+        }
+    }
+
+    /// Sets refreshable token
+    pub fn with_cache(self, token: impl TokenCache + Send + 'static) -> Self {
+        ClientBuilder {
+            token_cache: Some(sync::Arc::new(token)),
+            ..self
+        }
+    }
+
+    /// Sets internal [reqwest Client](https://docs.rs/reqwest/latest/reqwest/struct.Client.html)
+    pub fn with_reqwest_client(self, reqwest_client: reqwest::Client) -> Self {
+        ClientBuilder {
+            client: Some(reqwest_client),
+            ..self
+        }
     }
 }
