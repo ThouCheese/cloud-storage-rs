@@ -56,6 +56,14 @@ impl Client {
         Default::default()
     }
 
+    /// Constucts a client with given reqwest client
+    pub fn with_client(client: reqwest::Client) -> Self {
+        Self {
+            client: client,
+            token_cache: sync::Arc::new(crate::Token::default()),
+        }
+    }
+
     /// Initializer with a provided refreshable token
     pub fn with_cache(token: impl TokenCache + Send + 'static) -> Self {
         Self {
