@@ -53,8 +53,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
             .await?;
         match result {
             crate::models::Response::Success(mut s) => {
-                // todo:
-                // s.bucket = bucket.to_string();
+                s.bucket = self.bucket.clone();
                 Ok(s)
             }
             crate::models::Response::Error(e) => Err(e.into()),

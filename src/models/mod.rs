@@ -128,5 +128,5 @@ pub(crate) use self::{
     response::Response,
     list_response::ListResponse,
     update_hmac_metadata::UpdateHmacMetadata,
-    update_hmac_request::UpdateHmacRequest,
+    //update_hmac_request::UpdateHmacRequest,
 }; 
