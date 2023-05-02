@@ -1,20 +1,16 @@
-use crate::{
-    object::{
-        ComposeParameters, ComposeRequest, CopyParameters, CreateParameters, DeleteParameters,
-        ObjectList, ReadParameters, RewriteParameters, UpdateParameters,
-    },
-    ListRequest, Object,
-};
-
-use futures_util::io::AllowStdIo;
-use futures_util::StreamExt;
-use futures_util::TryStreamExt;
+use bytes::Buf;
+use futures_util::{io::AllowStdIo, StreamExt, TryStreamExt};
 use tokio::io::AsyncWriteExt;
 use tokio_util::compat::FuturesAsyncWriteCompatExt;
 
+use crate::{models::{CreateParameters, ObjectList, ReadParameters, UpdateParameters, DeleteParameters, ComposeRequest, ComposeParameters, CopyParameters, RewriteParameters}, Object, Error, ListRequest};
+
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
-pub struct ObjectClient<'a>(pub(super) &'a super::Client);
+pub struct ObjectClient<'a> {
+    pub(crate) client: &'a crate::client::ObjectClient<'a>,
+    pub(crate) runtime: &'a tokio::runtime::Handle,
+}
 
 impl<'a> ObjectClient<'a> {
     /// Create a new object.
@@ -29,7 +25,7 @@ impl<'a> ObjectClient<'a> {
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
     /// let client = Client::new()?;
-    /// client.object().create("cat-photos", file, "recently read cat.png", "image/png", None)?;
+    /// client.object("cat-photos").create(file, "recently read cat.png", "image/png", None)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -40,11 +36,9 @@ impl<'a> ObjectClient<'a> {
         filename: &str,
         mime_type: &str,
         parameters: Option<CreateParameters>,
-    ) -> crate::Result<Object> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object()
+    ) -> Result<Object, Error> {
+        self.runtime.block_on(
+            self.client
                 .create(bucket, file, filename, mime_type, parameters),
         )
     }
@@ -66,7 +60,7 @@ impl<'a> ObjectClient<'a> {
     ///         "custom_id": "1234"
     ///     }
     /// });
-    /// client.object().create_with("cat-photos", file, "recently read cat.png", "image/png", &metadata)?;
+    /// client.object("cat-photos").create_with(file, "recently read cat.png", "image/png", &metadata)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -77,11 +71,9 @@ impl<'a> ObjectClient<'a> {
         filename: &str,
         mime_type: &str,
         metadata: &serde_json::Value,
-    ) -> crate::Result<Object> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object()
+    ) -> Result<Object, Error> {
+        self.runtime.block_on(
+            self.client
                 .create_with(bucket, file, filename, mime_type, metadata),
         )
     }
@@ -96,16 +88,14 @@ impl<'a> ObjectClient<'a> {
         filename: &str,
         mime_type: &str,
         parameters: Option<CreateParameters>,
-    ) -> crate::Result<Object>
+    ) -> Result<Object, Error>
     where
         R: std::io::Read + Send + Sync + Unpin + 'static,
     {
         let stream = super::helpers::ReaderStream::new(file);
 
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object()
+        self.runtime.block_on(
+            self.client
                 .create_streamed(bucket, stream, length, filename, mime_type, parameters),
         )
     }
@@ -119,16 +109,14 @@ impl<'a> ObjectClient<'a> {
         filename: &str,
         mime_type: &str,
         metadata: &serde_json::Value,
-    ) -> crate::Result<Object>
+    ) -> Result<Object, Error>
     where
         R: std::io::Read + Send + Sync + Unpin + 'static,
     {
         let stream = super::helpers::ReaderStream::new(file);
 
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object()
+        self.runtime.block_on(
+            self.client
                 .create_streamed_with(bucket, stream, filename, mime_type, metadata),
         )
     }
@@ -141,7 +129,7 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::{Object, ListRequest};
     ///
     /// let client = Client::new()?;
-    /// let all_objects = client.object().list("my_bucket", ListRequest::default())?;
+    /// let all_objects = client.object("my_bucket").list(ListRequest::default())?;
     /// # Ok(())
     /// # }
     /// ```
@@ -149,9 +137,9 @@ impl<'a> ObjectClient<'a> {
         &self,
         bucket: &'a str,
         list_request: ListRequest,
-    ) -> crate::Result<Vec<ObjectList>> {
-        let rt = &self.0.runtime;
-        let listed = rt.block_on(self.0.client.object().list(bucket, list_request))?;
+    ) -> Result<Vec<ObjectList>, Error> {
+        let rt = &self.runtime;
+        let listed = rt.block_on(self.client.list(bucket, list_request))?;
         rt.block_on(listed.try_collect())
     }
 
@@ -163,7 +151,7 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::new()?;
-    /// let object = client.object().read("my_bucket", "path/to/my/file.png", None)?;
+    /// let object = client.object("my_bucket").read("path/to/my/file.png", None)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -172,10 +160,9 @@ impl<'a> ObjectClient<'a> {
         bucket: &str,
         file_name: &str,
         parameters: Option<ReadParameters>,
-    ) -> crate::Result<Object> {
-        self.0
-            .runtime
-            .block_on(self.0.client.object().read(bucket, file_name, parameters))
+    ) -> Result<Object, Error> {
+        self.runtime
+            .block_on(self.client.read(bucket, file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket.
@@ -186,7 +173,7 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::new()?;
-    /// let bytes = client.object().download("my_bucket", "path/to/my/file.png", None)?;
+    /// let bytes = client.object("my_bucket").download("path/to/my/file.png", None)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -195,11 +182,9 @@ impl<'a> ObjectClient<'a> {
         bucket: &str,
         file_name: &str,
         parameters: Option<ReadParameters>,
-    ) -> crate::Result<Vec<u8>> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object()
+    ) -> Result<Vec<u8>, Error> {
+        self.runtime.block_on(
+            self.client
                 .download(bucket, file_name, parameters),
         )
     }
@@ -216,25 +201,22 @@ impl<'a> ObjectClient<'a> {
     ///
     /// let client = Client::new()?;
     /// let file = File::create("somefile")?;
-    /// let bytes = client.object().download("my_bucket", "path/to/my/file.png", file)?;
+    /// let bytes = client.object("my_bucket").download("path/to/my/file.png", file)?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn download_streamed<W>(&self, bucket: &str, file_name: &str, file: W) -> crate::Result<()>
+    pub fn download_streamed<W>(&self, bucket: &str, file_name: &str, file: W) -> Result<(), Error>
     where
         W: std::io::Write, // + Send + Sync + Unpin + 'static,
     {
-        self.0.runtime.block_on(async {
-            let mut stream = self
-                .0
-                .client
-                .object()
-                .download_streamed(bucket, file_name)
+        self.runtime.block_on(async {
+            let mut stream = self.client
+                .download_streamed(bucket, file_name, None)
                 .await?;
 
             let mut writer = tokio::io::BufWriter::new(AllowStdIo::new(file).compat_write());
             while let Some(byte) = stream.next().await {
-                writer.write_all(&[byte?]).await?;
+                writer.write_all(byte?.chunk()).await?;
             }
             writer.flush().await?;
             Ok(())
@@ -249,7 +231,7 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::new()?;
-    /// let mut object = client.object().read("my_bucket", "path/to/my/file.png", None)?;
+    /// let mut object = client.object("my_bucket").read("path/to/my/file.png", None)?;
     /// object.content_type = Some("application/xml".to_string());
     /// client.object().update(&object, None)?;
     /// # Ok(())
@@ -259,10 +241,9 @@ impl<'a> ObjectClient<'a> {
         &self,
         object: &Object,
         parameters: Option<UpdateParameters>,
-    ) -> crate::Result<Object> {
-        self.0
-            .runtime
-            .block_on(self.0.client.object().update(object, parameters))
+    ) -> Result<Object, Error> {
+        self.runtime
+            .block_on(self.client.update(object, parameters))
     }
 
     /// Deletes a single object with the specified name in the specified bucket.
@@ -273,7 +254,7 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::Object;
     ///
     /// let client = Client::new()?;
-    /// client.object().delete("my_bucket", "path/to/my/file.png", None)?;
+    /// client.object("my_bucket").delete("path/to/my/file.png", None)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -282,10 +263,9 @@ impl<'a> ObjectClient<'a> {
         bucket: &str,
         file_name: &str,
         parameters: Option<DeleteParameters>,
-    ) -> crate::Result<()> {
-        self.0
-            .runtime
-            .block_on(self.0.client.object().delete(bucket, file_name, parameters))
+    ) -> Result<(), Error> {
+        self.runtime
+            .block_on(self.client.delete(bucket, file_name, parameters))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -296,8 +276,8 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::object::{Object, ComposeRequest, SourceObject};
     ///
     /// let client = Client::new()?;
-    /// let obj1 = client.object().read("my_bucket", "file1", None)?;
-    /// let obj2 = client.object().read("my_bucket", "file2", None)?;
+    /// let obj1 = client.object("my_bucket").read("file1", None)?;
+    /// let obj2 = client.object("my_bucket").read("file2", None)?;
     /// let compose_request = ComposeRequest {
     ///     kind: "storage#composeRequest".to_string(),
     ///     source_objects: vec![
@@ -314,7 +294,7 @@ impl<'a> ObjectClient<'a> {
     ///     ],
     ///     destination: None,
     /// };
-    /// let obj3 = client.object().compose("my_bucket", &compose_request, "test-concatted-file", None)?;
+    /// let obj3 = client.object("my_bucket").compose(&compose_request, "test-concatted-file", None)?;
     /// // obj3 is now a file with the content of obj1 and obj2 concatted together.
     /// # Ok(())
     /// # }
@@ -325,8 +305,8 @@ impl<'a> ObjectClient<'a> {
         req: &ComposeRequest,
         destination_object: &str,
         parameters: Option<ComposeParameters>,
-    ) -> crate::Result<Object> {
-        self.0.runtime.block_on(self.0.client.object().compose(
+    ) -> Result<Object, Error> {
+        self.runtime.block_on(self.client.compose(
             bucket,
             req,
             destination_object,
@@ -342,7 +322,7 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::object::{Object, ComposeRequest};
     ///
     /// let client = Client::new()?;
-    /// let obj1 = client.object().read("my_bucket", "file1", None)?;
+    /// let obj1 = client.object("my_bucket").read("file1", None)?;
     /// let obj2 = client.object().copy(&obj1, "my_other_bucket", "file2", None)?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
@@ -354,8 +334,8 @@ impl<'a> ObjectClient<'a> {
         destination_bucket: &str,
         path: &str,
         parameters: Option<CopyParameters>,
-    ) -> crate::Result<Object> {
-        self.0.runtime.block_on(self.0.client.object().copy(
+    ) -> Result<Object, Error> {
+        self.runtime.block_on(self.client.copy(
             object,
             destination_bucket,
             path,
@@ -378,7 +358,7 @@ impl<'a> ObjectClient<'a> {
     /// use cloud_storage::object::Object;
     ///
     /// let client = Client::new()?;
-    /// let obj1 = client.object().read("my_bucket", "file1", None)?;
+    /// let obj1 = client.object("my_bucket").read("file1", None)?;
     /// let obj2 = client.object().rewrite(&obj1, "my_other_bucket", "file2", None)?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
@@ -390,8 +370,8 @@ impl<'a> ObjectClient<'a> {
         destination_bucket: &str,
         path: &str,
         parameters: Option<RewriteParameters>,
-    ) -> crate::Result<Object> {
-        self.0.runtime.block_on(self.0.client.object().rewrite(
+    ) -> Result<Object, Error> {
+        self.runtime.block_on(self.client.rewrite(
             object,
             destination_bucket,
             path,

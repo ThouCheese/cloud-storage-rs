@@ -13,23 +13,21 @@ cloud-storage = "0.10"
 ### Examples
 ```rust
 // create a new Bucket
-let new_bucket = NewBucket { name: "mybucket", ..Default::default() }
+let new_bucket = create::Bucket { name: "my_bucket", ..Default::default() }
 let bucket = Bucket::create(new_bucket).await?;
 // upload a file to our new bucket
 let content = b"Your file is now on google cloud storage!";
 bucket.upload(content, "folder/filename.txt", "application/text", None).await?;
-let mut object = Object::create("mybucket", content, "folder/filename.txt", "application/text", None).await?;
+let mut object = Object::create("my_bucket", content, "folder/filename.txt", "application/text", None).await?;
 // let's copy the file
-object.copy("mybucket2: electric boogaloo", "otherfolder/filename.txt", None).await?;
+object.copy("my_bucket2: electric boogaloo", "otherfolder/filename.txt", None).await?;
 // print a link to the file
 println!("{}", object.download_url(1000)); // download link for 1000 seconds
 // remove the file from the bucket
 object.delete(None).await?;
 ```
 
-Authorization can be granted using the `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS` environment variable, which should contain path to the `service-account-*******.json` file that contains the Google credentials. Alternatively, the service account credentials can be provided as JSON directly through the `SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_JSON` environment variable, which is useful when providing secrets in CI or k8s.
-
-The service account should also have the roles `Service Account Token Creator` (for generating access tokens) and `Storage Object Admin` (for generating sign urls to download the files).
+The service account should have the roles `Service Account Token Creator` (for generating access tokens) and `Storage Object Admin` (for generating sign urls to download the files).
 
 ### Sync
 If you're not (yet) interested in running an async executor, then `cloud_storage` exposes a sync api. To use it, enable the feature flag `sync`, and then call instead of calling `function().await`, call `function_sync()`.

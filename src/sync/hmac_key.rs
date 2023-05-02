@@ -1,8 +1,11 @@
-use crate::hmac_key::{HmacKey, HmacMeta, HmacState};
+use crate::{Error, models::{HmacKey, HmacMeta, HmacState}};
 
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]
-pub struct HmacKeyClient<'a>(pub(super) &'a super::Client);
+pub struct HmacKeyClient<'a> {
+    pub(crate) client: &'a crate::client::HmacKeyClient<'a>,
+    pub(crate) runtime: &'a tokio::runtime::Handle,
+}
 
 impl<'a> HmacKeyClient<'a> {
     /// Creates a new HMAC key for the specified service account.
@@ -26,8 +29,8 @@ impl<'a> HmacKeyClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn create(&self) -> crate::Result<HmacKey> {
-        self.0.runtime.block_on(self.0.client.hmac_key().create())
+    pub fn create(&self) -> Result<HmacKey, Error> {
+        self.runtime.block_on(self.client.create())
     }
 
     /// Retrieves a list of HMAC keys matching the criteria. Since the HmacKey is secret, this does
@@ -50,8 +53,8 @@ impl<'a> HmacKeyClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list(&self) -> crate::Result<Vec<HmacMeta>> {
-        self.0.runtime.block_on(self.0.client.hmac_key().list())
+    pub fn list(&self) -> Result<Vec<HmacMeta>, Error> {
+        self.runtime.block_on(self.client.list())
     }
 
     /// Retrieves an HMAC key's metadata. Since the HmacKey is secret, this does not return a
@@ -73,10 +76,9 @@ impl<'a> HmacKeyClient<'a> {
     /// let key = client.hmac_key().read("some identifier")?;
     /// # Ok(())
     /// # }
-    pub fn read(&self, access_id: &str) -> crate::Result<HmacMeta> {
-        self.0
-            .runtime
-            .block_on(self.0.client.hmac_key().read(access_id))
+    pub fn read(&self, access_id: &str) -> Result<HmacMeta, Error> {
+        self.runtime
+            .block_on(self.client.read(access_id))
     }
 
     /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
@@ -98,10 +100,9 @@ impl<'a> HmacKeyClient<'a> {
     /// let key = client.hmac_key().update("your key", HmacState::Active)?;
     /// # Ok(())
     /// # }
-    pub fn update(&self, access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
-        self.0
-            .runtime
-            .block_on(self.0.client.hmac_key().update(access_id, state))
+    pub fn update(&self, access_id: &str, state: HmacState) -> Result<HmacMeta, Error> {
+        self.runtime
+            .block_on(self.client.update(access_id, state))
     }
 
     /// Deletes an HMAC key. Note that a key must be set to `Inactive` first.
@@ -122,9 +123,8 @@ impl<'a> HmacKeyClient<'a> {
     /// client.hmac_key().delete(&key.access_id)?;
     /// # Ok(())
     /// # }
-    pub fn delete(&self, access_id: &str) -> crate::Result<()> {
-        self.0
-            .runtime
-            .block_on(self.0.client.hmac_key().delete(access_id))
+    pub fn delete(&self, access_id: &str) -> Result<(), Error> {
+        self.runtime
+            .block_on(self.client.delete(access_id))
     }
 }

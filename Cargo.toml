@@ -1,21 +1,21 @@
 [package]
 name = "cloud-storage"
-version = "0.11.2"
+version = "1.0.0"
 authors = ["Luuk Wester <luuk.wester@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
 license = "MIT"
-repository = "https://github.com/ThouCheese/cloud-storage-rs"
+repository = "https://github.com/SonnyX/cloud-storage-rs"
 documentation = "https://docs.rs/cloud-storage"
 keywords = ["google", "cloud", "storage"]
 readme = "README.md"
 categories = ["api-bindings", "web-programming"]
-resolver = "2"
 # maintenance = { status = "actively-developed" }
 
 [features]
-default = ["native-tls"]
+default = ["native-tls", "ring", "pem", "global-client"]
 
+dotenv = ["dep:dotenv"]
 global-client = []
 sync = ["reqwest/blocking"]
 native-tls = ["reqwest/default-tls", "openssl"]
@@ -23,27 +23,28 @@ rustls-tls = ["reqwest/rustls-tls", "ring", "pem"]
 trust-dns = ["reqwest/trust-dns"]
 
 [dependencies]
-reqwest =          { version = "0.11", default-features = false, features = ["json", "stream", "multipart"] }
-percent-encoding = { version = "2",    default-features = false }
-jsonwebtoken =     { version = "8.1",  default-features = false, features = ["use_pem"] }
-serde =            { version = "1",    default-features = false, features = ["derive"] }
-serde_json =       { version = "1",    default-features = false }
-base64 =           { version = "0.13", default-features = false }
-lazy_static =      { version = "1",    default-features = false }
-dotenv =           { version = "0.15", default-features = false }
-openssl =          { version = "0.10", default-features = false, optional = true }
-ring =             { version = "0.16", default-features = false, optional = true }
-pem =              { version = "0.8",  default-features = false, optional = true }
-time =             { version = "0.3",  default-features = false, features = ["serde-well-known", "serde-human-readable", "macros"]}
-hex =              { version = "0.4",  default-features = false, features = ["alloc"] }
-tokio =            { version = "1.0",  default-features = false, features = ["macros", "rt"] }
-tokio-util =       { version = "0.7",  default-features = false, features = ["compat"] }
-futures-util =     { version = "0.3",  default_features = false, features = ["alloc"] }
-bytes =            { version = "1.0",  default-features = false }
-async-trait =      { version = "0.1.48", default-features = false }
+reqwest =          { version = "0.11.16", default-features = false, features = ["json", "stream", "multipart"] }
+percent-encoding = { version = "2.2.0",   default-features = false }
+jsonwebtoken =     { version = "8.3.0",     default-features = false, features = ["use_pem"] }
+serde =            { version = "1.0.160", default-features = false, features = ["derive"] }
+serde_json =       { version = "1.0.96",  default-features = false }
+base64 =           { version = "0.21.0",  default-features = false }
+once_cell =        { version = "1.17.1",   default-features = false }
+time =             { version = "0.3.20",  default-features = false, features = ["serde-well-known", "serde-human-readable", "macros"]}
+hex =              { version = "0.4.3",   default-features = false, features = ["alloc"] }
+tokio =            { version = "1.28.0",  default-features = false, features = ["macros", "rt"] }
+tokio-util =       { version = "0.7.8",     default-features = false, features = ["compat"] }
+futures-util =     { version = "0.3.28",  default_features = false, features = ["alloc"] }
+bytes =            { version = "1.4.0",   default-features = false }
+async-trait =      { version = "0.1.68",  default-features = false }
+# Optional features
+openssl =          { version = "0.10.52", default-features = false, optional = true }
+ring =             { version = "0.16.20", default-features = false, optional = true }
+pem =              { version = "2.0.1",   default-features = false, optional = true, features = ["std"] }
+dotenv =           { version = "0.15.0",    default-features = false, optional = true }
 
 [dev-dependencies]
-tokio =            { version = "1.0",  default-features = false, features = ["full"] }
+tokio =            { version = "1.28.0",  default-features = false, features = ["full"] }
 
 [package.metadata.docs.rs]
 features = ["global-client", "sync"]

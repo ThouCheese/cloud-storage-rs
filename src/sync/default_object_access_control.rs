@@ -1,11 +1,11 @@
-use crate::{
-    bucket_access_control::Entity,
-    default_object_access_control::{DefaultObjectAccessControl, NewDefaultObjectAccessControl},
-};
+use crate::{models::{create, DefaultObjectAccessControl, Entity}, Error};
 
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
 #[derive(Debug)]
-pub struct DefaultObjectAccessControlClient<'a>(pub(super) &'a super::Client);
+pub struct DefaultObjectAccessControlClient<'a> {
+    pub(crate) client: &'a crate::client::DefaultObjectAccessControlClient<'a>,
+    pub(crate) runtime: &'a tokio::runtime::Handle,
+}
 
 impl<'a> DefaultObjectAccessControlClient<'a> {
     /// Create a new `DefaultObjectAccessControl` entry on the specified bucket.
@@ -18,29 +18,26 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::sync::Client;
     /// use cloud_storage::default_object_access_control::{
-    ///     DefaultObjectAccessControl, NewDefaultObjectAccessControl, Role, Entity,
+    ///     DefaultObjectAccessControl, create::DefaultObjectAccessControl, Role, Entity,
     /// };
     ///
     /// let client = Client::new()?;
-    /// let new_acl = NewDefaultObjectAccessControl {
+    /// let new_acl = create::DefaultObjectAccessControl {
     ///     entity: Entity::AllAuthenticatedUsers,
     ///     role: Role::Reader,
     /// };
-    /// let default_acl = client.default_object_access_control().create("mybucket", &new_acl)?;
+    /// let default_acl = client.default_object_access_control("my_bucket").create(&new_acl)?;
     /// # client.default_object_access_control().delete(default_acl)?;
     /// # Ok(())
     /// # }
     /// ```
     pub fn create(
         &self,
-        bucket: &str,
-        new_acl: &NewDefaultObjectAccessControl,
-    ) -> crate::Result<DefaultObjectAccessControl> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .default_object_access_control()
-                .create(bucket, new_acl),
+        new_acl: &create::DefaultObjectAccessControl,
+    ) -> Result<DefaultObjectAccessControl, Error> {
+        self.runtime.block_on(
+            self.client
+                .create(new_acl),
         )
     }
 
@@ -56,14 +53,13 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// use cloud_storage::default_object_access_control::DefaultObjectAccessControl;
     ///
     /// let client = Client::new()?;
-    /// let default_acls = client.default_object_access_control().list("mybucket")?;
+    /// let default_acls = client.default_object_access_control().list("my_bucket")?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list(&self, bucket: &str) -> crate::Result<Vec<DefaultObjectAccessControl>> {
-        self.0
-            .runtime
-            .block_on(self.0.client.default_object_access_control().list(bucket))
+    pub fn list(&self, bucket: &str) -> Result<Vec<DefaultObjectAccessControl>, Error> {
+        self.runtime
+            .block_on(self.client.list())
     }
 
     /// Read a single `DefaultObjectAccessControl`.
@@ -82,16 +78,13 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
     ///
     /// let client = Client::new()?;
-    /// let default_acl = client.default_object_access_control().read("mybucket", &Entity::AllUsers)?;
+    /// let default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers)?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn read(&self, bucket: &str, entity: &Entity) -> crate::Result<DefaultObjectAccessControl> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .default_object_access_control()
-                .read(bucket, entity),
+    pub fn read(&self, bucket: &str, entity: &Entity) -> Result<DefaultObjectAccessControl, Error> {
+        self.runtime.block_on(
+            self.client.read(entity),
         )
     }
 
@@ -107,7 +100,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
     ///
     /// let client = Client::new()?;
-    /// let mut default_acl = client.default_object_access_control().read("my_bucket", &Entity::AllUsers)?;
+    /// let mut default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers)?;
     /// default_acl.entity = Entity::AllAuthenticatedUsers;
     /// client.default_object_access_control().update(&default_acl)?;
     /// # Ok(())
@@ -116,11 +109,9 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     pub fn update(
         &self,
         default_object_access_control: &DefaultObjectAccessControl,
-    ) -> crate::Result<DefaultObjectAccessControl> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .default_object_access_control()
+    ) -> Result<DefaultObjectAccessControl, Error> {
+        self.runtime.block_on(
+            self.client
                 .update(default_object_access_control),
         )
     }
@@ -137,7 +128,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
     ///
     /// let client = Client::new()?;
-    /// let mut default_acl = client.default_object_access_control().read("my_bucket", &Entity::AllUsers)?;
+    /// let mut default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers)?;
     /// client.default_object_access_control().delete(default_acl)?;
     /// # Ok(())
     /// # }
@@ -146,10 +137,8 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         &self,
         default_object_access_control: DefaultObjectAccessControl,
     ) -> Result<(), crate::Error> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .default_object_access_control()
+        self.runtime.block_on(
+            self.client
                 .delete(default_object_access_control),
         )
     }

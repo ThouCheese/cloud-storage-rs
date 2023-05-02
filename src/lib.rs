@@ -1,3 +1,4 @@
+#![feature(try_trait_v2)]
 //! This crate aims to simplify interacting with the Google Cloud Storage JSON API. Use it until
 //! Google releases a Cloud Storage Client Library for Rust. Shoutout to
 //! [MyEmma](https://myemma.io/) for funding this free and open source project.
@@ -26,11 +27,11 @@
 //! ## Examples:
 //! Creating a new Bucket in Google Cloud Storage:
 //! ```rust
-//! # use cloud_storage::{Client, Bucket, NewBucket};
+//! # use cloud_storage::{Client, Bucket, create::Bucket};
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = Client::default();
-//! let bucket = client.bucket().create(&NewBucket {
+//! let bucket = client.bucket().create(&create::Bucket {
 //!     name: "doctest-bucket".to_string(),
 //!     ..Default::default()
 //! }).await?;
@@ -44,7 +45,7 @@
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = Client::default();
-//! let bucket = client.bucket().read("mybucket").await?;
+//! let bucket = client.bucket().read("my_bucket").await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -60,7 +61,7 @@
 //!     bytes.push(byte?)
 //! }
 //! let client = Client::default();
-//! client.object().create("mybucket", bytes, "myfile.txt", "text/plain").await?;
+//! client.object("my_bucket").create(bytes, "myfile.txt", "text/plain").await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -70,7 +71,7 @@
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = Client::default();
-//! let mut object = client.object().read("mybucket", "myfile").await?;
+//! let mut object = client.object("my_bucket").read("myfile").await?;
 //! object.content_type = Some("application/xml".to_string());
 //! client.object().update(&object).await?;
 //! # Ok(())
@@ -82,65 +83,44 @@
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = Client::default();
-//! client.object().delete("mybucket", "myfile").await?;
+//! client.object("my_bucket").delete("myfile").await?;
 //! # Ok(())
 //! # }
 //! ```
 #![forbid(unsafe_code, missing_docs)]
-
 pub mod client;
 #[cfg(feature = "sync")]
 pub mod sync;
 
+
+
+mod configuration;
+mod models;
 mod download_options;
 mod error;
-/// Contains objects as represented by Google, to be used for serialization and deserialization.
-mod resources;
 mod token;
 
-use crate::resources::service_account::ServiceAccount;
+#[cfg(feature = "global-client")]
+mod global_client;
+mod crypto;
+mod sized_byte_stream;
+#[cfg(feature = "global-client")]
+use crate::global_client::CLOUD_CLIENT;
+
 pub use crate::{
     client::Client,
-    error::*,
-    resources::{
-        bucket::{Bucket, NewBucket},
-        object::{ListRequest, Object},
-        *,
-    },
+    download_options::DownloadOptions,
+    error::Error,
+    models::{Bucket, ListRequest, Object},
+    configuration::ServiceAccount,
     token::{Token, TokenCache},
 };
-pub use download_options::DownloadOptions;
-use tokio::sync::Mutex;
-
-lazy_static::lazy_static! {
-    static ref IAM_TOKEN_CACHE: Mutex<Token> = Mutex::new(Token::new(
-        "https://www.googleapis.com/auth/iam"
-    ));
-
-    /// The struct is the parsed service account json file. It is publicly exported to enable easier
-    /// debugging of which service account is currently used. It is of the type
-    /// [ServiceAccount](service_account/struct.ServiceAccount.html).
-    pub static ref SERVICE_ACCOUNT: ServiceAccount = ServiceAccount::get();
-}
-
-#[cfg(feature = "global-client")]
-lazy_static::lazy_static! {
-    static ref CLOUD_CLIENT: client::Client = client::Client::default();
-}
-
-/// A type alias where the error is set to be `cloud_storage::Error`.
-pub type Result<T> = std::result::Result<T, crate::Error>;
-
-const BASE_URL: &str = "https://storage.googleapis.com/storage/v1";
 
 const ISO_8601_BASIC_FORMAT: &[::time::format_description::FormatItem<'_>] = time::macros::format_description!("[year][month][day]T[hour][minute][second]Z");
+// todo: may or may not do stuff?
 time::serde::format_description!(rfc3339_date, Date, "[year]-[month]-[day]");
 
-fn from_str<'de, T, D>(deserializer: D) -> std::result::Result<T, D::Error>
-where
-    T: std::str::FromStr,
-    T::Err: std::fmt::Display,
-    D: serde::Deserializer<'de>,
+fn from_str<'de, T, D>(deserializer: D) -> std::result::Result<T, D::Error> where T: std::str::FromStr, T::Err: std::fmt::Display, D: serde::Deserializer<'de>
 {
     use serde::de::Deserialize;
     let s = String::deserialize(deserializer)?;
@@ -148,13 +128,9 @@ where
 }
 
 fn from_str_opt<'de, T, D>(deserializer: D) -> std::result::Result<Option<T>, D::Error>
-where
-    T: std::str::FromStr,
-    T::Err: std::fmt::Display,
-    D: serde::Deserializer<'de>,
+where T: std::str::FromStr, T::Err: std::fmt::Display, D: serde::Deserializer<'de>,
 {
-    let s: std::result::Result<serde_json::Value, _> =
-        serde::Deserialize::deserialize(deserializer);
+    let s: std::result::Result<serde_json::Value, _> = serde::Deserialize::deserialize(deserializer);
     match s {
         Ok(serde_json::Value::String(s)) => T::from_str(&s)
             .map_err(serde::de::Error::custom)
@@ -167,57 +143,22 @@ where
     }
 }
 
-#[cfg(all(test, feature = "global-client", feature = "sync"))]
-fn read_test_bucket_sync() -> Bucket {
-    crate::runtime().unwrap().block_on(read_test_bucket())
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
+
+const ENCODE_SET: &AsciiSet = &NON_ALPHANUMERIC.remove(b'*').remove(b'-').remove(b'.').remove(b'_');
+const NOSLASH_ENCODE_SET: &AsciiSet = &ENCODE_SET.remove(b'/').remove(b'~');
+
+// We need to be able to percent encode stuff, but without touching the slashes in filenames. To
+// this end we create an implementation that does this, without touching the slashes.
+fn percent_encode_noslash(input: &str) -> String {
+    utf8_percent_encode(input, NOSLASH_ENCODE_SET).to_string()
 }
 
-#[cfg(all(test, feature = "global-client"))]
-async fn read_test_bucket() -> Bucket {
-    dotenv::dotenv().ok();
-    let name = std::env::var("TEST_BUCKET").unwrap();
-    match Bucket::read(&name).await {
-        Ok(bucket) => bucket,
-        Err(_not_found) => Bucket::create(&NewBucket {
-            name,
-            ..NewBucket::default()
-        })
-        .await
-        .unwrap(),
-    }
-}
-
-// since all tests run in parallel, we need to make sure we do not create multiple buckets with
-// the same name in each test.
-#[cfg(all(test, feature = "global-client", feature = "sync"))]
-fn create_test_bucket_sync(name: &str) -> Bucket {
-    crate::runtime().unwrap().block_on(create_test_bucket(name))
-}
-
-// since all tests run in parallel, we need to make sure we do not create multiple buckets with
-// the same name in each test.
-#[cfg(all(test, feature = "global-client"))]
-async fn create_test_bucket(name: &str) -> Bucket {
-    std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
-
-    dotenv::dotenv().ok();
-    let base_name = std::env::var("TEST_BUCKET").unwrap();
-    let name = format!("{}-{}", base_name, name);
-    let new_bucket = NewBucket {
-        name,
-        ..NewBucket::default()
-    };
-    match Bucket::create(&new_bucket).await {
-        Ok(bucket) => bucket,
-        Err(_alread_exists) => Bucket::read(&new_bucket.name).await.unwrap(),
-    }
+pub(crate) fn percent_encode(input: &str) -> String {
+    utf8_percent_encode(input, ENCODE_SET).to_string()
 }
 
 #[cfg(feature = "sync")]
-fn runtime() -> Result<tokio::runtime::Runtime> {
-    Ok(tokio::runtime::Builder::new_current_thread()
-        .thread_name("cloud-storage-worker")
-        .enable_time()
-        .enable_io()
-        .build()?)
+fn runtime() -> Result<tokio::runtime::Runtime, Error> {
+    Ok(tokio::runtime::Builder::new_current_thread().thread_name("cloud-storage-worker").enable_time().enable_io().build()?)
 }

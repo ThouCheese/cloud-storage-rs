@@ -1,16 +1,14 @@
-use crate::{
-    bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl},
-    error::GoogleResponse,
-    object::percent_encode,
-    resources::common::ListResponse,
-};
+use crate::{models::{create, BucketAccessControl, ListResponse, Entity}, Error};
 
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
-pub struct BucketAccessControlClient<'a>(pub(super) &'a super::Client);
+#[derive(Debug)]
+pub struct BucketAccessControlClient<'a> {
+    pub(crate) client: &'a super::client::Client,
+    pub(crate) bucket_acl_url: String
+}
 
 impl<'a> BucketAccessControlClient<'a> {
-    /// Create a new `BucketAccessControl` using the provided `NewBucketAccessControl`, related to
-    /// the `Bucket` provided by the `bucket_name` argument.
+    /// Create a new `BucketAccessControl` using the provided `create::BucketAccessControl`.
     ///
     /// ### Important
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
@@ -21,38 +19,25 @@ impl<'a> BucketAccessControlClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, NewBucketAccessControl};
+    /// use cloud_storage::bucket_access_control::{BucketAccessControl, create::BucketAccessControl};
     /// use cloud_storage::bucket_access_control::{Role, Entity};
     ///
     /// let client = Client::default();
-    /// let new_bucket_access_control = NewBucketAccessControl {
+    /// let new_bucket_access_control = create::BucketAccessControl {
     ///     entity: Entity::AllUsers,
     ///     role: Role::Reader,
     /// };
-    /// client.bucket_access_control().create("mybucket", &new_bucket_access_control).await?;
+    /// client.bucket_access_control("my_bucket").create_using(&new_bucket_access_control).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn create(
+    pub async fn create_using(
         &self,
-        bucket: &str,
-        new_bucket_access_control: &NewBucketAccessControl,
-    ) -> crate::Result<BucketAccessControl> {
-        let url = format!("{}/b/{}/acl", crate::BASE_URL, percent_encode(bucket));
-        let result: GoogleResponse<BucketAccessControl> = self
-            .0
-            .client
-            .post(&url)
-            .headers(self.0.get_headers().await?)
-            .json(new_bucket_access_control)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        new_bucket_access_control: &create::BucketAccessControl,
+    ) -> Result<BucketAccessControl, Error> {
+        let headers = self.client.get_headers().await?;
+        let result: crate::models::Response<BucketAccessControl> = self.client.reqwest.post(&self.bucket_acl_url).headers(headers).json(new_bucket_access_control).send().await?.json().await?;
+        Ok(result?)
     }
 
     /// Returns all `BucketAccessControl`s related to this bucket.
@@ -69,28 +54,20 @@ impl<'a> BucketAccessControlClient<'a> {
     /// use cloud_storage::bucket_access_control::BucketAccessControl;
     ///
     /// let client = Client::default();
-    /// let acls = client.bucket_access_control().list("mybucket").await?;
+    /// let acls = client.bucket_access_control("my_bucket").list().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn list(&self, bucket: &str) -> crate::Result<Vec<BucketAccessControl>> {
-        let url = format!("{}/b/{}/acl", crate::BASE_URL, percent_encode(bucket));
-        let result: GoogleResponse<ListResponse<BucketAccessControl>> = self
-            .0
-            .client
-            .get(&url)
-            .headers(self.0.get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
+    pub async fn list(&self) -> Result<Vec<BucketAccessControl>, Error> {
+        let headers = self.client.get_headers().await?;
+        let result: crate::models::Response<ListResponse<BucketAccessControl>> = self.client.reqwest.get(&self.bucket_acl_url).headers(headers).send().await?.json().await?;
         match result {
-            GoogleResponse::Success(s) => Ok(s.items),
-            GoogleResponse::Error(e) => Err(e.into()),
+            crate::models::Response::Success(s) => Ok(s.items),
+            crate::models::Response::Error(e) => Err(e.into()),
         }
     }
 
-    /// Returns the ACL entry for the specified entity on the specified bucket.
+    /// Returns the ACL entry for the specified entity.
     ///
     /// ### Important
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
@@ -104,30 +81,19 @@ impl<'a> BucketAccessControlClient<'a> {
     /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
     ///
     /// let client = Client::default();
-    /// let controls = client.bucket_access_control().read("mybucket", &Entity::AllUsers).await?;
+    /// let controls = client.bucket_access_control("my_bucket").read(&Entity::AllUsers).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn read(&self, bucket: &str, entity: &Entity) -> crate::Result<BucketAccessControl> {
+    pub async fn read(&self, entity: &Entity) -> Result<BucketAccessControl, Error> {
         let url = format!(
-            "{}/b/{}/acl/{}",
-            crate::BASE_URL,
-            percent_encode(bucket),
-            percent_encode(&entity.to_string())
+            "{}/{}",
+            self.bucket_acl_url,
+            crate::percent_encode(&entity.to_string())
         );
-        let result: GoogleResponse<BucketAccessControl> = self
-            .0
-            .client
-            .get(&url)
-            .headers(self.0.get_headers().await?)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        let headers = self.client.get_headers().await?;
+        let result: crate::models::Response<BucketAccessControl> = self.client.reqwest.get(&url).headers(headers).send().await?.json().await?;
+        Ok(result?)
     }
 
     /// Update this `BucketAccessControl`.
@@ -144,7 +110,7 @@ impl<'a> BucketAccessControlClient<'a> {
     /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
     ///
     /// let client = Client::default();
-    /// let mut acl = client.bucket_access_control().read("mybucket", &Entity::AllUsers).await?;
+    /// let mut acl = client.bucket_access_control("my_bucket").read(&Entity::AllUsers).await?;
     /// acl.entity = Entity::AllAuthenticatedUsers;
     /// client.bucket_access_control().update(&acl).await?;
     /// # Ok(())
@@ -153,27 +119,15 @@ impl<'a> BucketAccessControlClient<'a> {
     pub async fn update(
         &self,
         bucket_access_control: &BucketAccessControl,
-    ) -> crate::Result<BucketAccessControl> {
+    ) -> Result<BucketAccessControl, Error> {
         let url = format!(
-            "{}/b/{}/acl/{}",
-            crate::BASE_URL,
-            percent_encode(&bucket_access_control.bucket),
-            percent_encode(&bucket_access_control.entity.to_string()),
+            "{}/{}",
+            self.bucket_acl_url,
+            crate::percent_encode(&bucket_access_control.entity.to_string()),
         );
-        let result: GoogleResponse<BucketAccessControl> = self
-            .0
-            .client
-            .put(&url)
-            .headers(self.0.get_headers().await?)
-            .json(bucket_access_control)
-            .send()
-            .await?
-            .json()
-            .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        let headers = self.client.get_headers().await?;
+        let result: crate::models::Response<BucketAccessControl> = self.client.reqwest.put(&url).headers(headers).json(bucket_access_control).send().await?.json().await?;
+        Ok(result?)
     }
 
     /// Permanently deletes the ACL entry for the specified entity on the specified bucket.
@@ -190,23 +144,24 @@ impl<'a> BucketAccessControlClient<'a> {
     /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
     ///
     /// let client = Client::default();
-    /// let controls = client.bucket_access_control().read("mybucket", &Entity::AllUsers).await?;
-    /// client.bucket_access_control().delete(controls).await?;
+    /// let my_bucket = client.bucket_access_control("my_bucket");
+    /// let controls = my_bucket.read(&Entity::AllUsers).await?;
+    /// my_bucket.delete(controls).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn delete(&self, bucket_access_control: BucketAccessControl) -> crate::Result<()> {
+    pub async fn delete(&self, bucket_access_control: BucketAccessControl) -> Result<(), Error> {
         let url = format!(
-            "{}/b/{}/acl/{}",
-            crate::BASE_URL,
-            percent_encode(&bucket_access_control.bucket),
-            percent_encode(&bucket_access_control.entity.to_string()),
+            "{}/{}",
+            self.bucket_acl_url,
+            crate::percent_encode(&bucket_access_control.entity.to_string()),
         );
+        let headers = self.client.get_headers().await?;
         let response = self
-            .0
             .client
+            .reqwest
             .delete(&url)
-            .headers(self.0.get_headers().await?)
+            .headers(headers)
             .send()
             .await?;
         if response.status().is_success() {

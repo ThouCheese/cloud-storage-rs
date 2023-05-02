@@ -1,11 +1,11 @@
-use crate::{
-    bucket::{IamPolicy, TestIamPermission},
-    Bucket, NewBucket,
-};
+use crate::{models::{create, IamPolicy, TestIamPermission}, Bucket, Error};
 
 /// Operations on [`Bucket`]()s.
 #[derive(Debug)]
-pub struct BucketClient<'a>(pub(super) &'a super::Client);
+pub struct BucketClient<'a> {
+    pub(crate) client: &'a crate::client::BucketClient<'a>,
+    pub(crate) runtime: tokio::runtime::Handle,
+}
 
 impl<'a> BucketClient<'a> {
     /// Creates a new `Bucket`. There are many options that you can provide for creating a new
@@ -16,11 +16,11 @@ impl<'a> BucketClient<'a> {
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket::{Bucket, NewBucket};
+    /// use cloud_storage::bucket::{Bucket, create::Bucket};
     /// use cloud_storage::bucket::{Location, MultiRegion};
     ///
     /// let client = Client::new()?;
-    /// let new_bucket = NewBucket {
+    /// let new_bucket = create::Bucket {
     ///    name: "cloud-storage-rs-doc-1".to_string(), // this is the only mandatory field
     ///    location: Location::Multi(MultiRegion::Eu),
     ///    ..Default::default()
@@ -30,10 +30,9 @@ impl<'a> BucketClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn create(&self, new_bucket: &NewBucket) -> crate::Result<Bucket> {
-        self.0
-            .runtime
-            .block_on(self.0.client.bucket().create(new_bucket))
+    pub fn create(&self, new_bucket: &create::Bucket) -> Result<Bucket, Error> {
+        self.runtime
+            .block_on(self.client.create(new_bucket))
     }
 
     /// Returns all `Bucket`s within this project.
@@ -52,8 +51,8 @@ impl<'a> BucketClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list(&self) -> crate::Result<Vec<Bucket>> {
-        self.0.runtime.block_on(self.0.client.bucket().list())
+    pub fn list(&self) -> Result<Vec<Bucket>, Error> {
+        self.runtime.block_on(self.client.list())
     }
 
     /// Returns a single `Bucket` by its name. If the Bucket does not exist, an error is returned.
@@ -65,7 +64,7 @@ impl<'a> BucketClient<'a> {
     ///
     /// let client = Client::new()?;
     /// # use cloud_storage::bucket::NewBucket;
-    /// # let new_bucket = NewBucket {
+    /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-2".to_string(),
     /// #    ..Default::default()
     /// # };
@@ -76,8 +75,8 @@ impl<'a> BucketClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn read(&self, name: &str) -> crate::Result<Bucket> {
-        self.0.runtime.block_on(self.0.client.bucket().read(name))
+    pub fn read(&self, name: &str) -> Result<Bucket, Error> {
+        self.runtime.block_on(self.client.read(name))
     }
 
     /// Update an existing `Bucket`. If you declare you bucket as mutable, you can edit its fields.
@@ -90,7 +89,7 @@ impl<'a> BucketClient<'a> {
     ///
     /// let client = Client::new()?;
     /// # use cloud_storage::bucket::NewBucket;
-    /// # let new_bucket = NewBucket {
+    /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-3".to_string(),
     /// #    ..Default::default()
     /// # };
@@ -107,10 +106,9 @@ impl<'a> BucketClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn update(&self, bucket: &Bucket) -> crate::Result<Bucket> {
-        self.0
-            .runtime
-            .block_on(self.0.client.bucket().update(bucket))
+    pub fn update(&self, bucket: &Bucket) -> Result<Bucket, Error> {
+        self.runtime
+            .block_on(self.client.update(bucket))
     }
 
     /// Delete an existing `Bucket`. This permanently removes a bucket from Google Cloud Storage.
@@ -124,7 +122,7 @@ impl<'a> BucketClient<'a> {
     ///
     /// let client = Client::new()?;
     /// # use cloud_storage::bucket::NewBucket;
-    /// # let new_bucket = NewBucket {
+    /// # let new_bucket = create::Bucket {
     /// #   name: "unnecessary-bucket".to_string(),
     /// #    ..Default::default()
     /// # };
@@ -135,10 +133,9 @@ impl<'a> BucketClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn delete(&self, bucket: Bucket) -> crate::Result<()> {
-        self.0
-            .runtime
-            .block_on(self.0.client.bucket().delete(bucket))
+    pub fn delete(&self, bucket: Bucket) -> Result<(), Error> {
+        self.runtime
+            .block_on(self.client.delete(bucket))
     }
 
     /// Returns the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
@@ -150,7 +147,7 @@ impl<'a> BucketClient<'a> {
     ///
     /// let client = Client::new()?;
     /// # use cloud_storage::bucket::NewBucket;
-    /// # let new_bucket = NewBucket {
+    /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-4".to_string(),
     /// #    ..Default::default()
     /// # };
@@ -162,10 +159,9 @@ impl<'a> BucketClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_iam_policy(&self, bucket: &Bucket) -> crate::Result<IamPolicy> {
-        self.0
-            .runtime
-            .block_on(self.0.client.bucket().get_iam_policy(bucket))
+    pub fn get_iam_policy(&self, bucket: &Bucket) -> Result<IamPolicy, Error> {
+        self.runtime
+            .block_on(self.client.get_iam_policy(bucket))
     }
 
     /// Updates the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
@@ -178,7 +174,7 @@ impl<'a> BucketClient<'a> {
     ///
     /// let client = Client::new()?;
     /// # use cloud_storage::bucket::NewBucket;
-    /// # let new_bucket = NewBucket {
+    /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-5".to_string(),
     /// #    ..Default::default()
     /// # };
@@ -201,10 +197,9 @@ impl<'a> BucketClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn set_iam_policy(&self, bucket: &Bucket, iam: &IamPolicy) -> crate::Result<IamPolicy> {
-        self.0
-            .runtime
-            .block_on(self.0.client.bucket().set_iam_policy(bucket, iam))
+    pub fn set_iam_policy(&self, bucket: &Bucket, iam: &IamPolicy) -> Result<IamPolicy, Error> {
+        self.runtime
+            .block_on(self.client.set_iam_policy(bucket, iam))
     }
 
     /// Checks whether the user provided in the service account has this permission.
@@ -215,7 +210,7 @@ impl<'a> BucketClient<'a> {
     /// use cloud_storage::Bucket;
     ///
     /// let client = Client::new()?;
-    /// let bucket = client.bucket().read("my-bucket")?;
+    /// let bucket = client.bucket("my_bucket").read()?;
     /// client.bucket().test_iam_permission(&bucket, "storage.buckets.get")?;
     /// # Ok(())
     /// # }
@@ -224,12 +219,7 @@ impl<'a> BucketClient<'a> {
         &self,
         bucket: &Bucket,
         permission: &str,
-    ) -> crate::Result<TestIamPermission> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .bucket()
-                .test_iam_permission(bucket, permission),
-        )
+    ) -> Result<TestIamPermission, Error> {
+        self.runtime.block_on(self.client.test_iam_permission(bucket, permission))
     }
 }
