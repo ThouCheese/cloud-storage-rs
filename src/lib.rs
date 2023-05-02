@@ -92,7 +92,8 @@ pub mod client;
 #[cfg(feature = "sync")]
 pub mod sync;
 
-
+// export time, so implementing libraries can use it
+pub extern crate time;
 
 mod configuration;
 pub mod models;
