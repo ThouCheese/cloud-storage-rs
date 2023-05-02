@@ -95,7 +95,7 @@ pub mod sync;
 
 
 mod configuration;
-mod models;
+pub mod models;
 mod download_options;
 mod error;
 mod token;

@@ -1,3 +1,4 @@
+//! Models used for communication with Google Cloud Platform
 pub(crate)mod create;
 
 mod legacy_iam_role;
