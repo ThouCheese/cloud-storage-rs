@@ -1,4 +1,3 @@
-use bytes::Buf;
 use futures_util::{Stream, stream, TryStream};
 use reqwest::StatusCode;
 
@@ -8,7 +7,6 @@ use crate::{models::{CreateParameters, ObjectList, ReadParameters, UpdateParamet
 #[derive(Debug)]
 pub struct ObjectClient<'a> {
     pub(crate) client: &'a super::client::Client,
-    pub(crate) object_creation_url: &'a str, // {}/{}/o?name={}&uploadType=media
     pub(crate) base_url: &'a str,
 }
 
@@ -40,7 +38,7 @@ impl<'a> ObjectClient<'a> {
     ) -> Result<Object, Error> {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
-        let url = &format!("{}&uploadType=media", self.object_creation_url);
+        let url = &format!("{}/{}/o?name={}&uploadType=media", self.base_url, bucket, filename);
         let mut headers = self.client.get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
         headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
@@ -88,7 +86,7 @@ impl<'a> ObjectClient<'a> {
         mime_type: &str,
         metadata: &serde_json::Value,
     ) -> Result<Object, Error> {
-        let url = &format!("{}&uploadType=multipart", self.object_creation_url);
+        let url = &format!("{}/{}/o?name={}&uploadType=multipart", self.base_url, bucket, filename);
 
         // single-request upload that includes metadata require a mutlipart request where
         // part 1 is metadata, and part2 is the file to upload
@@ -145,7 +143,7 @@ impl<'a> ObjectClient<'a> {
         S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
         bytes::Bytes: From<S::Ok>,
     {
-        let url = &format!("{}&uploadType=multipart", self.object_creation_url);
+        let url = &format!("{}/{}/o?name={}&uploadType=multipart", self.base_url, bucket, filename);
         let headers = self.client.get_headers().await?;
 
         // single-request upload that includes metadata require a mutlipart request where
@@ -206,7 +204,7 @@ impl<'a> ObjectClient<'a> {
     {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
-        let url = &format!("{}&uploadType=media", self.object_creation_url);
+        let url = &format!("{}/{}/o?name={}&uploadType=media", self.base_url, bucket, filename);
         let mut headers = self.client.get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
         if let Some(length) = length.into() {

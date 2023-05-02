@@ -96,7 +96,6 @@ impl Client {
     /// Operations on [`Object`](crate::object::Object)s.
     pub fn object(&self) -> ObjectClient {
         ObjectClient {
-            object_creation_url: todo!(),
             base_url: "https://storage.googleapis.com/storage/v1/",
             client: self,
         }
