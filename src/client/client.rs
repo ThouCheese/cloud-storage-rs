@@ -140,7 +140,7 @@ impl ClientBuilder {
         Client {
             reqwest: self.client.unwrap_or_default(),
             token_cache: self.token_cache.unwrap_or(sync::Arc::new(crate::Token::default())),
-            service_account: self.service_account.unwrap_or(crate::ServiceAccount::default())
+            service_account: self.service_account.unwrap_or_default()
         }
     }
 
