@@ -13,9 +13,8 @@ categories = ["api-bindings", "web-programming"]
 # maintenance = { status = "actively-developed" }
 
 [features]
-default = ["native-tls", "ring", "pem", "global-client"]
+default = ["native-tls", "ring", "pem", "global-client", "dotenv"]
 
-dotenv = ["dep:dotenv"]
 global-client = []
 sync = ["reqwest/blocking"]
 native-tls = ["reqwest/default-tls", "openssl"]
@@ -30,7 +29,7 @@ serde =            { version = "1.0.160", default-features = false, features = [
 serde_json =       { version = "1.0.96",  default-features = false }
 base64 =           { version = "0.21.0",  default-features = false }
 once_cell =        { version = "1.17.1",   default-features = false }
-time =             { version = "0.3.20",  default-features = false, features = ["serde-well-known", "serde-human-readable", "macros"]}
+time =             { version = "0.3.20",  default-features = false, features = ["serde", "formatting", "parsing"]}
 hex =              { version = "0.4.3",   default-features = false, features = ["alloc"] }
 tokio =            { version = "1.28.0",  default-features = false, features = ["macros", "rt"] }
 tokio-util =       { version = "0.7.8",     default-features = false, features = ["compat"] }

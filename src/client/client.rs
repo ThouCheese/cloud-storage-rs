@@ -59,8 +59,8 @@ impl Client {
     /// Operations on [`Bucket`](crate::bucket::Bucket)s.
     pub fn bucket(&self) -> BucketClient {
         BucketClient {
-            bucket_url: "https://storage.googleapis.com/storage/v1/b/",
-            project_id: &self.service_account.project_id,
+            bucket_url: "https://storage.googleapis.com/storage/v1/b".to_string(),
+            project_id: self.service_account.project_id.clone(),
             client: self,
         }
     }
@@ -70,7 +70,7 @@ impl Client {
         let url = format!("https://storage.googleapis.com/storage/v1/b/{}/acl", crate::percent_encode(bucket));
         BucketAccessControlClient {
             bucket_acl_url: url,
-            client: &self
+            client: self
         }
     }
 
@@ -94,9 +94,10 @@ impl Client {
     }
 
     /// Operations on [`Object`](crate::object::Object)s.
-    pub fn object(&self) -> ObjectClient {
+    pub fn object(&self, bucket: &str) -> ObjectClient {
         ObjectClient {
-            base_url: "https://storage.googleapis.com/storage/v1/",
+            base_url: format!("https://storage.googleapis.com/storage/v1/b/{}/o", crate::percent_encode(bucket)),
+            insert_url: format!("https://storage.googleapis.com/upload/storage/v1/b/{}/o", crate::percent_encode(bucket)),
             client: self,
         }
     }

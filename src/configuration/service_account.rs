@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use crate::Error;
+
 /// A deserialized `service-account-********.json`-file.
 #[derive(serde::Deserialize, Debug)]
 pub struct ServiceAccount {
@@ -27,7 +31,7 @@ pub struct ServiceAccount {
 impl Default for ServiceAccount {
     fn default() -> Self {
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().ok();
+        dotenv::dotenv().unwrap();
         let credentials_json = std::env::var("SERVICE_ACCOUNT")
             .or_else(|_| std::env::var("GOOGLE_APPLICATION_CREDENTIALS"))
             .map(|path| std::fs::read_to_string(path).expect("SERVICE_ACCOUNT file not found"))
@@ -45,14 +49,15 @@ impl Default for ServiceAccount {
     }
 }
 
-impl ServiceAccount {
-    /// Method for creating a `ServiceAccount` from a json string.
-    pub fn from_str(credentials_json: &str) -> Self {
-        let account: Self = serde_json::from_str(&credentials_json).expect("Format for Service Account invalid");
+impl FromStr for ServiceAccount {
+    type Err = Error;
+
+    fn from_str(credentials_json: &str) -> Result<ServiceAccount, Self::Err> {
+        let account: Self = serde_json::from_str(credentials_json).expect("Format for Service Account invalid");
         assert_eq!(
             account.r#type, "service_account",
             "`type` should be 'service_account'"
         );
-        account
+        Ok(account)
     }
 }

@@ -22,7 +22,7 @@ let mut object = Object::create("my_bucket", content, "folder/filename.txt", "ap
 // let's copy the file
 object.copy("my_bucket2: electric boogaloo", "otherfolder/filename.txt", None).await?;
 // print a link to the file
-println!("{}", object.download_url(1000)); // download link for 1000 seconds
+println!("{}", object.download_url(1000)); // download link that expires after 1000 seconds
 // remove the file from the bucket
 object.delete(None).await?;
 ```

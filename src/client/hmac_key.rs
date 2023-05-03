@@ -78,6 +78,8 @@ impl<'a> HmacKeyClient<'a> {
             .text()
             .await?;
         let result: Result<Response<ListResponse<HmacMeta>>, serde_json::Error> = serde_json::from_str(&response);
+        let single_result: Result<Response<HmacMeta>, serde_json::Error> = serde_json::from_str(&response);
+        // todo: test this with one hmac key
 
         // This function rquires more complicated error handling because when there is only one
         // entry, Google will return the response `{ "kind": "storage#hmacKeysMetadata" }` instead
@@ -87,7 +89,7 @@ impl<'a> HmacKeyClient<'a> {
                 crate::models::Response::Success(s) => Ok(s.items),
                 crate::models::Response::Error(e) => Err(e.into()),
             },
-            Err(_) => Ok(vec![]),
+            Err(_) => Ok(vec![single_result??]),
         }
     }
 

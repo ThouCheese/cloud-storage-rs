@@ -1,4 +1,4 @@
-use crate::{models::{create, ObjectAccessControl, ListResponse, Entity}, Error};
+use crate::{models::{create, ObjectAccessControl, ListResponse, Entity, Response}, Error};
 
 
 /// Operations on [`ObjectAccessControl`](ObjectAccessControl)s.
@@ -39,17 +39,14 @@ impl<'a> ObjectAccessControlClient<'a> {
     pub async fn list(
         &self
     ) -> Result<Vec<ObjectAccessControl>, Error> {
-        let result: crate::models::Response<ListResponse<ObjectAccessControl>> = self.client.reqwest
+        let result = self.client.reqwest
             .get(&self.acl_url)
             .headers(self.client.get_headers().await?)
             .send()
             .await?
-            .json()
-            .await?;
-        match result {
-            crate::models::Response::Success(s) => Ok(s.items),
-            crate::models::Response::Error(e) => Err(e.into()),
-        }
+            .json::<Response<ListResponse<ObjectAccessControl>>>()
+            .await??;
+        Ok(result.items)
     }
 
     /// Returns the `ACL` entry for the specified entity on the specified bucket.

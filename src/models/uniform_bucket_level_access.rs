@@ -1,3 +1,5 @@
+use time::OffsetDateTime;
+
 /// Access that is configured for all objects in one go.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -10,6 +12,6 @@ pub struct UniformBucketLevelAccess {
     ///
     /// iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until
     /// the locked time, after which the field is immutable.
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub locked_time: Option<time::OffsetDateTime>,
+    #[serde(default, with = "time::serde::rfc3339::option")]
+    pub locked_time: Option<OffsetDateTime>,
 }

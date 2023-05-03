@@ -26,8 +26,8 @@ impl Object {
         parameters: Option<CreateParameters>,
     ) -> Result<Self, Error> {
         crate::CLOUD_CLIENT
-            .object()
-            .create(bucket, file, filename, mime_type, parameters)
+            .object(bucket)
+            .create(file, filename, mime_type, parameters)
             .await
     }
 
@@ -43,7 +43,7 @@ impl Object {
         mime_type: &str,
         parameters: Option<CreateParameters>,
     ) -> Result<Self, Error> {
-        crate::runtime()?.block_on(Self::create(bucket, file, filename, mime_type, parameters))
+        crate::runtime()?.block_on(Self::create(file, filename, mime_type, parameters))
     }
 
     /// Create a new object with metadata.
@@ -74,8 +74,8 @@ impl Object {
         metadata: &serde_json::Value,
     ) -> Result<Self, Error> {
         crate::CLOUD_CLIENT
-            .object()
-            .create_with(bucket, file, filename, mime_type, metadata)
+            .object(bucket)
+            .create_with(file, filename, mime_type, metadata)
             .await
     }
 
@@ -127,8 +127,8 @@ impl Object {
         bytes::Bytes: From<S::Ok>,
     {
         crate::CLOUD_CLIENT
-            .object()
-            .create_streamed(bucket, stream, length, filename, mime_type, parameters)
+            .object(bucket)
+            .create_streamed(stream, length, filename, mime_type, parameters)
             .await
     }
 
@@ -170,12 +170,12 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn list<'a>(
-        bucket: &'a str,
+    pub async fn list(
+        bucket: &str,
         list_request: ListRequest,
-    ) -> Result<impl Stream<Item = Result<ObjectList, Error>> + '_, Error> {
-        let object_client : crate::client::ObjectClient<'a> = crate::CLOUD_CLIENT.object();
-        object_client.list(bucket.clone(), list_request).await
+    ) -> Result<impl Stream<Item = Result<ObjectList, Error>>, Error> {
+        let object_client = crate::CLOUD_CLIENT.object(bucket);
+        object_client.list(list_request).await
     }
 
     /// The synchronous equivalent of `Object::list`.
@@ -187,7 +187,7 @@ impl Object {
         use futures_util::TryStreamExt;
 
         let rt = crate::runtime()?;
-        let listed = rt.block_on(Self::list(bucket, list_request))?;
+        let listed = rt.block_on(Self::list(list_request))?;
         rt.block_on(listed.try_collect())
     }
 
@@ -208,8 +208,8 @@ impl Object {
         parameters: Option<ReadParameters>,
     ) -> Result<Self, Error> {
         crate::CLOUD_CLIENT
-            .object()
-            .read(bucket, file_name, parameters)
+            .object(bucket)
+            .read(file_name, parameters)
             .await
     }
 
@@ -223,7 +223,7 @@ impl Object {
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Self, Error> {
-        crate::runtime()?.block_on(Self::read(bucket, file_name, parameters))
+        crate::runtime()?.block_on(Self::read(file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket.
@@ -243,8 +243,8 @@ impl Object {
         parameters: Option<ReadParameters>,
     ) -> Result<Vec<u8>, Error> {
         crate::CLOUD_CLIENT
-            .object()
-            .download(bucket, file_name, parameters)
+            .object(bucket)
+            .download(file_name, parameters)
             .await
     }
 
@@ -258,7 +258,7 @@ impl Object {
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Vec<u8>, Error> {
-        crate::runtime()?.block_on(Self::download(bucket, file_name, parameters))
+        crate::runtime()?.block_on(Self::download(file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket, without
@@ -286,8 +286,8 @@ impl Object {
         parameters: Option<ReadParameters>,
     ) -> Result<impl Stream<Item = Result<bytes::Bytes, Error>> + Unpin, Error> {
         crate::CLOUD_CLIENT
-            .object()
-            .download_streamed(bucket, file_name, parameters)
+            .object(bucket)
+            .download_streamed(file_name, parameters)
             .await
     }
 
@@ -305,7 +305,7 @@ impl Object {
     /// # }
     /// ```
     pub async fn update(&self, parameters: Option<UpdateParameters>) -> Result<Self, Error> {
-        crate::CLOUD_CLIENT.object().update(self, parameters).await
+        crate::CLOUD_CLIENT.object(&self.bucket).update(self, parameters).await
     }
 
     /// The synchronous equivalent of `Object::download`.
@@ -334,8 +334,8 @@ impl Object {
         parameters: Option<DeleteParameters>,
     ) -> Result<(), Error> {
         crate::CLOUD_CLIENT
-            .object()
-            .delete(bucket, file_name, parameters)
+            .object(bucket)
+            .delete(file_name, parameters)
             .await
     }
 
@@ -349,7 +349,7 @@ impl Object {
         file_name: &str,
         parameters: Option<DeleteParameters>,
     ) -> Result<(), Error> {
-        crate::runtime()?.block_on(Self::delete(bucket, file_name, parameters))
+        crate::runtime()?.block_on(Self::delete(file_name, parameters))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -389,8 +389,8 @@ impl Object {
         parameters: Option<ComposeParameters>,
     ) -> Result<Self, Error> {
         crate::CLOUD_CLIENT
-            .object()
-            .compose(bucket, req, destination_object, parameters)
+            .object(bucket)
+            .compose(req, destination_object, parameters)
             .await
     }
 
@@ -406,7 +406,7 @@ impl Object {
         parameters: Option<ComposeParameters>,
     ) -> Result<Self, Error> {
 
-        crate::runtime()?.block_on(Self::compose(bucket, req, destination_object, parameters))
+        crate::runtime()?.block_on(Self::compose(req, destination_object, parameters))
     }
 
     /// Copy this object to the target bucket and path
@@ -429,7 +429,7 @@ impl Object {
         parameters: Option<CopyParameters>,
     ) -> Result<Self, Error> {
         crate::CLOUD_CLIENT
-            .object()
+            .object(&self.bucket)
             .copy(self, destination_bucket, path, parameters)
             .await
     }
@@ -475,7 +475,7 @@ impl Object {
         parameters: Option<RewriteParameters>,
     ) -> Result<Self, Error> {
         crate::CLOUD_CLIENT
-            .object()
+            .object(&self.bucket)
             .rewrite(self, destination_bucket, path, parameters)
             .await
     }
@@ -643,7 +643,7 @@ mod tests {
         let mut result = Object::download_streamed(&bucket.name, "test-download", None).await?;
         let mut data: Vec<u8> = Vec::new();
         while let Some(part) = result.next().await {
-            data.write_all(part?.chunk());
+            data.write_all(part?.chunk())?;
         }
         assert_eq!(data, content);
 
@@ -667,7 +667,7 @@ mod tests {
             Object::download_streamed(&bucket.name, "test-download-large", None).await?;
         let mut data: Vec<u8> = Vec::new();
         while let Some(part) = result.next().await {
-            data.write_all(part?.chunk());
+            data.write_all(part?.chunk())?;
         }
         assert_eq!(data, content);
 
@@ -728,6 +728,7 @@ mod tests {
             None,
         )
         .await?;
+        
         let obj2 = Object::create(
             &bucket.name,
             vec![2, 3],
@@ -752,8 +753,7 @@ mod tests {
             ],
             destination: None,
         };
-        let obj3 =
-            Object::compose(&bucket.name, &compose_request, "test-concatted-file", None).await?;
+        let obj3 = Object::compose(&bucket.name, &compose_request, "test-concatted-file", None).await?;
         let url = obj3.download_url(100)?;
         let content = reqwest::get(&url).await?.text().await?;
         assert_eq!(content.as_bytes(), &[0, 1, 2, 3]);
@@ -774,8 +774,7 @@ mod tests {
     #[tokio::test]
     async fn rewrite() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = crate::global_client::read_test_bucket().await;
-        let obj =
-            Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain", None).await?;
+        let obj = Object::create(&bucket.name, vec![0, 1], "test-rewrite", "text/plain", None).await?;
         let obj = obj.rewrite(&bucket.name, "test-rewritten", None).await?;
         let url = obj.download_url(100)?;
         let client = reqwest::Client::default();
@@ -797,7 +796,7 @@ mod tests {
         ];
         for name in &complicated_names {
             let _obj = Object::create(&bucket.name, vec![0, 1], name, "text/plain", None).await?;
-            let obj = Object::read(&bucket.name, &name, None).await.unwrap();
+            let obj = Object::read(&bucket.name, name, None).await.unwrap();
             let url = obj.download_url(100)?;
             let client = reqwest::Client::default();
             let download = client.head(&url).send().await?;

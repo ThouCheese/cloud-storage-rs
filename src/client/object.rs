@@ -1,13 +1,12 @@
 use futures_util::{Stream, stream, TryStream};
-use reqwest::StatusCode;
-
-use crate::{models::{CreateParameters, ObjectList, ReadParameters, UpdateParameters, DeleteParameters, ComposeRequest, ComposeParameters, CopyParameters, RewriteParameters, rewrite_response::RewriteResponse}, Object, Error, ListRequest, sized_byte_stream::SizedByteStream};
+use crate::{models::{CreateParameters, ObjectList, ReadParameters, UpdateParameters, DeleteParameters, ComposeRequest, ComposeParameters, CopyParameters, RewriteParameters, Response, rewrite_response::RewriteResponse}, Object, Error, ListRequest, sized_byte_stream::SizedByteStream};
 
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
 pub struct ObjectClient<'a> {
     pub(crate) client: &'a super::client::Client,
-    pub(crate) base_url: &'a str,
+    pub(crate) base_url: String,
+    pub(crate) insert_url: String,
 }
 
 impl<'a> ObjectClient<'a> {
@@ -30,7 +29,6 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn create(
         &self,
-        bucket: &str,
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
@@ -38,7 +36,7 @@ impl<'a> ObjectClient<'a> {
     ) -> Result<Object, Error> {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
-        let url = &format!("{}/{}/o?name={}&uploadType=media", self.base_url, bucket, filename);
+        let url = &format!("{}?name={}&uploadType=media", self.insert_url, crate::percent_encode(filename));
         let mut headers = self.client.get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
         headers.insert(CONTENT_LENGTH, file.len().to_string().parse()?);
@@ -49,11 +47,11 @@ impl<'a> ObjectClient<'a> {
             .body(file)
             .send()
             .await?;
-        if response.status() == 200 {
-            Ok(serde_json::from_str(&response.text().await?)?)
-        } else {
-            Err(crate::Error::new(&response.text().await?))
-        }
+
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Create a new object. This works in the same way as `ObjectClient::create` but allows setting of metadata for this object.
@@ -80,13 +78,12 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn create_with(
         &self,
-        bucket: &str,
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
         metadata: &serde_json::Value,
     ) -> Result<Object, Error> {
-        let url = &format!("{}/{}/o?name={}&uploadType=multipart", self.base_url, bucket, filename);
+        let url = &format!("{}?name={}&uploadType=multipart", self.insert_url, crate::percent_encode(filename));
 
         // single-request upload that includes metadata require a mutlipart request where
         // part 1 is metadata, and part2 is the file to upload
@@ -103,12 +100,10 @@ impl<'a> ObjectClient<'a> {
             .multipart(form)
             .send()
             .await?;
-
-        if response.status() == 200 {
-            Ok(serde_json::from_str(&response.text().await?)?)
-        } else {
-            Err(crate::Error::new(&response.text().await?))
-        }
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Create a new object. This works in the same way as `ObjectClient::create`, except it does not need
@@ -132,7 +127,6 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn create_streamed_with<S>(
         &self,
-        bucket: &str,
         stream: S,
         filename: &str,
         mime_type: &str,
@@ -143,7 +137,7 @@ impl<'a> ObjectClient<'a> {
         S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
         bytes::Bytes: From<S::Ok>,
     {
-        let url = &format!("{}/{}/o?name={}&uploadType=multipart", self.base_url, bucket, filename);
+        let url = &format!("{}?name={}&uploadType=multipart", self.insert_url, crate::percent_encode(filename));
         let headers = self.client.get_headers().await?;
 
         // single-request upload that includes metadata require a mutlipart request where
@@ -162,11 +156,10 @@ impl<'a> ObjectClient<'a> {
             .multipart(form)
             .send()
             .await?;
-        if response.status() == 200 {
-            Ok(serde_json::from_str(&response.text().await?)?)
-        } else {
-            Err(crate::Error::new(&response.text().await?))
-        }
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Create a new object. This works in the same way as `ObjectClient::create`, except it does not need
@@ -190,7 +183,6 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn create_streamed<S>(
         &self,
-        bucket: &str,
         stream: S,
         length: impl Into<Option<u64>>,
         filename: &str,
@@ -204,7 +196,7 @@ impl<'a> ObjectClient<'a> {
     {
         use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 
-        let url = &format!("{}/{}/o?name={}&uploadType=media", self.base_url, bucket, filename);
+        let url = &format!("{}?name={}&uploadType=media", self.insert_url, crate::percent_encode(filename));
         let mut headers = self.client.get_headers().await?;
         headers.insert(CONTENT_TYPE, mime_type.parse()?);
         if let Some(length) = length.into() {
@@ -219,11 +211,10 @@ impl<'a> ObjectClient<'a> {
             .body(body)
             .send()
             .await?;
-        if response.status() == 200 {
-            Ok(serde_json::from_str(&response.text().await?)?)
-        } else {
-            Err(crate::Error::new(&response.text().await?))
-        }
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Obtain a list of objects within this Bucket.
@@ -241,12 +232,9 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn list(
         &self,
-        bucket: &str,
         list_request: ListRequest,
     ) -> Result<impl Stream<Item = Result<ObjectList, Error>>, Error> {
-        let bucket = bucket.clone();
-        
-        enum ListState {
+       enum ListState {
             Start(ListRequest),
             HasMore(ListRequest),
             Done,
@@ -269,8 +257,8 @@ impl<'a> ObjectClient<'a> {
         }
 
         let reqwest = self.client.reqwest.clone();
-        let headers = self.client.get_headers().await?.clone();
-        let url = format!("{}/b/{}/o", self.base_url, crate::percent_encode(bucket));
+        let headers = self.client.get_headers().await?;
+        let url = self.base_url.to_string();
 
         Ok(stream::unfold(ListState::Start(list_request), move |mut state| {
                 let reqwest = reqwest.clone();
@@ -278,8 +266,6 @@ impl<'a> ObjectClient<'a> {
                 let headers = headers.clone();
                 
                 async move {
-                    
-
                     let req = state.req_mut()?;
                     if req.max_results == Some(0) {
                         return None;
@@ -345,26 +331,26 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn read(
         &self,
-        bucket: &str,
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Object, Error> {
         //let paramters = qs::
         let url = format!(
-            "{}/b/{}/o/{}",
+            "{}/{}",
             self.base_url,
-            crate::percent_encode(bucket),
             crate::percent_encode(file_name),
         );
-        let result: crate::models::Response<Object> = self.client.reqwest
+        let response = self.client.reqwest
             .get(&url)
             .query(&parameters)
             .headers(self.client.get_headers().await?)
             .send()
-            .await?
-            .json()
             .await?;
-        Ok(result?)
+
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Download the content of the object with the specified name in the specified bucket.
@@ -382,27 +368,26 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn download(
         &self,
-        bucket: &str,
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Vec<u8>, Error> {
         let url = format!(
-            "{}/b/{}/o/{}?alt=media",
+            "{}/{}?alt=media",
             self.base_url,
-            crate::percent_encode(bucket),
             crate::percent_encode(file_name),
         );
-        let resp = self.client.reqwest
+        let response = self.client.reqwest
             .get(&url)
             .query(&parameters)
             .headers(self.client.get_headers().await?)
             .send()
             .await?;
-        if resp.status() == StatusCode::NOT_FOUND {
-            Err(crate::Error::Other(resp.text().await?))
-        } else {
-            Ok(resp.error_for_status()?.bytes().await?.to_vec())
-        }
+
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                Err(crate::Error::Other(response.text().await?))
+            } else {
+                Ok(response.error_for_status()?.bytes().await?.to_vec())
+            }
     }
 
     /// Download the content of the object with the specified name in the specified bucket, without
@@ -429,15 +414,13 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn download_streamed(
         &self,
-        bucket: &str,
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<impl Stream<Item = Result<bytes::Bytes, Error>> + Unpin, Error> {
         use futures_util::TryStreamExt;
         let url = format!(
-            "{}/b/{}/o/{}?alt=media",
+            "{}/{}?alt=media",
             self.base_url,
-            crate::percent_encode(bucket),
             crate::percent_encode(file_name),
         );
         let response = self.client.reqwest
@@ -448,8 +431,7 @@ impl<'a> ObjectClient<'a> {
             .await?
             .error_for_status()?;
         let size = response.content_length();
-        let bytes = response
-            .bytes_stream().map_err(Error::from);
+        let bytes = response.bytes_stream().map_err(Error::from);
         Ok(SizedByteStream::new(bytes, size))
     }
 
@@ -478,21 +460,22 @@ impl<'a> ObjectClient<'a> {
         parameters: Option<UpdateParameters>,
     ) -> Result<Object, Error> {
         let url = format!(
-            "{}/b/{}/o/{}",
+            "{}/{}",
             self.base_url,
-            crate::percent_encode(&object.bucket),
             crate::percent_encode(&object.name),
         );
-        let result: crate::models::Response<Object> = self.client.reqwest
+        let response = self.client.reqwest
             .put(&url)
             .query(&parameters)
             .headers(self.client.get_headers().await?)
             .json(&object)
             .send()
-            .await?
-            .json()
             .await?;
-        Ok(result?)
+
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Deletes a single object with the specified name in the specified bucket.
@@ -510,14 +493,12 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn delete(
         &self,
-        bucket: &str,
         file_name: &str,
         parameters: Option<DeleteParameters>,
     ) -> Result<(), Error> {
         let url = format!(
-            "{}/b/{}/o/{}",
+            "{}/{}",
             self.base_url,
-            crate::percent_encode(bucket),
             crate::percent_encode(file_name),
         );
         let response = self.client.reqwest
@@ -526,7 +507,8 @@ impl<'a> ObjectClient<'a> {
             .headers(self.client.get_headers().await?)
             .send()
             .await?;
-        if response.status().is_success() {
+
+       if response.status().is_success() {
             Ok(())
         } else {
             Err(crate::Error::Google(response.json().await?))
@@ -567,27 +549,27 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub async fn compose(
         &self,
-        bucket: &str,
         req: &ComposeRequest,
         destination_object: &str,
         parameters: Option<ComposeParameters>,
     ) -> Result<Object, Error> {
         let url = format!(
-            "{}/b/{}/o/{}/compose",
+            "{}/{}/compose",
             self.base_url,
-            crate::percent_encode(bucket),
             crate::percent_encode(destination_object)
         );
-        let result: crate::models::Response<Object> = self.client.reqwest
+        let response = self.client.reqwest
             .post(&url)
             .query(&parameters)
             .headers(self.client.get_headers().await?)
             .json(req)
             .send()
-            .await?
-            .json()
             .await?;
-        Ok(result?)
+
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Copy this object to the target bucket and path.
@@ -600,7 +582,7 @@ impl<'a> ObjectClient<'a> {
     ///
     /// let client = Client::default();
     /// let obj1 = client.object("my_bucket").read("file1", None).await?;
-    /// let obj2 = client.object().copy(&obj1, "my_other_bucket", "file2", None).await?;
+    /// let obj2 = client.object("my_bucket").copy(&obj1, "my_other_bucket", "file2", None).await?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
@@ -615,24 +597,25 @@ impl<'a> ObjectClient<'a> {
         use reqwest::header::CONTENT_LENGTH;
 
         let url = format!(
-            "{base}/b/{sBucket}/o/{sObject}/copyTo/b/{dBucket}/o/{dObject}",
+            "{base}/{sObject}/copyTo/b/{dBucket}/o/{dObject}",
             base = self.base_url,
-            sBucket = crate::percent_encode(&object.bucket),
             sObject = crate::percent_encode(&object.name),
             dBucket = crate::percent_encode(destination_bucket),
             dObject = crate::percent_encode(path),
         );
         let mut headers = self.client.get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let result: crate::models::Response<Object> = self.client.reqwest
+        let response = self.client.reqwest
             .post(&url)
             .query(&parameters)
             .headers(headers)
             .send()
-            .await?
-            .json()
             .await?;
-        Ok(result?)
+
+        let mut object = response.json::<Response<Object>>().await??;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 
     /// Moves a file from the current location to the target bucket and path.
@@ -652,7 +635,7 @@ impl<'a> ObjectClient<'a> {
     ///
     /// let client = Client::default();
     /// let obj1 = client.object("my_bucket").read("file1", None).await?;
-    /// let obj2 = client.object().rewrite(&obj1, "my_other_bucket", "file2", None).await?;
+    /// let obj2 = client.object("my_bucket").rewrite(&obj1, "my_other_bucket", "file2", None).await?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
@@ -667,25 +650,24 @@ impl<'a> ObjectClient<'a> {
         use reqwest::header::CONTENT_LENGTH;
 
         let url = format!(
-            "{base}/b/{sBucket}/o/{sObject}/rewriteTo/b/{dBucket}/o/{dObject}",
+            "{base}/{sObject}/rewriteTo/b/{dBucket}/o/{dObject}",
             base = self.base_url,
-            sBucket = crate::percent_encode(&object.bucket),
             sObject = crate::percent_encode(&object.name),
             dBucket = crate::percent_encode(destination_bucket),
             dObject = crate::percent_encode(path),
         );
         let mut headers = self.client.get_headers().await?;
         headers.insert(CONTENT_LENGTH, "0".parse()?);
-        let s = self.client.reqwest
+        let response = self.client.reqwest
             .post(&url)
             .query(&parameters)
             .headers(headers)
             .send()
-            .await?
-            .text()
             .await?;
 
-        let result: RewriteResponse = serde_json::from_str(&s).unwrap();
-        Ok(result.resource)
+        let mut object = response.json::<RewriteResponse>().await?.resource;
+        object.private_key = Some(self.client.service_account.private_key.clone());
+        object.client_email = Some(self.client.service_account.client_email.clone());
+        Ok(object)
     }
 }

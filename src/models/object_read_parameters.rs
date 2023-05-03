@@ -16,7 +16,7 @@ pub struct ReadParameters {
     /// Makes the operation conditional on whether the object's current metageneration matches the given value.
     pub if_metageneration_match: Option<usize>,
 
-    ///	Makes the operation conditional on whether the object's current metageneration does not match the given value.
+    /// Makes the operation conditional on whether the object's current metageneration does not match the given value.
     pub if_metageneration_not_match: Option<usize>,
 
     /// Set of properties to return. Defaults to noAcl, unless the object resource specifies the acl property, when it defaults to full.

@@ -1,4 +1,4 @@
-use crate::{models::{create, DefaultObjectAccessControl, ListResponse, Entity}, Error};
+use crate::{models::{create, DefaultObjectAccessControl, ListResponse, Entity, Response}, Error};
 
 
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
@@ -39,25 +39,17 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         new_acl: &create::DefaultObjectAccessControl,
     ) -> Result<DefaultObjectAccessControl, Error> {
         let headers = self.client.get_headers().await?;
-        let url = format!(
-            "{}",
-            self.base_url
-        );
-        let result: crate::models::Response<DefaultObjectAccessControl> = self.client.reqwest
+        let url = self.base_url.to_string();
+        let response = self.client.reqwest
             .post(&url)
             .headers(headers)
             .json(new_acl)
             .send()
-            .await?
-            .json()
             .await?;
-        match result {
-            crate::models::Response::Success(mut s) => {
-                s.bucket = self.bucket.clone();
-                Ok(s)
-            }
-            crate::models::Response::Error(e) => Err(e.into()),
-        }
+
+        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await??;
+        object.bucket = self.bucket.clone();
+        Ok(object)
     }
 
     /// Retrieves default object ACL entries on the specified bucket.
@@ -79,15 +71,14 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ```
     pub async fn list(&self) -> Result<Vec<DefaultObjectAccessControl>, Error> {
         let headers = self.client.get_headers().await?;
-        let result: crate::models::Response<ListResponse<DefaultObjectAccessControl>> = self.client.reqwest.get(&self.base_url).headers(headers).send().await?.json().await?;
-        match result {
-            crate::models::Response::Success(s) => Ok(s.items.into_iter()
-            .map(|item| DefaultObjectAccessControl {
-                bucket: self.bucket.to_string(),
-                ..item
-            }).collect()),
-            crate::models::Response::Error(e) => Err(e.into()),
-        }
+        let response = self.client.reqwest.get(&self.base_url).headers(headers).send().await?;
+
+        let mut object = response.json::<Response<ListResponse<DefaultObjectAccessControl>>>().await??.items;
+        object = object.into_iter().map(|item| DefaultObjectAccessControl {
+            bucket: self.bucket.to_string(),
+            ..item
+        }).collect();
+        Ok(object)
     }
 
     /// Read a single `DefaultObjectAccessControl`.
@@ -121,20 +112,15 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
             self.base_url,
             crate::percent_encode(&entity.to_string()),
         );
-        let result: crate::models::Response<DefaultObjectAccessControl> = self.client.reqwest
+        let response = self.client.reqwest
             .get(&url)
             .headers(headers)
             .send()
-            .await?
-            .json()
             .await?;
-        match result {
-            crate::models::Response::Success(mut s) => {
-                s.bucket = self.bucket.to_string();
-                Ok(s)
-            }
-            crate::models::Response::Error(e) => Err(e.into()),
-        }
+
+        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await??;
+        object.bucket = self.bucket.clone();
+        Ok(object)
     }
 
     /// Update the current `DefaultObjectAccessControl`.
@@ -166,14 +152,11 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
             self.base_url,
             crate::percent_encode(&default_object_access_control.entity.to_string()),
         );
-        let result: crate::models::Response<DefaultObjectAccessControl> = self.client.reqwest.put(&url).headers(headers).json(default_object_access_control).send().await?.json().await?;
-        match result {
-            crate::models::Response::Success(mut s) => {
-                s.bucket = default_object_access_control.bucket.to_string();
-                Ok(s)
-            }
-            crate::models::Response::Error(e) => Err(e.into()),
-        }
+        let response = self.client.reqwest.put(&url).headers(headers).json(default_object_access_control).send().await?;
+
+        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await??;
+        object.bucket = self.bucket.clone();
+        Ok(object)
     }
 
     /// Delete this 'DefaultObjectAccessControl`.
@@ -199,16 +182,13 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         default_object_access_control: DefaultObjectAccessControl,
     ) -> Result<(), crate::Error> {
         let headers = self.client.get_headers().await?;
-        let url = format!(
-            "{}/{}",
-            self.base_url,
-            crate::percent_encode(&default_object_access_control.entity.to_string()),
-        );
+        let url = format!("{}/{}", self.base_url, crate::percent_encode(&default_object_access_control.entity.to_string()));
         let response = self.client.reqwest
             .delete(&url)
             .headers(headers)
             .send()
             .await?;
+
         if response.status().is_success() {
             Ok(())
         } else {

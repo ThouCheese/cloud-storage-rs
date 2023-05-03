@@ -8,13 +8,13 @@ pub struct SizedByteStream<S: Stream<Item = Result<bytes::Bytes, Error>> + Unpin
     bytes: S,
 }
 
-impl<'a, S: Stream<Item = Result<bytes::Bytes, Error>> + Unpin> SizedByteStream<S> {
+impl<S: Stream<Item = Result<bytes::Bytes, Error>> + Unpin> SizedByteStream<S> {
     pub(crate) fn new(bytes: S, size: Option<u64>) -> Self {
         Self { size, bytes }
     }
 }
 
-impl<'a, S: Stream<Item = Result<bytes::Bytes, Error>> + Unpin> Stream for SizedByteStream<S> {
+impl<S: Stream<Item = Result<bytes::Bytes, Error>> + Unpin> Stream for SizedByteStream<S> {
     type Item = Result<bytes::Bytes, Error>;
 
     fn poll_next(

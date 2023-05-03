@@ -64,15 +64,13 @@ impl Notification {
     /// Retrieves a list of notification subscriptions for a given bucket.}
     pub fn list(bucket: &str) -> Result<Vec<Self>, crate::Error> {
         let url = format!("{}/v1/b/{}/notificationConfigs", crate::BASE_URL, bucket);
-        let result: crate::models::Response<ListResponse<Self>> = crate::CLIENT
+        let result = crate::CLIENT
             .get(&url)
             .headers(crate::get_headers()?)
             .send()?
-            .json()?;
-        match result {
-            crate::models::Response::Success(s) => Ok(s.items),
-            crate::models::Response::Error(e) => Err(e.into()),
-        }
+            .json::<Response<ListResponse<Self>>>()?;
+
+        Ok(result.items)
     }
 
     /// Permanently deletes a notification subscription.
@@ -100,7 +98,7 @@ mod tests {
     fn create() {
         let bucket = crate::global_client::read_test_bucket();
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().ok();
+        dotenv::dotenv().unwrap();
         let service_account = crate::ServiceAccount::default();
         let topic = format!(
             "//pubsub.googleapis.com/projects/{}/topics/{}",
@@ -131,7 +129,7 @@ mod tests {
     fn delete() {
         let bucket = crate::global_client::read_test_bucket();
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().ok();
+        dotenv::dotenv().unwrap();
         let service_account = crate::ServiceAccount::default();
         let topic = format!(
             "//pubsub.googleapis.com/projects/{}/topics/{}",

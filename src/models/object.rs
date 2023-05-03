@@ -98,9 +98,9 @@ pub struct Object {
     pub kms_key_name: Option<String>,
 
     #[serde(skip)]
-    private_key: Option<String>,
+    pub(crate) private_key: Option<String>,
     #[serde(skip)]
-    client_email: Option<String>,
+    pub(crate) client_email: Option<String>,
 }
 
 impl Object {

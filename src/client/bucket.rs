@@ -5,8 +5,8 @@ use crate::{models::{create, ListResponse, IamPolicy, TestIamPermission}, Bucket
 #[derive(Debug)]
 pub struct BucketClient<'a> {
     pub(crate) client: &'a super::client::Client,
-    pub(crate) bucket_url: &'a str,
-    pub(crate) project_id: &'a str,
+    pub(crate) bucket_url: String,
+    pub(crate) project_id: String,
 }
 
 impl<'a> BucketClient<'a> {
@@ -36,7 +36,7 @@ impl<'a> BucketClient<'a> {
     pub async fn create(&self, new_bucket: &create::Bucket) -> Result<Bucket, Error> {
         let headers = self.client.get_headers().await?;
         let url = format!("{}/", self.bucket_url);
-        let project = self.project_id;
+        let project = &self.project_id;
         let query = [("project", project)];
         let result: crate::models::Response<Bucket> = self.client.reqwest.post(&url).headers(headers).query(&query).json(new_bucket).send().await?.json().await?;
         Ok(result?)
@@ -62,7 +62,7 @@ impl<'a> BucketClient<'a> {
     pub async fn list(&self) -> Result<Vec<Bucket>, Error> {
         let headers = self.client.get_headers().await?;
         let url = format!("{}/", self.bucket_url);
-        let project = self.project_id;
+        let project = &self.project_id;
         let query = [("project", project)];
         let result: crate::models::Response<ListResponse<Bucket>> = self.client.reqwest.get(&url).headers(headers).query(&query).send().await?.json().await?;
         Ok(result?.items)
@@ -91,7 +91,7 @@ impl<'a> BucketClient<'a> {
     /// ```
     pub async fn read(&self, name: &str) -> Result<Bucket, Error> {
         let headers = self.client.get_headers().await?;
-        let url = format!("{}/{}", self.bucket_url, crate::percent_encode(name),);
+        let url = format!("{}/{}", self.bucket_url, crate::percent_encode(name));
         let result: crate::models::Response<Bucket> = self.client.reqwest.get(&url).headers(headers).send().await?.json().await?;
         Ok(result?)
     }

@@ -41,6 +41,5 @@ pub struct DefaultObjectAccessControl {
     pub etag: String,
     /// The bucket this resource belongs to.
     #[serde(default)]
-    pub bucket: String, // this field is not returned by Google, but we populate it manually for the
-                        // convenience of the end user.
+    pub bucket: String, // this field is not returned by Google, but we populate it manually for the convenience of the end user.
 }
