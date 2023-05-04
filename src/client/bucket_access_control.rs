@@ -3,7 +3,7 @@ use crate::{models::{create, BucketAccessControl, ListResponse, Entity, Response
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
 #[derive(Debug)]
 pub struct BucketAccessControlClient<'a> {
-    pub(crate) client: &'a super::client::Client,
+    pub(crate) client: &'a super::CloudStorageClient,
     pub(crate) bucket_acl_url: String
 }
 
@@ -18,11 +18,11 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, create::BucketAccessControl};
-    /// use cloud_storage::bucket_access_control::{Role, Entity};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, create};
+    /// # use cloud_storage::models::{Role, Entity};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let new_bucket_access_control = create::BucketAccessControl {
     ///     entity: Entity::AllUsers,
     ///     role: Role::Reader,
@@ -50,10 +50,10 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::bucket_access_control::BucketAccessControl;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::BucketAccessControl;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let acls = client.bucket_access_control("my_bucket").list().await?;
     /// # Ok(())
     /// # }
@@ -76,10 +76,10 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let controls = client.bucket_access_control("my_bucket").read(&Entity::AllUsers).await?;
     /// # Ok(())
     /// # }
@@ -105,13 +105,13 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
-    ///
-    /// let client = Client::default();
-    /// let mut acl = client.bucket_access_control("my_bucket").read(&Entity::AllUsers).await?;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
+    /// let cloud_storage_client = CloudStorageClient::default();
+    /// let client = cloud_storage_client.bucket_access_control("my_bucket");
+    /// let mut acl = client.read(&Entity::AllUsers).await?;
     /// acl.entity = Entity::AllAuthenticatedUsers;
-    /// client.bucket_access_control().update(&acl).await?;
+    /// client.update(&acl).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -139,10 +139,10 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let my_bucket = client.bucket_access_control("my_bucket");
     /// let controls = my_bucket.read(&Entity::AllUsers).await?;
     /// my_bucket.delete(controls).await?;

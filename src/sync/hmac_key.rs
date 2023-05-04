@@ -18,12 +18,12 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let hmac_key = client.hmac_key().create()?;
-    /// # use cloud_storage::hmac_key::HmacState;
+    /// # use cloud_storage::models::HmacState;
     /// # client.hmac_key().update(&hmac_key.metadata.access_id, HmacState::Inactive)?;
     /// # client.hmac_key().delete(&hmac_key.metadata.access_id)?;
     /// # Ok(())
@@ -45,10 +45,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let all_hmac_keys = client.hmac_key().list()?;
     /// # Ok(())
     /// # }
@@ -69,10 +69,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let key = client.hmac_key().read("some identifier")?;
     /// # Ok(())
     /// # }
@@ -93,10 +93,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let key = client.hmac_key().update("your key", HmacState::Active)?;
     /// # Ok(())
     /// # }
@@ -115,10 +115,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let key = client.hmac_key().update("your key", HmacState::Inactive)?; // this is required.
     /// client.hmac_key().delete(&key.access_id)?;
     /// # Ok(())

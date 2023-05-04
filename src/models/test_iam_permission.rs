@@ -7,7 +7,7 @@ pub struct TestIamPermission {
     /// The permissions held by the caller. Permissions are always of the format
     /// `storage.resource.capability`, where resource is one of buckets or objects. See
     /// [Cloud Storage IAM Permissions]
-    /// (https://cloud.google.com/storage/docs/access-control/iam-permissions) for a list of
+    /// <https://cloud.google.com/storage/docs/access-control/iam-permissions> for a list of
     /// supported permissions.
     permissions: Vec<String>,
 }

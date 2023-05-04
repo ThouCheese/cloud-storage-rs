@@ -11,7 +11,7 @@ pub struct Cors {
     #[serde(default)]
     pub method: Vec<String>,
     /// The list of HTTP headers other than the simple response headers to give permission for the
-    /// user-agent to share across domains.
+    /// # user-agent to share across domains.
     #[serde(default)]
     pub response_header: Vec<String>,
     /// The value, in seconds, to return in the Access-Control-Max-Age header used in preflight

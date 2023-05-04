@@ -4,7 +4,7 @@ use crate::{models::{create, DefaultObjectAccessControl, ListResponse, Entity, R
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
 #[derive(Debug)]
 pub struct DefaultObjectAccessControlClient<'a> {
-    pub(crate) client: &'a super::client::Client,
+    pub(crate) client: &'a super::CloudStorageClient,
     pub(crate) base_url: String,
     pub(crate) bucket: String,
 }
@@ -19,18 +19,19 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::default_object_access_control::{
-    ///     DefaultObjectAccessControl, create::DefaultObjectAccessControl, Role, Entity,
-    /// };
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{
+    /// #     DefaultObjectAccessControl, create, Role, Entity,
+    /// # };
     ///
-    /// let client = Client::default();
+    /// let cloud_storage_client = CloudStorageClient::default();
+    /// let client = cloud_storage_client.default_object_access_control("my_bucket");
     /// let new_acl = create::DefaultObjectAccessControl {
     ///     entity: Entity::AllAuthenticatedUsers,
     ///     role: Role::Reader,
     /// };
-    /// let default_acl = client.default_object_access_control("my_bucket").create(&new_acl).await?;
-    /// # client.default_object_access_control().delete(default_acl).await?;
+    /// let default_acl = client.create(&new_acl).await?;
+    /// # client.delete(default_acl).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -61,10 +62,10 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::default_object_access_control::DefaultObjectAccessControl;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::DefaultObjectAccessControl;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let default_acls = client.default_object_access_control("my_bucket").list().await?;
     /// # Ok(())
     /// # }
@@ -94,10 +95,10 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers).await?;
     /// # Ok(())
     /// # }
@@ -132,13 +133,14 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     ///
-    /// let client = Client::default();
-    /// let mut default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers).await?;
+    /// let cloud_storage_client = CloudStorageClient::default();
+    /// let client = cloud_storage_client.default_object_access_control("my_bucket");
+    /// let mut default_acl = client.read(&Entity::AllUsers).await?;
     /// default_acl.entity = Entity::AllAuthenticatedUsers;
-    /// client.default_object_access_control().update(&default_acl).await?;
+    /// client.update(&default_acl).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -168,12 +170,13 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     ///
-    /// let client = Client::default();
-    /// let mut default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers).await?;
-    /// client.default_object_access_control().delete(default_acl).await?;
+    /// let cloud_storage_client = CloudStorageClient::default();
+    /// let client = cloud_storage_client.default_object_access_control("my_bucket");
+    /// let mut default_acl = client.read(&Entity::AllUsers).await?;
+    /// client.delete(default_acl).await?;
     /// # Ok(())
     /// # }
     /// ```

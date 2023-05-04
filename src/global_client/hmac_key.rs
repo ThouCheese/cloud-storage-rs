@@ -12,10 +12,10 @@ impl HmacKey {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::models::HmacKey;
     ///
     /// let hmac_key = HmacKey::create().await?;
-    /// # use cloud_storage::hmac_key::HmacState;
+    /// # use cloud_storage::models::HmacState;
     /// # HmacKey::update(&hmac_key.metadata.access_id, HmacState::Inactive).await?;
     /// # HmacKey::delete(&hmac_key.metadata.access_id).await?;
     /// # Ok(())
@@ -47,7 +47,7 @@ impl HmacKey {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::models::HmacKey;
     ///
     /// let all_hmac_keys = HmacKey::list().await?;
     /// # Ok(())
@@ -79,7 +79,7 @@ impl HmacKey {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::models::HmacKey;
     ///
     /// let key = HmacKey::read("some identifier").await?;
     /// # Ok(())
@@ -110,7 +110,7 @@ impl HmacKey {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
     /// let key = HmacKey::update("your key", HmacState::Active).await?;
     /// # Ok(())
@@ -142,7 +142,7 @@ impl HmacKey {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
     /// let key = HmacKey::update("your key", HmacState::Inactive).await?; // this is required.
     /// HmacKey::delete(&key.access_id).await?;

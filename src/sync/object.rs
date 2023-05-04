@@ -20,11 +20,11 @@ impl<'a> ObjectClient<'a> {
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// client.object("cat-photos").create(file, "recently read cat.png", "image/png", None)?;
     /// # Ok(())
     /// # }
@@ -49,11 +49,11 @@ impl<'a> ObjectClient<'a> {
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let metadata = serde_json::json!({
     ///     "metadata": {
     ///         "custom_id": "1234"
@@ -121,10 +121,10 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::{Object, ListRequest};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::{Object, ListRequest};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let all_objects = client.object("my_bucket").list(ListRequest::default())?;
     /// # Ok(())
     /// # }
@@ -142,10 +142,10 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Object;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let object = client.object("my_bucket").read("path/to/my/file.png", None)?;
     /// # Ok(())
     /// # }
@@ -163,10 +163,10 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Object;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let bytes = client.object("my_bucket").download("path/to/my/file.png", None)?;
     /// # Ok(())
     /// # }
@@ -189,12 +189,13 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Object;
+    /// # use std::fs::File;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let file = File::create("somefile")?;
-    /// let bytes = client.object("my_bucket").download("path/to/my/file.png", file)?;
+    /// let bytes = client.object("my_bucket").download_streamed("path/to/my/file.png", file)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -220,13 +221,13 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Object;
-    ///
-    /// let client = Client::new()?;
-    /// let mut object = client.object("my_bucket").read("path/to/my/file.png", None)?;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Object;
+    /// let client = CloudStorageClient::new()?;
+    /// let my_bucket = client.object("my_bucket");
+    /// let mut object = my_bucket.read("path/to/my/file.png", None)?;
     /// object.content_type = Some("application/xml".to_string());
-    /// client.object().update(&object, None)?;
+    /// my_bucket.update(&object, None)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -243,10 +244,10 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Object;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// client.object("my_bucket").delete("path/to/my/file.png", None)?;
     /// # Ok(())
     /// # }
@@ -264,10 +265,10 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::object::{Object, ComposeRequest, SourceObject};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{Object, ComposeRequest, SourceObject};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let obj1 = client.object("my_bucket").read("file1", None)?;
     /// let obj2 = client.object("my_bucket").read("file2", None)?;
     /// let compose_request = ComposeRequest {
@@ -308,12 +309,13 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{Object, ComposeRequest};
     ///
-    /// let client = Client::new()?;
-    /// let obj1 = client.object("my_bucket").read("file1", None)?;
-    /// let obj2 = client.object().copy(&obj1, "my_other_bucket", "file2", None)?;
+    /// let cloud_storage_client = CloudStorageClient::new()?;
+    /// let client = cloud_storage_client.object("my_bucket");
+    /// let obj1 = client.read("file1", None)?;
+    /// let obj2 = client.copy(&obj1, "my_other_bucket", "file2", None)?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }
@@ -344,12 +346,13 @@ impl<'a> ObjectClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::object::Object;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::Object;
     ///
-    /// let client = Client::new()?;
-    /// let obj1 = client.object("my_bucket").read("file1", None)?;
-    /// let obj2 = client.object().rewrite(&obj1, "my_other_bucket", "file2", None)?;
+    /// let cloud_storage_client = CloudStorageClient::new()?;
+    /// let client = cloud_storage_client.object("my_bucket");
+    /// let obj1 = client.read("file1", None)?;
+    /// let obj2 = client.rewrite(&obj1, "my_other_bucket", "file2", None)?;
     /// // obj2 is now a copy of obj1.
     /// # Ok(())
     /// # }

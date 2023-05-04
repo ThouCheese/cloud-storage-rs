@@ -9,17 +9,17 @@ pub struct BucketClient<'a> {
 
 impl<'a> BucketClient<'a> {
     /// Creates a new `Bucket`. There are many options that you can provide for creating a new
-    /// bucket, so the `NewBucket` resource contains all of them. Note that `NewBucket` implements
+    /// bucket, so the `create::Bucket` resource contains all of them. Note that `create::Bucket` implements
     /// `Default`, so you don't have to specify the fields you're not using. And error is returned
     /// if that bucket name is already taken.
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket::{Bucket, create::Bucket};
-    /// use cloud_storage::bucket::{Location, MultiRegion};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{Bucket, create};
+    /// # use cloud_storage::models::{Location, MultiRegion};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let new_bucket = create::Bucket {
     ///    name: "cloud-storage-rs-doc-1".to_string(), // this is the only mandatory field
     ///    location: Location::Multi(MultiRegion::Eu),
@@ -43,10 +43,10 @@ impl<'a> BucketClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let buckets = client.bucket().list()?;
     /// # Ok(())
     /// # }
@@ -59,11 +59,11 @@ impl<'a> BucketClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
     ///
-    /// let client = Client::new()?;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::new()?;
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-2".to_string(),
     /// #    ..Default::default()
@@ -84,11 +84,11 @@ impl<'a> BucketClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket::{Bucket, RetentionPolicy};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{Bucket, RetentionPolicy};
     ///
-    /// let client = Client::new()?;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::new()?;
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-3".to_string(),
     /// #    ..Default::default()
@@ -117,11 +117,11 @@ impl<'a> BucketClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Bucket;
-    ///
-    /// let client = Client::new()?;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
+    /// #
+    /// let client = CloudStorageClient::new()?;
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "unnecessary-bucket".to_string(),
     /// #    ..Default::default()
@@ -142,20 +142,21 @@ impl<'a> BucketClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Bucket;
-    ///
-    /// let client = Client::new()?;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
+    /// # use cloud_storage::models::create;
+    /// #
+    /// let cloud_storage_client = CloudStorageClient::new()?;
+    /// let client = cloud_storage_client.bucket();
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-4".to_string(),
     /// #    ..Default::default()
     /// # };
-    /// # let _ = client.bucket().create(&new_bucket)?;
+    /// # let _ = client.create(&new_bucket)?;
     ///
-    /// let bucket = client.bucket().read("cloud-storage-rs-doc-4")?;
-    /// let policy = client.bucket().get_iam_policy(&bucket)?;
-    /// # client.bucket().delete(bucket)?;
+    /// let bucket = client.read("cloud-storage-rs-doc-4")?;
+    /// let policy = client.get_iam_policy(&bucket)?;
+    /// # client.delete(bucket)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -168,12 +169,12 @@ impl<'a> BucketClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Bucket;
-    /// use cloud_storage::bucket::{IamPolicy, Binding, IamRole, StandardIamRole, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
+    /// # use cloud_storage::models::{IamPolicy, Binding, IamRole, StandardIamRole, Entity};
     ///
-    /// let client = Client::new()?;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::new()?;
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-5".to_string(),
     /// #    ..Default::default()
@@ -206,11 +207,11 @@ impl<'a> BucketClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
     ///
-    /// let client = Client::new()?;
-    /// let bucket = client.bucket("my_bucket").read()?;
+    /// let client = CloudStorageClient::new()?;
+    /// let bucket = client.bucket().read("my_bucket")?;
     /// client.bucket().test_iam_permission(&bucket, "storage.buckets.get")?;
     /// # Ok(())
     /// # }

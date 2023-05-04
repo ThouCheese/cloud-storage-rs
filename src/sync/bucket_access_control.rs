@@ -19,16 +19,16 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, create::BucketAccessControl};
-    /// use cloud_storage::bucket_access_control::{Role, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, create};
+    /// # use cloud_storage::models::{Role, Entity};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let new_bucket_access_control = create::BucketAccessControl {
     ///     entity: Entity::AllUsers,
     ///     role: Role::Reader,
     /// };
-    /// client.bucket_access_control("my_bucket").create_using(&new_bucket_access_control)?;
+    /// client.bucket_access_control("my_bucket").create(&new_bucket_access_control)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -48,10 +48,10 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::BucketAccessControl;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::BucketAccessControl;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let acls = client.bucket_access_control("my_bucket").list()?;
     /// # Ok(())
     /// # }
@@ -69,10 +69,10 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let controls = client.bucket_access_control("my_bucket").read(&Entity::AllUsers)?;
     /// # Ok(())
     /// # }
@@ -90,10 +90,10 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let my_bucket = client.bucket_access_control("my_bucket");
     /// let mut acl = my_bucket.read(&Entity::AllUsers)?;
     /// acl.entity = Entity::AllAuthenticatedUsers;
@@ -117,10 +117,10 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let my_bucket = client.bucket_access_control("my_bucket");
     /// let controls = my_bucket.read(&Entity::AllUsers)?;
     /// my_bucket.delete(controls)?;

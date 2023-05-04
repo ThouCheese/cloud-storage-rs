@@ -19,7 +19,7 @@
 //! Add the following line to your `Cargo.toml`
 //! ```toml
 //! [dependencies]
-//! cloud-storage = "0.10"
+//! cloud-storage = "1.0.0"
 //! ```
 //! The two most important concepts are [Buckets](bucket/struct.Bucket.html), which represent
 //! file systems, and [Objects](object/struct.Object.html), which represent files.
@@ -27,10 +27,10 @@
 //! ## Examples:
 //! Creating a new Bucket in Google Cloud Storage:
 //! ```rust
-//! # use cloud_storage::{Client, Bucket, create::Bucket};
+//! # use cloud_storage::{CloudStorageClient, Bucket, create};
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = Client::default();
+//! let client = CloudStorageClient::default();
 //! let bucket = client.bucket().create(&create::Bucket {
 //!     name: "doctest-bucket".to_string(),
 //!     ..Default::default()
@@ -41,17 +41,17 @@
 //! ```
 //! Connecting to an existing Bucket in Google Cloud Storage:
 //! ```no_run
-//! # use cloud_storage::{Client, Bucket};
+//! # use cloud_storage::{CloudStorageClient, Bucket};
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = Client::default();
+//! let client = CloudStorageClient::default();
 //! let bucket = client.bucket().read("my_bucket").await?;
 //! # Ok(())
 //! # }
 //! ```
 //! Read a file from disk and store it on googles server:
 //! ```rust,no_run
-//! # use cloud_storage::{Client, Object};
+//! # use cloud_storage::{CloudStorageClient, Object};
 //! # use std::fs::File;
 //! # use std::io::Read;
 //! # #[tokio::main]
@@ -60,30 +60,31 @@
 //! for byte in File::open("myfile.txt")?.bytes() {
 //!     bytes.push(byte?)
 //! }
-//! let client = Client::default();
-//! client.object("my_bucket").create(bytes, "myfile.txt", "text/plain").await?;
+//! let client = CloudStorageClient::default();
+//! client.object("my_bucket").create(bytes, "myfile.txt", "text/plain", None).await?;
 //! # Ok(())
 //! # }
 //! ```
 //! Renaming/moving a file
 //! ```rust,no_run
-//! # use cloud_storage::{Client, Object};
+//! # use cloud_storage::{CloudStorageClient, Object};
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = Client::default();
-//! let mut object = client.object("my_bucket").read("myfile").await?;
+//! let cloud_storage_client = CloudStorageClient::default();
+//! let client = cloud_storage_client.object("my_bucket");
+//! let mut object = client.read("myfile", None).await?;
 //! object.content_type = Some("application/xml".to_string());
-//! client.object().update(&object).await?;
+//! client.update(&object, None).await?;
 //! # Ok(())
 //! # }
 //! ```
 //! Removing a file
 //! ```rust,no_run
-//! # use cloud_storage::{Client, Object};
+//! # use cloud_storage::{CloudStorageClient, Object};
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = Client::default();
-//! client.object("my_bucket").delete("myfile").await?;
+//! let client = CloudStorageClient::default();
+//! client.object("my_bucket").delete("myfile", None).await?;
 //! # Ok(())
 //! # }
 //! ```
@@ -109,10 +110,10 @@ mod sized_byte_stream;
 use crate::global_client::CLOUD_CLIENT;
 
 pub use crate::{
-    client::Client,
+    client::{CloudStorageClient, CloudStorageClientBuilder},
     download_options::DownloadOptions,
     error::Error,
-    models::{Bucket, ListRequest, Object},
+    models::{Bucket, ListRequest, Object, create},
     configuration::ServiceAccount,
     token::{Token, TokenCache},
 };
@@ -161,5 +162,5 @@ pub(crate) fn percent_encode(input: &str) -> String {
 
 #[cfg(feature = "sync")]
 fn runtime() -> Result<tokio::runtime::Runtime, Error> {
-    Ok(tokio::runtime::Builder::new_current_thread().thread_name("cloud-storage-worker").enable_time().enable_io().build()?)
+    Ok(tokio::runtime::Builder::new_multi_thread().thread_name("cloud-storage-worker").enable_time().enable_io().build()?)
 }

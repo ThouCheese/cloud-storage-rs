@@ -6,8 +6,8 @@ use crate::models::{Entity, Role};
 pub struct ObjectAccessControl {
     /// The entity holding the permission, in one of the following forms:
     ///
-    /// user-userId
-    /// user-email
+    /// # user-userId
+    /// # user-email
     /// group-groupId
     /// group-email
     /// domain-domain

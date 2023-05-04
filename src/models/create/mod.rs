@@ -1,3 +1,4 @@
+//! Creation models used for communication with Google Cloud Platform
 mod bucket;
 mod bucket_access_control;
 mod default_object_access_control;
@@ -5,7 +6,7 @@ mod default_object_access_control;
 //mod payload_format;
 mod object_access_control;
 
-pub(crate) use self::{
+pub use self::{
     bucket::Bucket,
     bucket_access_control::BucketAccessControl,
     default_object_access_control::DefaultObjectAccessControl,

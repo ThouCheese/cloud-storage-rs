@@ -10,10 +10,9 @@ impl DefaultObjectAccessControl {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::default_object_access_control::{
-    ///     DefaultObjectAccessControl, create::DefaultObjectAccessControl, Role, Entity,
-    /// };
-    ///
+    /// # use cloud_storage::models::{
+    /// #     DefaultObjectAccessControl, create, Role, Entity,
+    /// # };
     /// let new_acl = create::DefaultObjectAccessControl {
     ///     entity: Entity::AllAuthenticatedUsers,
     ///     role: Role::Reader,
@@ -51,8 +50,7 @@ impl DefaultObjectAccessControl {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::default_object_access_control::DefaultObjectAccessControl;
-    ///
+    /// # use cloud_storage::models::DefaultObjectAccessControl;
     /// let default_acls = DefaultObjectAccessControl::list("my_bucket").await?;
     /// # Ok(())
     /// # }
@@ -83,8 +81,7 @@ impl DefaultObjectAccessControl {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
-    ///
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     /// let default_acl = DefaultObjectAccessControl::read("my_bucket", &Entity::AllUsers).await?;
     /// # Ok(())
     /// # }
@@ -112,8 +109,7 @@ impl DefaultObjectAccessControl {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
-    ///
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     /// let mut default_acl = DefaultObjectAccessControl::read("my_bucket", &Entity::AllUsers).await?;
     /// default_acl.entity = Entity::AllAuthenticatedUsers;
     /// default_acl.update().await?;
@@ -142,7 +138,7 @@ impl DefaultObjectAccessControl {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     ///
     /// let mut default_acl = DefaultObjectAccessControl::read("my_bucket", &Entity::AllUsers).await?;
     /// default_acl.delete().await?;

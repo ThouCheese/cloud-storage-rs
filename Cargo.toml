@@ -13,7 +13,7 @@ categories = ["api-bindings", "web-programming"]
 # maintenance = { status = "actively-developed" }
 
 [features]
-default = ["native-tls", "ring", "pem", "global-client", "sync"]
+default = ["native-tls", "ring", "pem", "global-client", "sync", "dotenv"]
 
 global-client = []
 sync = ["reqwest/blocking"]

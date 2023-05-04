@@ -16,18 +16,19 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::default_object_access_control::{
-    ///     DefaultObjectAccessControl, create::DefaultObjectAccessControl, Role, Entity,
-    /// };
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{
+    /// #    DefaultObjectAccessControl, create, Role, Entity,
+    /// # };
     ///
-    /// let client = Client::new()?;
+    /// let cloud_storage_client = CloudStorageClient::new()?;
+    /// let client = cloud_storage_client.default_object_access_control("my_bucket");
     /// let new_acl = create::DefaultObjectAccessControl {
     ///     entity: Entity::AllAuthenticatedUsers,
     ///     role: Role::Reader,
     /// };
-    /// let default_acl = client.default_object_access_control("my_bucket").create(&new_acl)?;
-    /// # client.default_object_access_control().delete(default_acl)?;
+    /// let default_acl = client.create(&new_acl)?;
+    /// # client.delete(default_acl)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -49,11 +50,11 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::default_object_access_control::DefaultObjectAccessControl;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::DefaultObjectAccessControl;
     ///
-    /// let client = Client::new()?;
-    /// let default_acls = client.default_object_access_control().list("my_bucket")?;
+    /// let client = CloudStorageClient::new()?;
+    /// let default_acls = client.default_object_access_control("my_bucket").list()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -74,10 +75,10 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers)?;
     /// # Ok(())
     /// # }
@@ -96,13 +97,14 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
-    /// let mut default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers)?;
+    /// let cloud_storage_client = CloudStorageClient::new()?;
+    /// let client = cloud_storage_client.default_object_access_control("my_bucket");
+    /// let mut default_acl = client.read(&Entity::AllUsers)?;
     /// default_acl.entity = Entity::AllAuthenticatedUsers;
-    /// client.default_object_access_control().update(&default_acl)?;
+    /// client.update(&default_acl)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -124,12 +126,13 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::default_object_access_control::{DefaultObjectAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{DefaultObjectAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
-    /// let mut default_acl = client.default_object_access_control("my_bucket").read(&Entity::AllUsers)?;
-    /// client.default_object_access_control().delete(default_acl)?;
+    /// let cloud_storage_client = CloudStorageClient::new()?;
+    /// let client = cloud_storage_client.default_object_access_control("my_bucket");
+    /// let mut default_acl = client.read(&Entity::AllUsers)?;
+    /// client.delete(default_acl)?;
     /// # Ok(())
     /// # }
     /// ```

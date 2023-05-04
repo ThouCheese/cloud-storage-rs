@@ -2,15 +2,15 @@ use crate::{Bucket, models::{create, IamPolicy, TestIamPermission}, Error};
 
 impl Bucket {
     /// Creates a new `Bucket`. There are many options that you can provide for creating a new
-    /// bucket, so the `NewBucket` resource contains all of them. Note that `NewBucket` implements
+    /// bucket, so the `create::Bucket` resource contains all of them. Note that `create::Bucket` implements
     /// `Default`, so you don't have to specify the fields you're not using. And error is returned
     /// if that bucket name is already taken.
     /// ### Example
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::bucket::{Bucket, create::Bucket};
-    /// use cloud_storage::bucket::{Location, MultiRegion};
+    /// # use cloud_storage::models::{Bucket, create};
+    /// # use cloud_storage::models::{Location, MultiRegion};
     ///
     /// let new_bucket = create::Bucket {
     ///    name: "cloud-storage-rs-doc-1".to_string(), // this is the only mandatory field
@@ -44,7 +44,7 @@ impl Bucket {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::Bucket;
     ///
     /// let buckets = Bucket::list().await?;
     /// # Ok(())
@@ -68,8 +68,8 @@ impl Bucket {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Bucket;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// # use cloud_storage::Bucket;
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-2".to_string(),
     /// #    ..Default::default()
@@ -100,8 +100,8 @@ impl Bucket {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::bucket::{Bucket, RetentionPolicy};
-    /// # use cloud_storage::bucket::NewBucket;
+    /// # use cloud_storage::models::{Bucket, RetentionPolicy};
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-3".to_string(),
     /// #    ..Default::default()
@@ -139,8 +139,8 @@ impl Bucket {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Bucket;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// # use cloud_storage::Bucket;
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "unnecessary-bucket".to_string(),
     /// #    ..Default::default()
@@ -170,8 +170,8 @@ impl Bucket {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Bucket;
-    /// # use cloud_storage::bucket::NewBucket;
+    /// # use cloud_storage::Bucket;
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-4".to_string(),
     /// #    ..Default::default()
@@ -202,9 +202,9 @@ impl Bucket {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Bucket;
-    /// use cloud_storage::bucket::{IamPolicy, Binding, IamRole, StandardIamRole, Entity};
-    /// # use cloud_storage::bucket::NewBucket;
+    /// # use cloud_storage::Bucket;
+    /// # use cloud_storage::models::{IamPolicy, Binding, IamRole, StandardIamRole, Entity};
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-5".to_string(),
     /// #    ..Default::default()
@@ -246,8 +246,7 @@ impl Bucket {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Bucket;
-    ///
+    /// # use cloud_storage::Bucket;
     /// let bucket = Bucket::read("my_bucket").await?;
     /// bucket.test_iam_permission("storage.buckets.get").await?;
     /// # Ok(())

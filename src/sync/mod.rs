@@ -10,7 +10,7 @@ mod object_access_control;
 
 mod helpers; // for internal use only
 
-pub use client::Client;
+pub use client::CloudStorageClient;
 pub use bucket::BucketClient;
 pub use bucket_access_control::BucketAccessControlClient;
 pub use default_object_access_control::DefaultObjectAccessControlClient;

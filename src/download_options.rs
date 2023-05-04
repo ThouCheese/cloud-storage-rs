@@ -9,7 +9,7 @@ impl DownloadOptions {
     ///
     /// ### Example
     /// ```rust
-    /// use cloud_storage::DownloadOptions;
+    /// # use cloud_storage::DownloadOptions;
     ///
     /// let opts = DownloadOptions::new();
     /// ```
@@ -21,7 +21,7 @@ impl DownloadOptions {
     ///
     /// ### Example
     /// ```rust
-    /// use cloud_storage::DownloadOptions;
+    /// # use cloud_storage::DownloadOptions;
     ///
     /// let opts = DownloadOptions::new()
     ///     .content_disposition("attachment");

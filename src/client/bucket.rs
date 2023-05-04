@@ -4,25 +4,25 @@ use crate::{models::{create, ListResponse, IamPolicy, TestIamPermission}, Bucket
 /// Operations on [`Bucket`]()s.
 #[derive(Debug)]
 pub struct BucketClient<'a> {
-    pub(crate) client: &'a super::client::Client,
+    pub(crate) client: &'a super::CloudStorageClient,
     pub(crate) bucket_url: String,
     pub(crate) project_id: String,
 }
 
 impl<'a> BucketClient<'a> {
     /// Creates a new `Bucket`. There are many options that you can provide for creating a new
-    /// bucket, so the `NewBucket` resource contains all of them. Note that `NewBucket` implements
+    /// bucket, so the `create::Bucket` resource contains all of them. Note that `create::Bucket` implements
     /// `Default`, so you don't have to specify the fields you're not using. And error is returned
     /// if that bucket name is already taken.
     /// ### Example
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::bucket::{Bucket, create::Bucket};
-    /// use cloud_storage::bucket::{Location, MultiRegion};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{Bucket, create};
+    /// # use cloud_storage::models::{Location, MultiRegion};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let new_bucket = create::Bucket {
     ///    name: "cloud-storage-rs-doc-1".to_string(), // this is the only mandatory field
     ///    location: Location::Multi(MultiRegion::Eu),
@@ -51,10 +51,10 @@ impl<'a> BucketClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let buckets = client.bucket().list().await?;
     /// # Ok(())
     /// # }
@@ -73,11 +73,11 @@ impl<'a> BucketClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
     ///
-    /// let client = Client::default();
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::default();
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-2".to_string(),
     /// #    ..Default::default()
@@ -102,11 +102,11 @@ impl<'a> BucketClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::bucket::{Bucket, RetentionPolicy};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{Bucket, RetentionPolicy};
     ///
-    /// let client = Client::default();
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::default();
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-3".to_string(),
     /// #    ..Default::default()
@@ -138,11 +138,11 @@ impl<'a> BucketClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
     ///
-    /// let client = Client::default();
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::default();
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "unnecessary-bucket".to_string(),
     /// #    ..Default::default()
@@ -170,11 +170,11 @@ impl<'a> BucketClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::Bucket;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
     ///
-    /// let client = Client::default();
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::default();
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-4".to_string(),
     /// #    ..Default::default()
@@ -199,12 +199,12 @@ impl<'a> BucketClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::Bucket;
-    /// use cloud_storage::bucket::{IamPolicy, Binding, IamRole, StandardIamRole, Entity};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::Bucket;
+    /// # use cloud_storage::models::{IamPolicy, Binding, IamRole, StandardIamRole, Entity};
     ///
-    /// let client = Client::default();
-    /// # use cloud_storage::bucket::NewBucket;
+    /// let client = CloudStorageClient::default();
+    /// # use cloud_storage::models::create;
     /// # let new_bucket = create::Bucket {
     /// #   name: "cloud-storage-rs-doc-5".to_string(),
     /// #    ..Default::default()
@@ -244,10 +244,9 @@ impl<'a> BucketClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::Bucket;
-    ///
-    /// let bucket_client = Client::default().bucket();
+    /// # use cloud_storage::CloudStorageClient;
+    /// let cloud_storage_client = CloudStorageClient::default();
+    /// let bucket_client = cloud_storage_client.bucket();
     /// let bucket = bucket_client.read("my_bucket").await?;
     /// bucket_client.test_iam_permission(&bucket, "storage.buckets.get").await?;
     /// # Ok(())

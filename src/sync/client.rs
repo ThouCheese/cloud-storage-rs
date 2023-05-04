@@ -4,17 +4,17 @@ use super::{BucketClient, BucketAccessControlClient, DefaultObjectAccessControlC
 
 /// The primary synchronous entrypoint to perform operations with Google Cloud Storage.
 #[derive(Debug)]
-pub struct Client {
+pub struct CloudStorageClient {
     runtime: tokio::runtime::Runtime,
-    client: crate::client::Client,
+    client: crate::client::CloudStorageClient,
 }
 
-impl Client {
+impl CloudStorageClient {
     /// Constructs a client with the default token provider, where it attemps to obtain the credentials from the following locations:
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
             runtime: crate::runtime()?,
-            client: crate::Client::default(),
+            client: crate::CloudStorageClient::default(),
         })
     }
 
@@ -22,11 +22,11 @@ impl Client {
     pub fn with_cache(token_cache: impl crate::TokenCache + 'static) -> Result<Self, Error> {
         Ok(Self {
             runtime: crate::runtime()?,
-            client: crate::Client::with_cache(token_cache),
+            client: crate::CloudStorageClient::with_cache(token_cache),
         })
     }
 
-    /// Synchronous operations on [`Bucket`](crate::bucket::Bucket)s.
+    /// Synchronous operations on [`Bucket`](crate::Bucket)s.
     pub fn bucket(&self) -> BucketClient {
         BucketClient {
             client: self.client.bucket(),
@@ -34,7 +34,7 @@ impl Client {
         }
     }
 
-    /// Synchronous operations on [`BucketAccessControl`](crate::bucket_access_control::BucketAccessControl)s.
+    /// Synchronous operations on [`BucketAccessControl`](crate::models::BucketAccessControl)s.
     pub fn bucket_access_control(&self, bucket: &str) -> BucketAccessControlClient {
         BucketAccessControlClient {
             client: self.client.bucket_access_control(bucket),
@@ -42,7 +42,7 @@ impl Client {
         }
     }
 
-    /// Synchronous operations on [`DefaultObjectAccessControl`](crate::default_object_access_control::DefaultObjectAccessControl)s.
+    /// Synchronous operations on [`DefaultObjectAccessControl`](crate::models::DefaultObjectAccessControl)s.
     pub fn default_object_access_control(&self, bucket: &str) -> DefaultObjectAccessControlClient {
         DefaultObjectAccessControlClient {
             client: self.client.default_object_access_control(bucket),
@@ -50,7 +50,7 @@ impl Client {
         }
     }
 
-    /// Synchronous operations on [`HmacKey`](crate::hmac_key::HmacKey)s.
+    /// Synchronous operations on [`HmacKey`](crate::models::HmacKey)s.
     pub fn hmac_key(&self) -> HmacKeyClient {
         HmacKeyClient {
             client: self.client.hmac_key(),
@@ -58,7 +58,7 @@ impl Client {
         }
     }
 
-    /// Synchronous operations on [`Object`](crate::object::Object)s.
+    /// Synchronous operations on [`Object`](crate::models::Object)s.
     pub fn object(&self, bucket: &str) -> ObjectClient {
         ObjectClient {
             client: self.client.object(bucket),
@@ -66,7 +66,7 @@ impl Client {
         }
     }
 
-    /// Synchronous operations on [`ObjectAccessControl`](crate::object_access_control::ObjectAccessControl)s.
+    /// Synchronous operations on [`ObjectAccessControl`](crate::models::ObjectAccessControl)s.
     pub fn object_access_control(&self, bucket: &str, object: &str) -> ObjectAccessControlClient {
         ObjectAccessControlClient {
             client: self.client.object_access_control(bucket, object),

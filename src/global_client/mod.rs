@@ -6,7 +6,7 @@ mod object_access_control;
 mod object;
 use once_cell::sync::Lazy;
 
-pub(crate) static CLOUD_CLIENT: Lazy<crate::client::Client> = Lazy::new(crate::client::Client::default);
+pub(crate) static CLOUD_CLIENT: Lazy<crate::client::CloudStorageClient> = Lazy::new(crate::client::CloudStorageClient::default);
 
 #[cfg(test)]
 pub(crate) use self::test_helpers::*;

@@ -11,7 +11,7 @@ impl Object {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
     /// Object::create("cat-photos", file, "recently read cat.png", "image/png", None).await?;
@@ -54,7 +54,7 @@ impl Object {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # fn read_cute_cat(_in: &str) -> Vec<u8> { vec![0, 1] }
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::Object;
     ///
     /// let file: Vec<u8> = read_cute_cat("cat.png");
     /// let metadata = serde_json::json!({
@@ -62,7 +62,7 @@ impl Object {
     ///         "custom_id": "1234"
     ///     }
     /// });
-    /// Object::create("cat-photos", file, "recently read cat.png", "image/png", &metadata).await?;
+    /// Object::create_with("cat-photos", file, "recently read cat.png", "image/png", &metadata).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -102,7 +102,7 @@ impl Object {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::Object;
     ///
     /// let file = reqwest::Client::new()
     ///     .get("https://my_domain.rs/nice_cat_photo.png")
@@ -164,7 +164,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::{Object, ListRequest};
+    /// # use cloud_storage::{Object, ListRequest};
     ///
     /// let all_objects = Object::list("my_bucket", ListRequest::default()).await?;
     /// # Ok(())
@@ -196,7 +196,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::Object;
     ///
     /// let object = Object::read("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
@@ -231,7 +231,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::Object;
     ///
     /// let bytes = Object::download("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
@@ -267,15 +267,16 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
-    /// use futures_util::stream::StreamExt;
-    /// use std::fs::File;
-    /// use std::io::{BufWriter, Write};
+    /// # use cloud_storage::Object;
+    /// # use futures_util::stream::StreamExt;
+    /// # use std::fs::File;
+    /// # use std::io::{BufWriter, Write};
+    /// # use bytes::Buf;
     ///
     /// let mut stream = Object::download_streamed("my_bucket", "path/to/my/file.png", None).await?;
     /// let mut file = BufWriter::new(File::create("file.png").unwrap());
-    /// while let Some(byte) = stream.next().await {
-    ///     file.write_all(&[byte.unwrap()]).unwrap();
+    /// while let Some(bytes) = stream.next().await {
+    ///     file.write_all(bytes.unwrap().chunk()).unwrap();
     /// }
     /// # Ok(())
     /// # }
@@ -296,7 +297,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::Object;
     ///
     /// let mut object = Object::read("my_bucket", "path/to/my/file.png", None).await?;
     /// object.content_type = Some("application/xml".to_string());
@@ -322,7 +323,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Object;
+    /// # use cloud_storage::Object;
     ///
     /// Object::delete("my_bucket", "path/to/my/file.png", None).await?;
     /// # Ok(())
@@ -357,7 +358,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest, SourceObject};
+    /// # use cloud_storage::models::{Object, ComposeRequest, SourceObject};
     ///
     /// let obj1 = Object::read("my_bucket", "file1", None).await?;
     /// let obj2 = Object::read("my_bucket", "file2", None).await?;
@@ -414,7 +415,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::{Object, ComposeRequest};
+    /// # use cloud_storage::models::{Object, ComposeRequest};
     ///
     /// let obj1 = Object::read("my_bucket", "file1", None).await?;
     /// let obj2 = obj1.copy("my_other_bucket", "file2", None).await?;
@@ -460,7 +461,7 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::object::Object;
+    /// # use cloud_storage::models::Object;
     ///
     /// let obj1 = Object::read("my_bucket", "file1", None).await?;
     /// let obj2 = obj1.rewrite("my_other_bucket", "file2", None).await?;

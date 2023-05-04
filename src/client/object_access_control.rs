@@ -4,7 +4,7 @@ use crate::{models::{create, ObjectAccessControl, ListResponse, Entity, Response
 /// Operations on [`ObjectAccessControl`](ObjectAccessControl)s.
 #[derive(Debug)]
 pub struct ObjectAccessControlClient<'a> {
-    pub(crate) client: &'a super::client::Client,
+    pub(crate) client: &'a super::CloudStorageClient,
     pub(crate) acl_url: String,
 }
 

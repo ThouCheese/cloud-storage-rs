@@ -111,9 +111,9 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
+    /// # use cloud_storage::{CloudStorageClient, models::{Object, ComposeRequest}};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let obj1 = client.object("my_bucket").read("file1", None).await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
@@ -132,9 +132,9 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
+    /// # use cloud_storage::{CloudStorageClient, models::{Object, ComposeRequest}};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let obj1 = client.object("my_bucket").read("file1", None).await?;
     /// let url = obj1.download_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a request to download a file
@@ -163,9 +163,9 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
+    /// # use cloud_storage::{CloudStorageClient, models::{Object, ComposeRequest}};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let obj1 = client.object("my_bucket").read("file1", None).await?;
     /// let url = obj1.upload_url(50)?;
     /// // url is now a url to which an unauthenticated user can make a PUT request to upload a file
@@ -184,10 +184,10 @@ impl Object {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::{Client, object::{Object, ComposeRequest}};
-    /// use std::collections::HashMap;
+    /// # use cloud_storage::{CloudStorageClient, models::{Object, ComposeRequest}};
+    /// # use std::collections::HashMap;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let obj1 = client.object("my_bucket").read("file1", None).await?;
     /// let mut custom_metadata = HashMap::new();
     /// custom_metadata.insert(String::from("field"), String::from("value"));
@@ -210,10 +210,18 @@ impl Object {
     /// which is valid for `duration` seconds, and lets the posessor upload new file contents.
     /// without any authentication.
     /// ### Example
-    /// ```no_run
-    /// pub fn upload_url(&self, duration: u32) -> Result<String, Error> {
-    ///   self.sign(&self.name, duration, "POST", None, &HashMap::new())
-    /// }
+    /// ```ignore
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use cloud_storage::{CloudStorageClient, models::{Object, ComposeRequest}};
+    /// # use std::collections::HashMap;
+    /// let client = CloudStorageClient::default();
+    /// let obj1 = client.object("my_bucket").read("file1", None).await?;
+    /// let mut custom_metadata = HashMap::new();
+    /// custom_metadata.insert(String::from("field"), String::from("value"));
+    /// let url = obj1.sign(obj1.name, 50, "POST", None, custom_metadata)?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline(always)]
     fn sign(

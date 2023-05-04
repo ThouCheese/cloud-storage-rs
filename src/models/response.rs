@@ -12,14 +12,14 @@ pub(crate) enum Response<T> {
 }
 
 /// Enable desugaring for `Response<T>`, e.g. the use of the `?` on an object of type `Response<T>`
-/// ```no_run
+/// ```ignore,no_run
 /// if let Response::Error(error) = my_response {
 ///    return error;
 /// }
 /// let my_response = my_response.unwrap();
 /// ```
 /// becomes:
-/// ```no_run
+/// ```ignore,no_run
 /// my_response?;
 /// ```
 impl<T> std::ops::Try for Response<T> {

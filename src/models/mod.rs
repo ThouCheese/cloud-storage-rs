@@ -1,5 +1,5 @@
 //! Models used for communication with Google Cloud Platform
-pub(crate)mod create;
+pub mod create;
 
 mod legacy_iam_role;
 mod test_iam_permission;

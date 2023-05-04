@@ -3,7 +3,7 @@ use crate::{Error, models::{HmacKey, HmacMeta, Response, ListResponse, HmacState
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]
 pub struct HmacKeyClient<'a> {
-    pub(crate) client: &'a super::client::Client,
+    pub(crate) client: &'a super::CloudStorageClient,
     pub(crate) hmac_keys_url: String,
     pub(crate) client_email: String,
 }
@@ -20,14 +20,14 @@ impl<'a> HmacKeyClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
-    ///
-    /// let client = Client::default();
-    /// let hmac_key = client.hmac_key().create().await?;
-    /// # use cloud_storage::hmac_key::HmacState;
-    /// # client.hmac_key().update(&hmac_key.metadata.access_id, HmacState::Inactive).await?;
-    /// # client.hmac_key().delete(&hmac_key.metadata.access_id).await?;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
+    /// let cloud_storage_client = CloudStorageClient::default();
+    /// let client = cloud_storage_client.hmac_key();
+    /// let hmac_key = client.create().await?;
+    /// # use cloud_storage::models::HmacState;
+    /// # client.update(&hmac_key.metadata.access_id, HmacState::Inactive).await?;
+    /// # client.delete(&hmac_key.metadata.access_id).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -61,10 +61,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let all_hmac_keys = client.hmac_key().list().await?;
     /// # Ok(())
     /// # }
@@ -106,10 +106,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let key = client.hmac_key().read("some identifier").await?;
     /// # Ok(())
     /// # }
@@ -138,10 +138,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let key = client.hmac_key().update("your key", HmacState::Active).await?;
     /// # Ok(())
     /// # }
@@ -174,10 +174,10 @@ impl<'a> HmacKeyClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let key = client.hmac_key().update("your key", HmacState::Inactive).await?; // this is required.
     /// client.hmac_key().delete(&key.access_id).await?;
     /// # Ok(())

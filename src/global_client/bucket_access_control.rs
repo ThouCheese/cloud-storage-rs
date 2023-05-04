@@ -12,8 +12,8 @@ impl BucketAccessControl {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, create::BucketAccessControl};
-    /// use cloud_storage::bucket_access_control::{Role, Entity};
+    /// # use cloud_storage::models::{BucketAccessControl, create};
+    /// # use cloud_storage::models::{Role, Entity};
     ///
     /// let new_bucket_access_control = create::BucketAccessControl {
     ///     entity: Entity::AllUsers,
@@ -55,7 +55,7 @@ impl BucketAccessControl {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::bucket_access_control::BucketAccessControl;
+    /// # use cloud_storage::models::BucketAccessControl;
     ///
     /// let acls = BucketAccessControl::list("my_bucket").await?;
     /// # Ok(())
@@ -87,7 +87,7 @@ impl BucketAccessControl {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
     /// let controls = BucketAccessControl::read("my_bucket", &Entity::AllUsers).await?;
     /// # Ok(())
@@ -119,7 +119,7 @@ impl BucketAccessControl {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
     /// let mut acl = BucketAccessControl::read("my_bucket", &Entity::AllUsers).await?;
     /// acl.entity = Entity::AllAuthenticatedUsers;
@@ -153,7 +153,7 @@ impl BucketAccessControl {
     /// ```rust,no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
     /// let controls = BucketAccessControl::read("my_bucket", &Entity::AllUsers).await?;
     /// controls.delete().await?;
