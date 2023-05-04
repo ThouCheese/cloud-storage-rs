@@ -26,7 +26,11 @@ println!("{}", object.download_url(1000)?); // download link that expires after 
 Object::delete(&bucket.name, "folder/filename.txt", None).await?;
 ```
 
-The service account should have the roles `Service Account Token Creator` (for generating access tokens) and `Storage Object Admin` (for generating sign urls to download the files).
+When using `CloudStorageClient::default()`, `sync::CloudStorageClient::new()` or the global client, an ServiceAccount will be created based on either of the environmental variables:
+ * `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS` which should contain path to the `service-account-*******.json`
+ * `SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_JSON` containing the contents of `service-account-*******.json`
+
+The service account requires the roles `Service Account Token Creator` (for generating access tokens) and `Storage Object Admin` (for generating signed urls to download the files).
 
 ### Sync
 If you're not (yet) interested in running an async executor, then `cloud_storage` exposes a sync api. To use it, enable the feature flag `sync`, and then call instead of calling `function().await`, call `function_sync()`.

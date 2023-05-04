@@ -1,11 +1,11 @@
 [package]
 name = "cloud-storage"
 version = "1.0.0"
-authors = ["Luuk Wester <luuk.wester@gmail.com>", "Randy von der Weide <randy@vonderweide.nl>"]
+authors = ["Luuk Wester <luuk.wester@gmail.com>", "SonnyX <randy@vonderweide.nl>"]
 edition = "2021"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
 license = "MIT"
-repository = "https://github.com/SonnyX/cloud-storage-rs"
+repository = "https://github.com/ThouCheese/cloud-storage-rs"
 documentation = "https://docs.rs/cloud-storage"
 keywords = ["google", "cloud", "storage"]
 readme = "README.md"
