@@ -275,8 +275,6 @@ impl Bucket {
 mod tests {
     use crate::{models::{create, Entity, Role, IamConfiguration, UniformBucketLevelAccess, RetentionPolicy, StandardIamRole, IamPolicy, Binding, IamRole}, Bucket};
 
-
-
     #[tokio::test]
     async fn create() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(feature = "dotenv")]
