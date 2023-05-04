@@ -3,8 +3,8 @@ use crate::{models::{create, IamPolicy, TestIamPermission}, Bucket, Error};
 /// Operations on [`Bucket`]()s.
 #[derive(Debug)]
 pub struct BucketClient<'a> {
-    pub(crate) client: &'a crate::client::BucketClient<'a>,
-    pub(crate) runtime: tokio::runtime::Handle,
+    pub(crate) client: crate::client::BucketClient<'a>,
+    pub(crate) runtime: &'a tokio::runtime::Handle,
 }
 
 impl<'a> BucketClient<'a> {

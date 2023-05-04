@@ -1,7 +1,7 @@
 [package]
 name = "cloud-storage"
 version = "1.0.0"
-authors = ["Luuk Wester <luuk.wester@gmail.com>"]
+authors = ["Luuk Wester <luuk.wester@gmail.com>", "Randy von der Weide <randy@vonderweide.nl>"]
 edition = "2021"
 description = "A crate for uploading files to Google cloud storage, and for generating download urls."
 license = "MIT"
@@ -13,7 +13,7 @@ categories = ["api-bindings", "web-programming"]
 # maintenance = { status = "actively-developed" }
 
 [features]
-default = ["native-tls", "ring", "pem", "global-client", "dotenv"]
+default = ["native-tls", "ring", "pem", "global-client", "sync"]
 
 global-client = []
 sync = ["reqwest/blocking"]

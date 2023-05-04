@@ -4,7 +4,7 @@ use crate::{models::{create, BucketAccessControl, Entity}, Error};
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
 #[derive(Debug)]
 pub struct BucketAccessControlClient<'a> {
-    pub(crate) client: &'a crate::client::BucketAccessControlClient<'a>,
+    pub(crate) client: crate::client::BucketAccessControlClient<'a>,
     pub(crate) runtime: &'a tokio::runtime::Handle,
 }
 
@@ -34,7 +34,6 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ```
     pub fn create(
         &self,
-        bucket: &str,
         new_bucket_access_control: &create::BucketAccessControl,
     ) -> Result<BucketAccessControl, Error> {
         self.runtime.block_on(self.client.create_using(new_bucket_access_control))
@@ -78,7 +77,7 @@ impl<'a> BucketAccessControlClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn read(&self, bucket: &str, entity: &Entity) -> Result<BucketAccessControl, Error> {
+    pub fn read(&self, entity: &Entity) -> Result<BucketAccessControl, Error> {
         self.runtime.block_on(self.client.read(entity))
     }
 

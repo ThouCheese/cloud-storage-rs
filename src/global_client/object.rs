@@ -43,7 +43,7 @@ impl Object {
         mime_type: &str,
         parameters: Option<CreateParameters>,
     ) -> Result<Self, Error> {
-        crate::runtime()?.block_on(Self::create(file, filename, mime_type, parameters))
+        crate::runtime()?.block_on(Self::create(bucket, file, filename, mime_type, parameters))
     }
 
     /// Create a new object with metadata.
@@ -187,7 +187,7 @@ impl Object {
         use futures_util::TryStreamExt;
 
         let rt = crate::runtime()?;
-        let listed = rt.block_on(Self::list(list_request))?;
+        let listed = rt.block_on(Self::list(bucket, list_request))?;
         rt.block_on(listed.try_collect())
     }
 
@@ -223,7 +223,7 @@ impl Object {
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Self, Error> {
-        crate::runtime()?.block_on(Self::read(file_name, parameters))
+        crate::runtime()?.block_on(Self::read(bucket, file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket.
@@ -258,7 +258,7 @@ impl Object {
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Vec<u8>, Error> {
-        crate::runtime()?.block_on(Self::download(file_name, parameters))
+        crate::runtime()?.block_on(Self::download(bucket, file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket, without
@@ -349,7 +349,7 @@ impl Object {
         file_name: &str,
         parameters: Option<DeleteParameters>,
     ) -> Result<(), Error> {
-        crate::runtime()?.block_on(Self::delete(file_name, parameters))
+        crate::runtime()?.block_on(Self::delete(bucket, file_name, parameters))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -406,7 +406,7 @@ impl Object {
         parameters: Option<ComposeParameters>,
     ) -> Result<Self, Error> {
 
-        crate::runtime()?.block_on(Self::compose(req, destination_object, parameters))
+        crate::runtime()?.block_on(Self::compose(bucket, req, destination_object, parameters))
     }
 
     /// Copy this object to the target bucket and path

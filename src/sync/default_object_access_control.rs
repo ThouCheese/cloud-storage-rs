@@ -3,7 +3,7 @@ use crate::{models::{create, DefaultObjectAccessControl, Entity}, Error};
 /// Operations on [`DefaultObjectAccessControl`](DefaultObjectAccessControl)s.
 #[derive(Debug)]
 pub struct DefaultObjectAccessControlClient<'a> {
-    pub(crate) client: &'a crate::client::DefaultObjectAccessControlClient<'a>,
+    pub(crate) client: crate::client::DefaultObjectAccessControlClient<'a>,
     pub(crate) runtime: &'a tokio::runtime::Handle,
 }
 
@@ -57,7 +57,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list(&self, bucket: &str) -> Result<Vec<DefaultObjectAccessControl>, Error> {
+    pub fn list(&self) -> Result<Vec<DefaultObjectAccessControl>, Error> {
         self.runtime
             .block_on(self.client.list())
     }
@@ -82,7 +82,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn read(&self, bucket: &str, entity: &Entity) -> Result<DefaultObjectAccessControl, Error> {
+    pub fn read(&self, entity: &Entity) -> Result<DefaultObjectAccessControl, Error> {
         self.runtime.block_on(
             self.client.read(entity),
         )

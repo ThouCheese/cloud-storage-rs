@@ -4,7 +4,7 @@ use crate::{models::{create, ObjectAccessControl, Entity}, Error};
 /// Operations on [`ObjectAccessControl`](ObjectAccessControl)s.
 #[derive(Debug)]
 pub struct ObjectAccessControlClient<'a> {
-    pub(crate) client: &'a crate::client::ObjectAccessControlClient<'a>,
+    pub(crate) client: crate::client::ObjectAccessControlClient<'a>,
     pub(crate) runtime: &'a tokio::runtime::Handle,
 }
 
@@ -29,7 +29,7 @@ impl<'a> ObjectAccessControlClient<'a> {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
-    pub fn list(&self, bucket: &str, object: &str) -> Result<Vec<ObjectAccessControl>, Error> {
+    pub fn list(&self) -> Result<Vec<ObjectAccessControl>, Error> {
         self.runtime
             .block_on(self.client.list())
     }
@@ -42,8 +42,6 @@ impl<'a> ObjectAccessControlClient<'a> {
     /// control access instead.
     pub fn read(
         &self,
-        bucket: &str,
-        object: &str,
         entity: &Entity,
     ) -> Result<ObjectAccessControl, Error> {
         self.runtime.block_on(

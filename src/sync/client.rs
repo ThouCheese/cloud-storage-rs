@@ -28,18 +28,16 @@ impl Client {
 
     /// Synchronous operations on [`Bucket`](crate::bucket::Bucket)s.
     pub fn bucket(&self) -> BucketClient {
-        let handle = self.runtime.handle().to_owned();
-        let client = self.client.bucket();
         BucketClient {
-            runtime: handle,
-            client: &client,
+            client: self.client.bucket(),
+            runtime: self.runtime.handle(),
         }
     }
 
     /// Synchronous operations on [`BucketAccessControl`](crate::bucket_access_control::BucketAccessControl)s.
     pub fn bucket_access_control(&self, bucket: &str) -> BucketAccessControlClient {
         BucketAccessControlClient {
-            client: &self.client.bucket_access_control(bucket),
+            client: self.client.bucket_access_control(bucket),
             runtime: self.runtime.handle()
         }
     }
@@ -47,7 +45,7 @@ impl Client {
     /// Synchronous operations on [`DefaultObjectAccessControl`](crate::default_object_access_control::DefaultObjectAccessControl)s.
     pub fn default_object_access_control(&self, bucket: &str) -> DefaultObjectAccessControlClient {
         DefaultObjectAccessControlClient {
-            client: &self.client.default_object_access_control(bucket),
+            client: self.client.default_object_access_control(bucket),
             runtime: self.runtime.handle()
         }
     }
@@ -55,15 +53,15 @@ impl Client {
     /// Synchronous operations on [`HmacKey`](crate::hmac_key::HmacKey)s.
     pub fn hmac_key(&self) -> HmacKeyClient {
         HmacKeyClient {
-            client: &self.client.hmac_key(),
+            client: self.client.hmac_key(),
             runtime: self.runtime.handle()
         }
     }
 
     /// Synchronous operations on [`Object`](crate::object::Object)s.
-    pub fn object(&self) -> ObjectClient {
+    pub fn object(&self, bucket: &str) -> ObjectClient {
         ObjectClient {
-            client: &self.client.object(),
+            client: self.client.object(bucket),
             runtime: self.runtime.handle()
         }
     }
@@ -71,7 +69,7 @@ impl Client {
     /// Synchronous operations on [`ObjectAccessControl`](crate::object_access_control::ObjectAccessControl)s.
     pub fn object_access_control(&self, bucket: &str, object: &str) -> ObjectAccessControlClient {
         ObjectAccessControlClient {
-            client: &self.client.object_access_control(bucket, object),
+            client: self.client.object_access_control(bucket, object),
             runtime: self.runtime.handle()
         }
     }

@@ -186,7 +186,7 @@ mod tests {
 
     #[tokio::test]
     async fn list() -> Result<(), Box<dyn std::error::Error>> {
-        let keys = HmacKey::list().await?;
+        let _keys = HmacKey::list().await?;
         Ok(())
     }
 

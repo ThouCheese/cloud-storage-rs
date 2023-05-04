@@ -8,7 +8,7 @@ use crate::{models::{CreateParameters, ObjectList, ReadParameters, UpdateParamet
 /// Operations on [`Object`](Object)s.
 #[derive(Debug)]
 pub struct ObjectClient<'a> {
-    pub(crate) client: &'a crate::client::ObjectClient<'a>,
+    pub(crate) client: crate::client::ObjectClient<'a>,
     pub(crate) runtime: &'a tokio::runtime::Handle,
 }
 
@@ -31,7 +31,6 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub fn create(
         &self,
-        bucket: &str,
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
@@ -39,7 +38,7 @@ impl<'a> ObjectClient<'a> {
     ) -> Result<Object, Error> {
         self.runtime.block_on(
             self.client
-                .create(bucket, file, filename, mime_type, parameters),
+                .create(file, filename, mime_type, parameters),
         )
     }
 
@@ -66,7 +65,6 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub fn create_with(
         &self,
-        bucket: &str,
         file: Vec<u8>,
         filename: &str,
         mime_type: &str,
@@ -74,7 +72,7 @@ impl<'a> ObjectClient<'a> {
     ) -> Result<Object, Error> {
         self.runtime.block_on(
             self.client
-                .create_with(bucket, file, filename, mime_type, metadata),
+                .create_with(file, filename, mime_type, metadata),
         )
     }
 
@@ -82,7 +80,6 @@ impl<'a> ObjectClient<'a> {
     /// to load the entire file in ram.
     pub fn create_streamed<R>(
         &self,
-        bucket: &str,
         file: R,
         length: impl Into<Option<u64>>,
         filename: &str,
@@ -96,7 +93,7 @@ impl<'a> ObjectClient<'a> {
 
         self.runtime.block_on(
             self.client
-                .create_streamed(bucket, stream, length, filename, mime_type, parameters),
+                .create_streamed(stream, length, filename, mime_type, parameters),
         )
     }
 
@@ -104,7 +101,6 @@ impl<'a> ObjectClient<'a> {
     /// to load the entire file in ram.
     pub fn create_streamed_with<R>(
         &self,
-        bucket: &str,
         file: R,
         filename: &str,
         mime_type: &str,
@@ -117,7 +113,7 @@ impl<'a> ObjectClient<'a> {
 
         self.runtime.block_on(
             self.client
-                .create_streamed_with(bucket, stream, filename, mime_type, metadata),
+                .create_streamed_with(stream, filename, mime_type, metadata),
         )
     }
 
@@ -135,11 +131,10 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub fn list(
         &self,
-        bucket: &'a str,
         list_request: ListRequest,
     ) -> Result<Vec<ObjectList>, Error> {
         let rt = &self.runtime;
-        let listed = rt.block_on(self.client.list(bucket, list_request))?;
+        let listed = rt.block_on(self.client.list(list_request))?;
         rt.block_on(listed.try_collect())
     }
 
@@ -157,12 +152,11 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub fn read(
         &self,
-        bucket: &str,
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Object, Error> {
         self.runtime
-            .block_on(self.client.read(bucket, file_name, parameters))
+            .block_on(self.client.read(file_name, parameters))
     }
 
     /// Download the content of the object with the specified name in the specified bucket.
@@ -179,13 +173,12 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub fn download(
         &self,
-        bucket: &str,
         file_name: &str,
         parameters: Option<ReadParameters>,
     ) -> Result<Vec<u8>, Error> {
         self.runtime.block_on(
             self.client
-                .download(bucket, file_name, parameters),
+                .download(file_name, parameters),
         )
     }
 
@@ -205,13 +198,13 @@ impl<'a> ObjectClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn download_streamed<W>(&self, bucket: &str, file_name: &str, file: W) -> Result<(), Error>
+    pub fn download_streamed<W>(&self, file_name: &str, file: W) -> Result<(), Error>
     where
         W: std::io::Write, // + Send + Sync + Unpin + 'static,
     {
         self.runtime.block_on(async {
             let mut stream = self.client
-                .download_streamed(bucket, file_name, None)
+                .download_streamed(file_name, None)
                 .await?;
 
             let mut writer = tokio::io::BufWriter::new(AllowStdIo::new(file).compat_write());
@@ -260,12 +253,11 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub fn delete(
         &self,
-        bucket: &str,
         file_name: &str,
         parameters: Option<DeleteParameters>,
     ) -> Result<(), Error> {
         self.runtime
-            .block_on(self.client.delete(bucket, file_name, parameters))
+            .block_on(self.client.delete(file_name, parameters))
     }
 
     /// Obtains a single object with the specified name in the specified bucket.
@@ -301,13 +293,11 @@ impl<'a> ObjectClient<'a> {
     /// ```
     pub fn compose(
         &self,
-        bucket: &str,
         req: &ComposeRequest,
         destination_object: &str,
         parameters: Option<ComposeParameters>,
     ) -> Result<Object, Error> {
         self.runtime.block_on(self.client.compose(
-            bucket,
             req,
             destination_object,
             parameters,

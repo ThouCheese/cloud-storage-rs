@@ -3,7 +3,7 @@ use crate::{Error, models::{HmacKey, HmacMeta, HmacState}};
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]
 pub struct HmacKeyClient<'a> {
-    pub(crate) client: &'a crate::client::HmacKeyClient<'a>,
+    pub(crate) client: crate::client::HmacKeyClient<'a>,
     pub(crate) runtime: &'a tokio::runtime::Handle,
 }
 
