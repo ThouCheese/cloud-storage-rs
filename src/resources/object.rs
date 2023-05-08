@@ -7,7 +7,7 @@ use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use std::collections::HashMap;
 
 /// A resource representing a file in Google Cloud Storage.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Object {
     /// The kind of item this is. For objects, this is always `storage#object`.
@@ -96,7 +96,7 @@ pub struct Object {
 }
 
 /// Contains data about how a user might encrypt their files in Google Cloud Storage.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CustomerEncrypton {
     /// The encryption algorithm.
@@ -106,7 +106,7 @@ pub struct CustomerEncrypton {
 }
 
 /// The request that is supplied to perform `Object::compose`.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ComposeRequest {
     /// The kind of item this is. Will always be `storage#composeRequest`.
@@ -118,7 +118,7 @@ pub struct ComposeRequest {
 }
 
 /// A SourceObject represents one of the objects that is to be composed.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceObject {
     /// The source object's name. All source objects must have the same storage class and reside in
@@ -131,7 +131,7 @@ pub struct SourceObject {
 }
 
 /// Allows conditional copying of this file.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectPrecondition {
     /// Only perform the composition if the generation of the source object that would be used
@@ -203,7 +203,7 @@ pub enum Projection {
 }
 
 /// Response from `Object::list`.
-#[derive(Debug, serde::Deserialize, Default)]
+#[derive(Clone, Debug, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectList {
     /// The kind of item this is. For lists of objects, this is always `storage#objects`.
@@ -225,7 +225,7 @@ pub struct ObjectList {
     pub next_page_token: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[allow(dead_code)]
 pub(crate) struct RewriteResponse {

@@ -15,7 +15,7 @@ pub use crate::resources::{common::Entity, location::*};
 /// controls.
 ///
 /// A bucket is always owned by the project team owners group.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Bucket {
     /// The kind of item this is. For buckets, this is always `storage#bucket`.
@@ -89,7 +89,7 @@ pub struct Bucket {
 }
 
 /// A model that can be used to insert new buckets into Google Cloud Storage.
-#[derive(Debug, PartialEq, Default, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewBucket {
     /// The name of the bucket. See the bucket naming guidelines for more information.
@@ -138,7 +138,7 @@ pub struct NewBucket {
 }
 
 /// Contains information about how files are kept after deletion.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RetentionPolicy {
     /// The period of time, in seconds, that objects in the bucket must be retained and cannot be
@@ -154,7 +154,7 @@ pub struct RetentionPolicy {
 }
 
 /// Contains information about the Buckets IAM configuration.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IamConfiguration {
     /// The bucket's uniform bucket-level access configuration.
@@ -166,7 +166,7 @@ pub struct IamConfiguration {
 }
 
 /// Access that is configured for all objects in one go.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UniformBucketLevelAccess {
     /// Whether or not the bucket uses uniform bucket-level access. If set, access checks only use
@@ -181,7 +181,7 @@ pub struct UniformBucketLevelAccess {
 }
 
 /// Contains information about the encryption used for data in this Bucket.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Encryption {
     /// A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no
@@ -190,7 +190,7 @@ pub struct Encryption {
 }
 
 /// Contains information about an entity that is able to own a `Bucket`.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Owner {
     /// The entity, in the form project-owner-projectId.
@@ -200,7 +200,7 @@ pub struct Owner {
 }
 
 /// Contains configuration about how to visit the website linked to this Bucket.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Website {
     /// If the requested object path is missing, the service will ensure the path has a trailing
@@ -214,7 +214,7 @@ pub struct Website {
 }
 
 /// Contains information of where and how access logs to this bucket are maintained.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Logging {
     /// The destination bucket where the current bucket's logs should be placed.
@@ -224,7 +224,7 @@ pub struct Logging {
 }
 
 /// Contains information about whether a Bucket keeps track of its version.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Versioning {
     /// While set to true, versioning is fully enabled for this bucket.
@@ -232,7 +232,7 @@ pub struct Versioning {
 }
 
 /// Contains information about how OPTIONS requests for this Bucket are handled.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Cors {
     /// The list of Origins eligible to receive CORS response headers. Note: "*" is permitted in the
@@ -253,7 +253,7 @@ pub struct Cors {
 }
 
 /// Contains a set of `Rule` Objects which together describe the way this lifecycle behaves
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Lifecycle {
     /// A lifecycle management rule, which is made of an action to take and the condition(s) under
@@ -262,7 +262,7 @@ pub struct Lifecycle {
 }
 
 /// An element of the lifecyle list.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Rule {
     /// The action to take.
@@ -272,7 +272,7 @@ pub struct Rule {
 }
 
 /// Represents an action that might be undertaken due to a `Condition`.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Action {
     /// Type of the action.
@@ -282,7 +282,7 @@ pub struct Action {
 }
 
 /// Type of the action.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum ActionType {
     /// Deletes a Bucket.
     Delete,
@@ -291,7 +291,7 @@ pub enum ActionType {
 }
 
 /// A rule that might induce an `Action` if met.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Condition {
     /// Age of an object (in days). This condition is satisfied when an object reaches the specified
@@ -316,7 +316,7 @@ pub struct Condition {
 }
 
 /// Contains information about the payment structure of this bucket
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Billing {
     /// When set to true, Requester Pays is enabled for this bucket.
@@ -324,7 +324,7 @@ pub struct Billing {
 }
 
 /// The type of storage that is used. Pertains to availability, performance and cost.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum StorageClass {
     /// Standard Storage is best for data that is frequently accessed ("hot" data) and/or stored for
@@ -353,7 +353,7 @@ pub enum StorageClass {
 }
 
 /// A representation of the IAM Policiy for a certain bucket.
-#[derive(Debug, PartialEq, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Default, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IamPolicy {
     /// The [Cloud IAM policy](https://cloud.google.com/iam/docs/policies#versions) version.
@@ -372,7 +372,7 @@ pub struct IamPolicy {
 
 /// An association between a role, which comes with a set of permissions, and members who may assume
 /// that role.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Binding {
     /// The role to which members belong. Two types of roles are supported: standard IAM roles,
@@ -412,7 +412,7 @@ pub struct Binding {
 }
 
 /// A condition object associated with a binding.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IamCondition {
     /// Title of the condition. For example, "expires_end_of_2018".
@@ -427,7 +427,7 @@ pub struct IamCondition {
 
 /// All possible roles that can exist in the IAM system. For a more comprehensive version, check
 /// [Googles Documentation](https://cloud.google.com/storage/docs/access-control/iam-roles).
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 pub enum IamRole {
     /// Standard roles can be applied to either buckets or projects.
@@ -441,7 +441,7 @@ pub enum IamRole {
 /// The following enum contains Cloud Identity and Access Management (Cloud IAM) roles that are
 /// associated with Cloud Storage and lists the permissions that are contained in each role. Unless
 /// otherwise noted, these roles can be applied either to entire projects or specific buckets.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum StandardIamRole {
     /// Allows users to create objects. Does not give permission to view, delete, or overwrite
     /// objects.
@@ -469,7 +469,7 @@ pub enum StandardIamRole {
 
 /// The following enum contains primitive roles and the Cloud Storage permissions that these roles
 /// contain. Primitive roles cannot be added at the bucket-level.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum PrimitiveIamRole {
     /// Grants permission to list buckets as well as view bucket metadata, excluding ACLs, when
     /// listing. Also grants permission to list and get HMAC keys in the project.
@@ -487,7 +487,7 @@ pub enum PrimitiveIamRole {
 
 /// The following enum contains Cloud IAM roles that are equivalent to Access Control List (ACL)
 /// permissions. These Cloud IAM roles can only be applied to a bucket, not a project.
-#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum LegacyIamRole {
     /// Grants permission to view objects and their metadata, excluding ACLs.
     #[serde(rename = "roles/storage.legacyObjectReader")]
@@ -525,7 +525,7 @@ pub enum LegacyIamRole {
 }
 
 /// The request needed to perform the Object::test_iam_permission function.
-#[derive(Debug, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestIamPermission {
     /// The kind of item this is.

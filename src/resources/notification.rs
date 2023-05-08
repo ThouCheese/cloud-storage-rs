@@ -4,7 +4,7 @@ pub use crate::resources::topic::Topic;
 
 /// A subscription to receive
 /// [Pub/Sub notifications](https://cloud.google.com/storage/docs/pubsub-notifications).
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Notification {
     /// The ID of the notification.
     id: String,
@@ -36,7 +36,7 @@ pub struct Notification {
 }
 
 /// Use this struct to create new notifications.
-#[derive(Debug, PartialEq, Default, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize)]
 pub struct NewNotification {
     /// The Pub/Sub topic to which this subscription publishes. Formatted as:
     /// `'//pubsub.googleapis.com/projects/{project-identifier}/topics/{my-topic}'`.
@@ -55,7 +55,7 @@ pub struct NewNotification {
 }
 
 /// Various ways of having the response formatted.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PayloadFormat {
     /// Respond with a format as specified in the Json API V1 documentation.

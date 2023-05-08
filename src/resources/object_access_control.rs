@@ -20,7 +20,7 @@ use crate::{error::GoogleResponse, resources::common::ListResponse};
 ///
 /// For more information, see Access Control, with the caveat that this API uses READER and OWNER
 /// instead of READ and FULL_CONTROL.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectAccessControl {
     /// The kind of item this is. For object access control entries, this is always
@@ -69,7 +69,7 @@ pub struct ObjectAccessControl {
 }
 
 /// Used to create a new `ObjectAccessControl` object.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewObjectAccessControl {
     /// The entity holding the permission, in one of the following forms:
@@ -95,7 +95,7 @@ pub struct NewObjectAccessControl {
 }
 
 #[allow(unused)]
-#[derive(Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ObjectAccessControlList {
     kind: String,
