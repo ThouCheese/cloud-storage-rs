@@ -2,7 +2,7 @@ use serde::Serializer;
 use std::str::FromStr;
 
 /// Contains information about the team related to this `DefaultObjectAccessControls`
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectTeam {
     /// The project number.
@@ -47,7 +47,7 @@ impl FromStr for Team {
 }
 
 /// Any type of role we can encounter.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Role {
     /// Full access.
@@ -58,7 +58,7 @@ pub enum Role {
     Reader,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ListResponse<T> {
     #[serde(default = "Vec::new")]

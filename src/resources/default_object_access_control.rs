@@ -6,7 +6,7 @@ use crate::{error::GoogleResponse, resources::common::ListResponse};
 /// The DefaultObjectAccessControls resources represent the Access Control Lists (ACLs) applied to a
 /// new object within Google Cloud Storage when no ACL was provided for that object. ACLs let you
 /// specify who has access to your data and to what extent.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DefaultObjectAccessControl {
     /// The kind of item this is. For object access control entries, this is always
@@ -49,7 +49,7 @@ pub struct DefaultObjectAccessControl {
 }
 
 /// Model that can be used to create a new DefaultObjectAccessControl object.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewDefaultObjectAccessControl {
     /// The entity holding the permission, in one of the following forms:

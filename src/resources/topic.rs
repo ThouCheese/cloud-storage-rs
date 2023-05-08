@@ -1,5 +1,5 @@
 /// The topic of a notification
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Topic {
     /// The project within which you want to receive notifications
     pub project_id: String,

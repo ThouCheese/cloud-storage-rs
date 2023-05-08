@@ -19,6 +19,7 @@ pub use object::ObjectClient;
 pub use object_access_control::ObjectAccessControlClient;
 
 /// The primary entrypoint to perform operations with Google Cloud Storage.
+#[derive(Clone)]
 pub struct Client {
     client: reqwest::Client,
     /// Static `Token` struct that caches

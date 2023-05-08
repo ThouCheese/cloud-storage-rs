@@ -17,7 +17,7 @@ pub use crate::resources::common::{Entity, ProjectTeam, Role};
 /// objects.
 /// * OWNERs are WRITERs, and they can get the acl property of a bucket, update a bucket, and call
 /// all BucketAccessControl methods on the bucket.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BucketAccessControl {
     /// The kind of item this is. For bucket access control entries, this is always
@@ -62,7 +62,7 @@ pub struct BucketAccessControl {
 }
 
 /// Model that can be used to create a new BucketAccessControl object.
-#[derive(Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewBucketAccessControl {
     /// The entity holding the permission, in one of the following forms:

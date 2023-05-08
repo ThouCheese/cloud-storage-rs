@@ -9,7 +9,7 @@ use crate::error::GoogleResponse;
 ///
 /// Note that the `HmacKey` resource is only returned when you use `HmacKey::create`. Other
 /// methods, such as `HmacKey::read`, return the metadata portion of the HMAC key resource.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HmacKey {
     /// The kind of item this is. For HMAC keys, this is always `storage#hmacKey`.
@@ -21,7 +21,7 @@ pub struct HmacKey {
 }
 
 /// Contains information about an Hmac Key.
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HmacMeta {
     /// The kind of item this is. For HMAC key metadata, this is always `storage#hmacKeyMetadata`.
@@ -58,7 +58,7 @@ pub enum HmacState {
     Deleted,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 pub(crate) struct ListResponse {
     pub(crate) items: Vec<HmacMeta>,
 }
