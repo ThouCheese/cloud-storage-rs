@@ -100,7 +100,7 @@ pub use self::{
     hmac_key::HmacKey,
     hmac_metadata::HmacMeta,
     hmac_state::HmacState,
-    location::{Location, AusLocation, AsiaLocation, EuropeLocation, NALocation, SALocation, DualRegion, MultiRegion, SingleRegion},
+    location::{Location, AustraliaLocation, AsiaLocation, EuropeLocation, NALocation, SALocation, DualRegion, MultiRegion, SingleRegion},
     customer_encryption::CustomerEncrypton,
     compose_request::ComposeRequest,
     source_object::SourceObject,

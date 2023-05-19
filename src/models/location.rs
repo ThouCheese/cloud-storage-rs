@@ -29,7 +29,9 @@ pub enum SingleRegion {
     /// All options in Asia.
     Asia(AsiaLocation),
     /// All options in Australia.
-    Australia(AusLocation),
+    Australia(AustraliaLocation),
+    /// All options in the Middle East
+    MiddleEast(MiddleEastLocation),
 }
 
 /// All options in North America.
@@ -39,6 +41,9 @@ pub enum NALocation {
     /// Store the files in Montréal.
     #[serde(rename = "NORTHAMERICA-NORTHEAST1")]
     Montreal,
+    /// Store the files in Toronto.
+    #[serde(rename = "NORTHAMERICA-NORTHEAST2")]
+    Toronto,
     /// Store the files in Iowa.
     #[serde(rename = "US-CENTRAL1")]
     Iowa,
@@ -48,12 +53,24 @@ pub enum NALocation {
     /// Store the files in Northern Virginia.
     #[serde(rename = "US-EAST4")]
     NorthernVirginia,
+    /// Store the files in Columbus.
+    #[serde(rename = "US-EAST5")]
+    Columbus,
+    /// Store the files in Dallas.
+    #[serde(rename = "US-SOUTH1")]
+    Dallas,
     /// Store the files in Oregon.
     #[serde(rename = "US-WEST1")]
     Oregon,
     /// Store the files in Los Angeles.
     #[serde(rename = "US-WEST2")]
     LosAngeles,
+    /// Store the files in Salt Lake City.
+    #[serde(rename = "US-WEST3")]
+    SaltLakeCity,
+    /// Store the files in Las Vegas.
+    #[serde(rename = "US-WEST4")]
+    LasVegas,
 }
 
 /// All options in South America.
@@ -63,6 +80,21 @@ pub enum SALocation {
     /// Store the files in Soa Paulo.
     #[serde(rename = "SOUTHAMERICA-EAST1")]
     SaoPaulo,
+    /// Store the files in Santiago.
+    #[serde(rename = "SOUTHAMERICA-EAST2")]
+    Santiago,
+}
+
+/// All options in Middle East.
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum MiddleEastLocation {
+    /// Store the files in Doha.
+    #[serde(rename = "ME-CENTRAL1")]
+    Doha,
+    /// Store the files in Tel Aviv.
+    #[serde(rename = "ME-WEST1")]
+    TelAviv,
 }
 
 /// All options in Europe.
@@ -92,6 +124,9 @@ pub enum EuropeLocation {
     /// Store the files in Paris.
     #[serde(rename = "EUROPE-WEST9")]
     Paris,
+    /// Store the files in Turin.
+    #[serde(rename = "EUROPE-WEST12")]
+    Turin,
     /// Store the files in Warsaw.
     #[serde(rename = "EUROPE-CENTRAL2")]
     Warsaw,
@@ -115,20 +150,32 @@ pub enum AsiaLocation {
     /// Store the files in Osaka.
     #[serde(rename = "ASIA-NORTHEAST2")]
     Osaka,
+    /// Store the files in Seoul.
+    #[serde(rename = "ASIA-NORTHEAST3")]
+    Seoul,
     /// Store the files in Mumbai.
     #[serde(rename = "ASIA-SOUTH1")]
     Mumbai,
+    /// Store the files in Delhi.
+    #[serde(rename = "ASIA-SOUTH2")]
+    Delhi,
     /// Store the files in Singapore.
     #[serde(rename = "ASIA-SOUTHEAST1")]
     Singapore,
+    /// Store the files in Jakarta.
+    #[serde(rename = "ASIA-SOUTHEAST2")]
+    Jakarta,
 }
 
 /// All options in Australia.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-pub enum AusLocation {
+pub enum AustraliaLocation {
     /// Store the files in Sydney.
     #[serde(rename = "AUSTRALIA-SOUTHEAST1")]
     Sydney,
+    /// Store the files in Melbourne.
+    #[serde(rename = "AUSTRALIA-SOUTHEAST2")]
+    Melbourne,
 }
 
 /// The possible options for multi-region storage.
@@ -137,10 +184,10 @@ pub enum AusLocation {
 pub enum MultiRegion {
     /// Data centers in Asia
     Asia,
-    /// Data centers in the European Union
+    /// Data centers within member states of the European Union:
     ///
-    /// Object data added to a bucket in the EU multi-region is not stored in the EUROPE-WEST2 or
-    /// EUROPE-WEST6 data center.
+    /// Object data added to a bucket in the `EU` multi-region is not stored in the EUROPE-WEST2 (London) or
+    /// EUROPE-WEST6 (Zurich) data centers.
     Eu,
     /// Data centers in the United States
     Us,
@@ -150,8 +197,10 @@ pub enum MultiRegion {
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum DualRegion {
-    /// EUROPE-NORTH1 and EUROPE-WEST4. Additionally, object metadata may be stored in EUROPE-WEST1.
+    /// Tokyo and Osaka.
+    Asia1,
+    /// Finland and Netherlands.
     Eur4,
-    /// US-CENTRAL1 and US-EAST1. Additionally, object metadata may be stored in Tulsa, Oklahoma.
+    /// Iowa and South Carolina.
     Nam4,
 }

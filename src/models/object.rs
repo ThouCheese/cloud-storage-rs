@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::Error;
 
-use super::{CustomerEncrypton, Owner, ObjectAccessControl};
+use super::{CustomerEncrypton, Owner, ObjectAccessControl, Location};
 
 /// A resource representing a file in Google Cloud Storage.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -223,7 +223,6 @@ impl Object {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline(always)]
     fn sign(
         &self,
         file_path: &str,
@@ -380,9 +379,8 @@ impl Object {
     #[inline(always)]
     fn get_credential_scope(date: &time::OffsetDateTime) -> String {
         format!(
-            "{}/henk/storage/goog4_request",
-            date.format(time::macros::format_description!("[year][month][day]"))
-                .unwrap()
+            "{}/auto/storage/goog4_request",
+            date.format(time::macros::format_description!("[year][month][day]")).unwrap(),
         )
     }
 }
