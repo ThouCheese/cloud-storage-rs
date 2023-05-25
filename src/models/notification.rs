@@ -98,7 +98,7 @@ mod tests {
     fn create() {
         let bucket = crate::global_client::read_test_bucket();
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().unwrap();
+        dotenv::dotenv().ok();
         let service_account = crate::ServiceAccount::default();
         let topic = format!(
             "//pubsub.googleapis.com/projects/{}/topics/{}",
@@ -129,7 +129,7 @@ mod tests {
     fn delete() {
         let bucket = crate::global_client::read_test_bucket();
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().unwrap();
+        dotenv::dotenv().ok();
         let service_account = crate::ServiceAccount::default();
         let topic = format!(
             "//pubsub.googleapis.com/projects/{}/topics/{}",

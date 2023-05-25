@@ -277,7 +277,7 @@ mod tests {
     #[tokio::test]
     async fn create() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().unwrap();
+        dotenv::dotenv().ok();
         let base_name = std::env::var("TEST_BUCKET")?;
         // use a more complex bucket in this test.
         let new_bucket = create::Bucket {
@@ -373,7 +373,7 @@ mod tests {
         #[test]
         fn create() -> Result<(), Box<dyn std::error::Error>> {
             #[cfg(feature = "dotenv")]
-            dotenv::dotenv().unwrap();
+            dotenv::dotenv().ok();
             let base_name = std::env::var("TEST_BUCKET")?;
             // use a more complex bucket in this test.
             let new_bucket = create::Bucket {

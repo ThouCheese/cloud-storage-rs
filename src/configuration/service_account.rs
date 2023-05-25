@@ -31,7 +31,7 @@ pub struct ServiceAccount {
 impl Default for ServiceAccount {
     fn default() -> Self {
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().unwrap();
+        dotenv::dotenv().ok();
         let credentials_json = std::env::var("SERVICE_ACCOUNT")
             .or_else(|_| std::env::var("GOOGLE_APPLICATION_CREDENTIALS"))
             .map(|path| std::fs::read_to_string(path).expect("SERVICE_ACCOUNT file not found"))

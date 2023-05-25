@@ -17,7 +17,7 @@ mod test_helpers {
 
     pub(crate) async fn read_test_bucket() -> Bucket {
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().unwrap();
+        dotenv::dotenv().ok();
         let name = std::env::var("TEST_BUCKET").unwrap();
         match Bucket::read(&name).await {
             Ok(bucket) => bucket,
@@ -50,7 +50,7 @@ mod test_helpers {
         std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
         
         #[cfg(feature = "dotenv")]
-        dotenv::dotenv().unwrap();
+        dotenv::dotenv().ok();
         let base_name = std::env::var("TEST_BUCKET").unwrap();
         let name = format!("{}-{}", base_name, name);
         let new_bucket = create::Bucket {
