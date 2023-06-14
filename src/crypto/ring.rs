@@ -6,7 +6,7 @@ pub fn rsa_pkcs1_sha256(message: &str, private_pem: &[u8]) -> Result<Vec<u8>, Er
     };
 
     let key_pem = pem::parse(private_pem)?;
-    let key = RsaKeyPair::from_pkcs8(&key_pem.contents())?;
+    let key = RsaKeyPair::from_pkcs8(key_pem.contents())?;
     let rng = SystemRandom::new();
     let mut signature = vec![0; key.public_modulus_len()];
     key.sign(&RSA_PKCS1_SHA256, &rng, message.as_bytes(), &mut signature)?;
