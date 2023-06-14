@@ -19,26 +19,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     # - name: Run cargo fmt
     #   uses: actions-rs/cargo@v1
     #   with:
     #     command: fmt
     #     args: -- --check
+
     - name: Run cargo clippy
       uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         args: -- -D warnings
-    - name: Create Secret
-      run: 'echo "$SECRET_FILE" > auth.json'
-      env:
-        SECRET_FILE: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
-    - name: Create Test File
-      run: 'echo "Temporary test text to test the transfer." > myemma.txt'
+
     - name: Build
       run: cargo build
+
     - name: Run tests
       run: cargo test ${{ matrix.features }} -- --test-threads=1
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: auth.json
+        SERVICE_ACCOUNT_JSON: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
         TEST_BUCKET: cloud-storage-rs-test-bucket

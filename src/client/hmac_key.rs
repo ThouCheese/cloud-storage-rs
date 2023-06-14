@@ -1,11 +1,12 @@
-use crate::{
-    error::GoogleResponse,
-    hmac_key::{HmacKey, HmacMeta, HmacState},
-};
+use crate::{Error, models::{HmacKey, HmacMeta, Response, ListResponse, HmacState, UpdateHmacMetadata}};
 
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]
-pub struct HmacKeyClient<'a>(pub(super) &'a super::Client);
+pub struct HmacKeyClient<'a> {
+    pub(crate) client: &'a super::CloudStorageClient,
+    pub(crate) hmac_keys_url: String,
+    pub(crate) client_email: String,
+}
 
 impl<'a> HmacKeyClient<'a> {
     /// Creates a new HMAC key for the specified service account.
@@ -19,42 +20,32 @@ impl<'a> HmacKeyClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
-    ///
-    /// let client = Client::default();
-    /// let hmac_key = client.hmac_key().create().await?;
-    /// # use cloud_storage::hmac_key::HmacState;
-    /// # client.hmac_key().update(&hmac_key.metadata.access_id, HmacState::Inactive).await?;
-    /// # client.hmac_key().delete(&hmac_key.metadata.access_id).await?;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
+    /// let cloud_storage_client = CloudStorageClient::default();
+    /// let client = cloud_storage_client.hmac_key();
+    /// let hmac_key = client.create().await?;
+    /// # use cloud_storage::models::HmacState;
+    /// # client.update(&hmac_key.metadata.access_id, HmacState::Inactive).await?;
+    /// # client.delete(&hmac_key.metadata.access_id).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn create(&self) -> crate::Result<HmacKey> {
+    pub async fn create(&self) -> Result<HmacKey, Error> {
         use reqwest::header::CONTENT_LENGTH;
 
-        let url = format!(
-            "{}/projects/{}/hmacKeys",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id
-        );
-        let query = [("serviceAccountEmail", &crate::SERVICE_ACCOUNT.client_email)];
-        let mut headers = self.0.get_headers().await?;
+        let query = [("serviceAccountEmail", &self.client_email)];
+        let mut headers = self.client.get_headers().await?;
         headers.insert(CONTENT_LENGTH, 0.into());
-        let result: GoogleResponse<HmacKey> = self
-            .0
-            .client
-            .post(&url)
+        let result: crate::models::Response<HmacKey> = self.client.reqwest
+            .post(&self.hmac_keys_url)
             .headers(headers)
             .query(&query)
             .send()
             .await?
             .json()
             .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        Ok(result.ok()?)
     }
 
     /// Retrieves a list of HMAC keys matching the criteria. Since the HmacKey is secret, this does
@@ -70,41 +61,35 @@ impl<'a> HmacKeyClient<'a> {
     /// ```
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let all_hmac_keys = client.hmac_key().list().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn list(&self) -> crate::Result<Vec<HmacMeta>> {
-        let url = format!(
-            "{}/projects/{}/hmacKeys",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id
-        );
-        let response = self
-            .0
-            .client
-            .get(&url)
-            .headers(self.0.get_headers().await?)
+    pub async fn list(&self) -> Result<Vec<HmacMeta>, Error> {
+        let response = self.client.reqwest
+            .get(&self.hmac_keys_url)
+            .headers(self.client.get_headers().await?)
             .send()
             .await?
             .text()
             .await?;
-        let result: Result<GoogleResponse<crate::hmac_key::ListResponse>, _> =
-            serde_json::from_str(&response);
+        let result: Result<Response<ListResponse<HmacMeta>>, serde_json::Error> = serde_json::from_str(&response);
+        let single_result: Result<Response<HmacMeta>, serde_json::Error> = serde_json::from_str(&response);
+        // todo: test this with one hmac key
 
         // This function rquires more complicated error handling because when there is only one
         // entry, Google will return the response `{ "kind": "storage#hmacKeysMetadata" }` instead
         // of a list with one element. This breaks the parser.
         match result {
-            Ok(parsed) => match parsed {
-                GoogleResponse::Success(s) => Ok(s.items),
-                GoogleResponse::Error(e) => Err(e.into()),
+            Ok(parsed) => match parsed.ok() {
+                Ok(s) => Ok(s.items),
+                Err(e) => Err(e.into()),
             },
-            Err(_) => Ok(vec![]),
+            Err(_) => Ok(vec![single_result?.ok()?]),
         }
     }
 
@@ -121,33 +106,23 @@ impl<'a> HmacKeyClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let key = client.hmac_key().read("some identifier").await?;
     /// # Ok(())
     /// # }
-    pub async fn read(&self, access_id: &str) -> crate::Result<HmacMeta> {
-        let url = format!(
-            "{}/projects/{}/hmacKeys/{}",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id,
-            access_id
-        );
-        let result: GoogleResponse<HmacMeta> = self
-            .0
-            .client
+    pub async fn read(&self, access_id: &str) -> Result<HmacMeta, Error> {
+        let url = format!("{}/{}",self.hmac_keys_url,access_id);
+        let result: crate::models::Response<HmacMeta> = self.client.reqwest
             .get(&url)
-            .headers(self.0.get_headers().await?)
+            .headers(self.client.get_headers().await?)
             .send()
             .await?
             .json()
             .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        Ok(result.ok()?)
     }
 
     /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
@@ -163,35 +138,29 @@ impl<'a> HmacKeyClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let key = client.hmac_key().update("your key", HmacState::Active).await?;
     /// # Ok(())
     /// # }
-    pub async fn update(&self, access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
+    pub async fn update(&self, access_id: &str, state: HmacState) -> Result<HmacMeta, Error> {
         let url = format!(
-            "{}/projects/{}/hmacKeys/{}",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id,
+            "{}/{}",
+            self.hmac_keys_url,
             access_id
         );
-        serde_json::to_string(&crate::hmac_key::UpdateMeta { state })?;
-        let result: GoogleResponse<HmacMeta> = self
-            .0
-            .client
+        serde_json::to_string(&UpdateHmacMetadata { state })?;
+        let result: Response<HmacMeta> = self.client.reqwest
             .put(&url)
-            .headers(self.0.get_headers().await?)
-            .json(&crate::hmac_key::UpdateMeta { state })
+            .headers(self.client.get_headers().await?)
+            .json(&UpdateHmacMetadata { state })
             .send()
             .await?
             .json()
             .await?;
-        match result {
-            GoogleResponse::Success(s) => Ok(s),
-            GoogleResponse::Error(e) => Err(e.into()),
-        }
+        Ok(result.ok()?)
     }
 
     /// Deletes an HMAC key. Note that a key must be set to `Inactive` first.
@@ -205,26 +174,23 @@ impl<'a> HmacKeyClient<'a> {
     /// ```no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::default();
+    /// let client = CloudStorageClient::default();
     /// let key = client.hmac_key().update("your key", HmacState::Inactive).await?; // this is required.
     /// client.hmac_key().delete(&key.access_id).await?;
     /// # Ok(())
     /// # }
-    pub async fn delete(&self, access_id: &str) -> crate::Result<()> {
+    pub async fn delete(&self, access_id: &str) -> Result<(), Error> {
         let url = format!(
-            "{}/projects/{}/hmacKeys/{}",
-            crate::BASE_URL,
-            crate::SERVICE_ACCOUNT.project_id,
+            "{}/{}",
+            self.hmac_keys_url,
             access_id
         );
-        let response = self
-            .0
-            .client
+        let response = self.client.reqwest
             .delete(&url)
-            .headers(self.0.get_headers().await?)
+            .headers(self.client.get_headers().await?)
             .send()
             .await?;
         if response.status().is_success() {

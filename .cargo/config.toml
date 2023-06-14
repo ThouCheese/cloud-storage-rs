@@ -1,0 +1,3 @@
+[env]
+# Required for linking openssl on windows, has no effect on other platforms.
+VCPKGRS_DYNAMIC="1"

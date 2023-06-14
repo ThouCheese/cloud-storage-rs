@@ -1,8 +1,11 @@
-use crate::hmac_key::{HmacKey, HmacMeta, HmacState};
+use crate::{Error, models::{HmacKey, HmacMeta, HmacState}};
 
 /// Operations on [`HmacKey`](HmacKey)s.
 #[derive(Debug)]
-pub struct HmacKeyClient<'a>(pub(super) &'a super::Client);
+pub struct HmacKeyClient<'a> {
+    pub(crate) client: crate::client::HmacKeyClient<'a>,
+    pub(crate) runtime: &'a tokio::runtime::Handle,
+}
 
 impl<'a> HmacKeyClient<'a> {
     /// Creates a new HMAC key for the specified service account.
@@ -15,19 +18,19 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let hmac_key = client.hmac_key().create()?;
-    /// # use cloud_storage::hmac_key::HmacState;
+    /// # use cloud_storage::models::HmacState;
     /// # client.hmac_key().update(&hmac_key.metadata.access_id, HmacState::Inactive)?;
     /// # client.hmac_key().delete(&hmac_key.metadata.access_id)?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn create(&self) -> crate::Result<HmacKey> {
-        self.0.runtime.block_on(self.0.client.hmac_key().create())
+    pub fn create(&self) -> Result<HmacKey, Error> {
+        self.runtime.block_on(self.client.create())
     }
 
     /// Retrieves a list of HMAC keys matching the criteria. Since the HmacKey is secret, this does
@@ -42,16 +45,16 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let all_hmac_keys = client.hmac_key().list()?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list(&self) -> crate::Result<Vec<HmacMeta>> {
-        self.0.runtime.block_on(self.0.client.hmac_key().list())
+    pub fn list(&self) -> Result<Vec<HmacMeta>, Error> {
+        self.runtime.block_on(self.client.list())
     }
 
     /// Retrieves an HMAC key's metadata. Since the HmacKey is secret, this does not return a
@@ -66,17 +69,16 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::HmacKey;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::HmacKey;
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let key = client.hmac_key().read("some identifier")?;
     /// # Ok(())
     /// # }
-    pub fn read(&self, access_id: &str) -> crate::Result<HmacMeta> {
-        self.0
-            .runtime
-            .block_on(self.0.client.hmac_key().read(access_id))
+    pub fn read(&self, access_id: &str) -> Result<HmacMeta, Error> {
+        self.runtime
+            .block_on(self.client.read(access_id))
     }
 
     /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
@@ -91,17 +93,16 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let key = client.hmac_key().update("your key", HmacState::Active)?;
     /// # Ok(())
     /// # }
-    pub fn update(&self, access_id: &str, state: HmacState) -> crate::Result<HmacMeta> {
-        self.0
-            .runtime
-            .block_on(self.0.client.hmac_key().update(access_id, state))
+    pub fn update(&self, access_id: &str, state: HmacState) -> Result<HmacMeta, Error> {
+        self.runtime
+            .block_on(self.client.update(access_id, state))
     }
 
     /// Deletes an HMAC key. Note that a key must be set to `Inactive` first.
@@ -114,17 +115,16 @@ impl<'a> HmacKeyClient<'a> {
     /// ### Example
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::hmac_key::{HmacKey, HmacState};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{HmacKey, HmacState};
     ///
-    /// let client = Client::new()?;
+    /// let client = CloudStorageClient::new()?;
     /// let key = client.hmac_key().update("your key", HmacState::Inactive)?; // this is required.
     /// client.hmac_key().delete(&key.access_id)?;
     /// # Ok(())
     /// # }
-    pub fn delete(&self, access_id: &str) -> crate::Result<()> {
-        self.0
-            .runtime
-            .block_on(self.0.client.hmac_key().delete(access_id))
+    pub fn delete(&self, access_id: &str) -> Result<(), Error> {
+        self.runtime
+            .block_on(self.client.delete(access_id))
     }
 }

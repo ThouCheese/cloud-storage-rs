@@ -1,11 +1,12 @@
-use crate::{
-    bucket_access_control::Entity,
-    object_access_control::{NewObjectAccessControl, ObjectAccessControl},
-};
+use crate::{models::{create, ObjectAccessControl, Entity}, Error};
+
 
 /// Operations on [`ObjectAccessControl`](ObjectAccessControl)s.
 #[derive(Debug)]
-pub struct ObjectAccessControlClient<'a>(pub(super) &'a super::Client);
+pub struct ObjectAccessControlClient<'a> {
+    pub(crate) client: crate::client::ObjectAccessControlClient<'a>,
+    pub(crate) runtime: &'a tokio::runtime::Handle,
+}
 
 impl<'a> ObjectAccessControlClient<'a> {
     /// Creates a new ACL entry on the specified `object`.
@@ -16,17 +17,10 @@ impl<'a> ObjectAccessControlClient<'a> {
     /// control access instead.
     pub fn create(
         &self,
-        bucket: &str,
-        object: &str,
-        new_object_access_control: &NewObjectAccessControl,
-    ) -> crate::Result<ObjectAccessControl> {
-        self.0
-            .runtime
-            .block_on(self.0.client.object_access_control().create(
-                bucket,
-                object,
-                new_object_access_control,
-            ))
+        new_object_access_control: &create::ObjectAccessControl,
+    ) -> Result<ObjectAccessControl, Error> {
+        self.runtime
+            .block_on(self.client.create(new_object_access_control))
     }
 
     /// Retrieves `ACL` entries on the specified object.
@@ -35,10 +29,9 @@ impl<'a> ObjectAccessControlClient<'a> {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
-    pub fn list(&self, bucket: &str, object: &str) -> crate::Result<Vec<ObjectAccessControl>> {
-        self.0
-            .runtime
-            .block_on(self.0.client.object_access_control().list(bucket, object))
+    pub fn list(&self) -> Result<Vec<ObjectAccessControl>, Error> {
+        self.runtime
+            .block_on(self.client.list())
     }
 
     /// Returns the `ACL` entry for the specified entity on the specified bucket.
@@ -49,15 +42,10 @@ impl<'a> ObjectAccessControlClient<'a> {
     /// control access instead.
     pub fn read(
         &self,
-        bucket: &str,
-        object: &str,
         entity: &Entity,
-    ) -> crate::Result<ObjectAccessControl> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object_access_control()
-                .read(bucket, object, entity),
+    ) -> Result<ObjectAccessControl, Error> {
+        self.runtime.block_on(
+            self.client.read(entity),
         )
     }
 
@@ -70,12 +58,9 @@ impl<'a> ObjectAccessControlClient<'a> {
     pub fn update(
         &self,
         object_access_control: &ObjectAccessControl,
-    ) -> crate::Result<ObjectAccessControl> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object_access_control()
-                .update(object_access_control),
+    ) -> Result<ObjectAccessControl, Error> {
+        self.runtime.block_on(
+            self.client.update(object_access_control),
         )
     }
 
@@ -85,11 +70,9 @@ impl<'a> ObjectAccessControlClient<'a> {
     /// Important: This method fails with a 400 Bad Request response for buckets with uniform
     /// bucket-level access enabled. Use `Bucket::get_iam_policy` and `Bucket::set_iam_policy` to
     /// control access instead.
-    pub fn delete(&self, object_access_control: ObjectAccessControl) -> crate::Result<()> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .object_access_control()
+    pub fn delete(&self, object_access_control: ObjectAccessControl) -> Result<(), Error> {
+        self.runtime.block_on(
+            self.client
                 .delete(object_access_control),
         )
     }

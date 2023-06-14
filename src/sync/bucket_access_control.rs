@@ -1,11 +1,15 @@
-use crate::bucket_access_control::{BucketAccessControl, Entity, NewBucketAccessControl};
+use crate::{models::{create, BucketAccessControl, Entity}, Error};
+
 
 /// Operations on [`BucketAccessControl`](BucketAccessControl)s.
 #[derive(Debug)]
-pub struct BucketAccessControlClient<'a>(pub(super) &'a super::Client);
+pub struct BucketAccessControlClient<'a> {
+    pub(crate) client: crate::client::BucketAccessControlClient<'a>,
+    pub(crate) runtime: &'a tokio::runtime::Handle,
+}
 
 impl<'a> BucketAccessControlClient<'a> {
-    /// Create a new `BucketAccessControl` using the provided `NewBucketAccessControl`, related to
+    /// Create a new `BucketAccessControl` using the provided `create::BucketAccessControl`, related to
     /// the `Bucket` provided by the `bucket_name` argument.
     ///
     /// ### Important
@@ -15,30 +19,24 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, NewBucketAccessControl};
-    /// use cloud_storage::bucket_access_control::{Role, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, create};
+    /// # use cloud_storage::models::{Role, Entity};
     ///
-    /// let client = Client::new()?;
-    /// let new_bucket_access_control = NewBucketAccessControl {
+    /// let client = CloudStorageClient::new()?;
+    /// let new_bucket_access_control = create::BucketAccessControl {
     ///     entity: Entity::AllUsers,
     ///     role: Role::Reader,
     /// };
-    /// client.bucket_access_control().create("mybucket", &new_bucket_access_control)?;
+    /// client.bucket_access_control("my_bucket").create(&new_bucket_access_control)?;
     /// # Ok(())
     /// # }
     /// ```
     pub fn create(
         &self,
-        bucket: &str,
-        new_bucket_access_control: &NewBucketAccessControl,
-    ) -> crate::Result<BucketAccessControl> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .bucket_access_control()
-                .create(bucket, new_bucket_access_control),
-        )
+        new_bucket_access_control: &create::BucketAccessControl,
+    ) -> Result<BucketAccessControl, Error> {
+        self.runtime.block_on(self.client.create_using(new_bucket_access_control))
     }
 
     /// Returns all `BucketAccessControl`s related to this bucket.
@@ -50,18 +48,16 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::BucketAccessControl;
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::BucketAccessControl;
     ///
-    /// let client = Client::new()?;
-    /// let acls = client.bucket_access_control().list("mybucket")?;
+    /// let client = CloudStorageClient::new()?;
+    /// let acls = client.bucket_access_control("my_bucket").list()?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list(&self, bucket: &str) -> crate::Result<Vec<BucketAccessControl>> {
-        self.0
-            .runtime
-            .block_on(self.0.client.bucket_access_control().list(bucket))
+    pub fn list(&self) -> Result<Vec<BucketAccessControl>, Error> {
+        self.runtime.block_on(self.client.list())
     }
 
     /// Returns the ACL entry for the specified entity on the specified bucket.
@@ -73,18 +69,16 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
-    /// let controls = client.bucket_access_control().read("mybucket", &Entity::AllUsers)?;
+    /// let client = CloudStorageClient::new()?;
+    /// let controls = client.bucket_access_control("my_bucket").read(&Entity::AllUsers)?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn read(&self, bucket: &str, entity: &Entity) -> crate::Result<BucketAccessControl> {
-        self.0
-            .runtime
-            .block_on(self.0.client.bucket_access_control().read(bucket, entity))
+    pub fn read(&self, entity: &Entity) -> Result<BucketAccessControl, Error> {
+        self.runtime.block_on(self.client.read(entity))
     }
 
     /// Update this `BucketAccessControl`.
@@ -96,26 +90,22 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
-    /// let mut acl = client.bucket_access_control().read("mybucket", &Entity::AllUsers)?;
+    /// let client = CloudStorageClient::new()?;
+    /// let my_bucket = client.bucket_access_control("my_bucket");
+    /// let mut acl = my_bucket.read(&Entity::AllUsers)?;
     /// acl.entity = Entity::AllAuthenticatedUsers;
-    /// client.bucket_access_control().update(&acl)?;
+    /// my_bucket.update(&acl)?;
     /// # Ok(())
     /// # }
     /// ```
     pub fn update(
         &self,
         bucket_access_control: &BucketAccessControl,
-    ) -> crate::Result<BucketAccessControl> {
-        self.0.runtime.block_on(
-            self.0
-                .client
-                .bucket_access_control()
-                .update(bucket_access_control),
-        )
+    ) -> Result<BucketAccessControl, Error> {
+        self.runtime.block_on(self.client.update(bucket_access_control))
     }
 
     /// Permanently deletes the ACL entry for the specified entity on the specified bucket.
@@ -127,20 +117,20 @@ impl<'a> BucketAccessControlClient<'a> {
     /// ### Example
     /// ```rust,no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// use cloud_storage::sync::Client;
-    /// use cloud_storage::bucket_access_control::{BucketAccessControl, Entity};
+    /// # use cloud_storage::sync::CloudStorageClient;
+    /// # use cloud_storage::models::{BucketAccessControl, Entity};
     ///
-    /// let client = Client::new()?;
-    /// let controls = client.bucket_access_control().read("mybucket", &Entity::AllUsers)?;
-    /// client.bucket_access_control().delete(controls)?;
+    /// let client = CloudStorageClient::new()?;
+    /// let my_bucket = client.bucket_access_control("my_bucket");
+    /// let controls = my_bucket.read(&Entity::AllUsers)?;
+    /// my_bucket.delete(controls)?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn delete(&self, bucket_access_control: BucketAccessControl) -> crate::Result<()> {
-        self.0.runtime.block_on(
-            self.0
+    pub fn delete(&self, bucket_access_control: BucketAccessControl) -> Result<(), Error> {
+        self.runtime.block_on(
+            self
                 .client
-                .bucket_access_control()
                 .delete(bucket_access_control),
         )
     }
