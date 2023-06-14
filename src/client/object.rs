@@ -48,7 +48,7 @@ impl<'a> ObjectClient<'a> {
             .send()
             .await?;
 
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)
@@ -100,7 +100,7 @@ impl<'a> ObjectClient<'a> {
             .multipart(form)
             .send()
             .await?;
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)
@@ -161,7 +161,7 @@ impl<'a> ObjectClient<'a> {
             .multipart(form)
             .send()
             .await?;
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)
@@ -216,7 +216,7 @@ impl<'a> ObjectClient<'a> {
             .body(body)
             .send()
             .await?;
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)
@@ -300,9 +300,9 @@ impl<'a> ObjectClient<'a> {
                         Err(e) => return Some((Err(e.into()), state)),
                     };
 
-                    let response_body = match result {
-                        crate::models::Response::Success(success) => success,
-                        crate::models::Response::Error(e) => return Some((Err(e.into()), state)),
+                    let response_body = match result.ok() {
+                        Ok(success) => success,
+                        Err(e) => return Some((Err(e.into()), state)),
                     };
 
                     let next_state = if let Some(ref page_token) = response_body.next_page_token {
@@ -352,7 +352,7 @@ impl<'a> ObjectClient<'a> {
             .send()
             .await?;
 
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)
@@ -479,7 +479,7 @@ impl<'a> ObjectClient<'a> {
             .send()
             .await?;
 
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)
@@ -573,7 +573,7 @@ impl<'a> ObjectClient<'a> {
             .send()
             .await?;
 
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)
@@ -619,7 +619,7 @@ impl<'a> ObjectClient<'a> {
             .send()
             .await?;
 
-        let mut object = response.json::<Response<Object>>().await??;
+        let mut object = response.json::<Response<Object>>().await?.ok()?;
         object.private_key = Some(self.client.service_account.private_key.clone());
         object.client_email = Some(self.client.service_account.client_email.clone());
         Ok(object)

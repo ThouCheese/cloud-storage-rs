@@ -48,7 +48,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
             .send()
             .await?;
 
-        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await??;
+        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await?.ok()?;
         object.bucket = self.bucket.clone();
         Ok(object)
     }
@@ -74,7 +74,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         let headers = self.client.get_headers().await?;
         let response = self.client.reqwest.get(&self.base_url).headers(headers).send().await?;
 
-        let mut object = response.json::<Response<ListResponse<DefaultObjectAccessControl>>>().await??.items;
+        let mut object = response.json::<Response<ListResponse<DefaultObjectAccessControl>>>().await?.ok()?.items;
         object = object.into_iter().map(|item| DefaultObjectAccessControl {
             bucket: self.bucket.to_string(),
             ..item
@@ -119,7 +119,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
             .send()
             .await?;
 
-        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await??;
+        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await?.ok()?;
         object.bucket = self.bucket.clone();
         Ok(object)
     }
@@ -156,7 +156,7 @@ impl<'a> DefaultObjectAccessControlClient<'a> {
         );
         let response = self.client.reqwest.put(&url).headers(headers).json(default_object_access_control).send().await?;
 
-        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await??;
+        let mut object = response.json::<Response<DefaultObjectAccessControl>>().await?.ok()?;
         object.bucket = self.bucket.clone();
         Ok(object)
     }

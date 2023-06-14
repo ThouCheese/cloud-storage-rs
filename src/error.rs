@@ -8,7 +8,7 @@ pub enum Error {
     /// If another network error causes something to fail, this variant is used.
     Reqwest(reqwest::Error),
     /// If we encounter a problem decoding the private key, this variant is used.
-    #[cfg(feature = "ring")]
+    #[cfg(feature = "pem")]
     Pem(pem::PemError),
     /// If we encounter a problem parsing the private key, this variant is used.
     #[cfg(feature = "ring")]
@@ -46,7 +46,7 @@ impl std::error::Error for Error {
             Self::Reqwest(e) => Some(e),
             #[cfg(feature = "openssl")]
             Self::Ssl(e) => Some(e),
-            #[cfg(feature = "ring")]
+            #[cfg(feature = "pem")]
             Self::Pem(e) => Some(e),
             #[cfg(feature = "ring")]
             Self::KeyRejected(e) => Some(e),
@@ -72,7 +72,7 @@ impl From<openssl::error::ErrorStack> for Error {
     }
 }
 
-#[cfg(feature = "ring")]
+#[cfg(feature = "pem")]
 impl From<pem::PemError> for Error {
     fn from(err: pem::PemError) -> Self {
         Self::Pem(err)

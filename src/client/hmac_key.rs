@@ -45,7 +45,7 @@ impl<'a> HmacKeyClient<'a> {
             .await?
             .json()
             .await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Retrieves a list of HMAC keys matching the criteria. Since the HmacKey is secret, this does
@@ -85,11 +85,11 @@ impl<'a> HmacKeyClient<'a> {
         // entry, Google will return the response `{ "kind": "storage#hmacKeysMetadata" }` instead
         // of a list with one element. This breaks the parser.
         match result {
-            Ok(parsed) => match parsed {
-                crate::models::Response::Success(s) => Ok(s.items),
-                crate::models::Response::Error(e) => Err(e.into()),
+            Ok(parsed) => match parsed.ok() {
+                Ok(s) => Ok(s.items),
+                Err(e) => Err(e.into()),
             },
-            Err(_) => Ok(vec![single_result??]),
+            Err(_) => Ok(vec![single_result?.ok()?]),
         }
     }
 
@@ -122,7 +122,7 @@ impl<'a> HmacKeyClient<'a> {
             .await?
             .json()
             .await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Updates the state of an HMAC key. See the HMAC Key resource descriptor for valid states.
@@ -160,7 +160,7 @@ impl<'a> HmacKeyClient<'a> {
             .await?
             .json()
             .await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Deletes an HMAC key. Note that a key must be set to `Inactive` first.

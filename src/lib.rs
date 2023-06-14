@@ -1,4 +1,3 @@
-#![feature(try_trait_v2)]
 //! This crate aims to simplify interacting with the Google Cloud Storage JSON API. Use it until
 //! Google releases a Cloud Storage Client Library for Rust. Shoutout to
 //! [MyEmma](https://myemma.io/) for funding this free and open source project.

@@ -1,5 +1,3 @@
 [env]
 # Required for linking openssl on windows, has no effect on other platforms.
 VCPKGRS_DYNAMIC="1"
-# Remove this when https://github.com/rust-lang/rust/issues/84277 becomes stable
-RUSTC_BOOTSTRAP="1"

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::Error;
 
-use super::{CustomerEncrypton, Owner, ObjectAccessControl, Location};
+use super::{CustomerEncrypton, Owner, ObjectAccessControl};
 
 /// A resource representing a file in Google Cloud Storage.
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]

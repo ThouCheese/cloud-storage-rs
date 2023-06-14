@@ -1,59 +1,38 @@
-use std::ops::ControlFlow;
+use serde::Deserialize;
+use super::ErrorResponse;
 
-use super::{ErrorResponse};
-use crate::Error;
+#[derive(Debug)]
+pub(crate) struct Response<T>(Result<T, ErrorResponse>);
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename = "camelCase")]
+#[derive(serde::Deserialize)]
 #[serde(untagged)]
-pub(crate) enum Response<T> {
+/// Private Response that will be transformed into Response<T> in the Deserialize trait of Response<T>
+enum EnumResponse<T> {
     Success(T),
     Error(ErrorResponse),
 }
 
-/// Enable desugaring for `Response<T>`, e.g. the use of the `?` on an object of type `Response<T>`
-/// ```ignore,no_run
-/// if let Response::Error(error) = my_response {
-///    return error;
-/// }
-/// let my_response = my_response.unwrap();
-/// ```
-/// becomes:
-/// ```ignore,no_run
-/// my_response?;
-/// ```
-impl<T> std::ops::Try for Response<T> {
-    type Output = T;
-    type Residual = Result<std::convert::Infallible, Error>;
-    #[inline]
-    fn from_output(output: Self::Output) -> Self {
-        Response::Success(output)
-    }
-    #[inline]
-    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
-        match self {
-            Response::Success(t) => ControlFlow::Continue(t),
-            Response::Error(error) => ControlFlow::Break(Err(Error::Google(error))),
-        }
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Response<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de> {
+            match EnumResponse::<T>::deserialize(deserializer)? {
+                EnumResponse::Success(value) => Ok(Response(Ok(value))),
+                EnumResponse::Error(value) => Ok(Response(Err(value))),
+            }
     }
 }
 
-
-impl<T> std::ops::FromResidual<Result<std::convert::Infallible, Error>> for Response<T> {
-    #[inline]
-    #[track_caller]
-    fn from_residual(residual: <Self as std::ops::Try>::Residual) -> Self {
-        if let Err(Error::Google(err)) = residual {
-            Response::Error(err)
-        } else {
-            panic!("Non expected residual type encountered")
-        }
+impl<T> Response<T> {
+    /// Transform the output into an result
+    pub fn ok(self) -> Result<T, ErrorResponse> {
+        self.0
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{models::{ErrorResponse, ErrorList}, Error, Bucket};
+    use crate::{Error, Bucket};
 
     use super::Response;
 
@@ -63,7 +42,7 @@ mod tests {
         let response = serde_json::from_slice::<Response<Bucket>>(response.as_bytes());
         let response = response.expect("failed to map response as a response");
 
-        let output = response?;
+        let output = response.ok()?;
         assert_eq!(output.kind, "storage#bucket");
         Ok(())
     }
@@ -71,17 +50,15 @@ mod tests {
     #[test]
     fn test_try_impl_error() -> Result<(), Error> {
         let function = || {
-            let response = Response::Error::<()>(ErrorResponse {
-                error: ErrorList {
-                    errors: Vec::new(),
-                    code: 250,
-                    message: "Some error occurred".to_string(),
-                },
-            });
-            response?;
+            let response = r#"{"error":{"errors":[{"domain":"global","reason":"required","message":"Login Required","locationType":"header","location":"Authorization"}],"code":401,"message":"Login Required"}}"#;
+            let response = serde_json::from_slice::<Response<Bucket>>(response.as_bytes());
+            response?.ok()?;
             Ok::<(), Error>(())
         };
-        assert_eq!(function().is_err(), true);
+        let result = function();
+        let value = format!("{:?}", result);
+        println!("{}", value);
+        assert_eq!(result.is_err(), true);
         Ok(())
     }
 }

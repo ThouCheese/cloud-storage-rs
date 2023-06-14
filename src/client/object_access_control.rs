@@ -27,7 +27,7 @@ impl<'a> ObjectAccessControlClient<'a> {
             .await?
             .json()
             .await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Retrieves `ACL` entries on the specified object.
@@ -45,7 +45,7 @@ impl<'a> ObjectAccessControlClient<'a> {
             .send()
             .await?
             .json::<Response<ListResponse<ObjectAccessControl>>>()
-            .await??;
+            .await?.ok()?;
         Ok(result.items)
     }
 
@@ -71,7 +71,7 @@ impl<'a> ObjectAccessControlClient<'a> {
             .await?
             .json()
             .await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Updates an ACL entry on the specified object.
@@ -97,7 +97,7 @@ impl<'a> ObjectAccessControlClient<'a> {
             .await?
             .json()
             .await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Permanently deletes the ACL entry for the specified entity on the specified object.

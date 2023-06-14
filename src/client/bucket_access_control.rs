@@ -37,7 +37,7 @@ impl<'a> BucketAccessControlClient<'a> {
     ) -> Result<BucketAccessControl, Error> {
         let headers = self.client.get_headers().await?;
         let result: crate::models::Response<BucketAccessControl> = self.client.reqwest.post(&self.bucket_acl_url).headers(headers).json(new_bucket_access_control).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Returns all `BucketAccessControl`s related to this bucket.
@@ -62,7 +62,7 @@ impl<'a> BucketAccessControlClient<'a> {
         let headers = self.client.get_headers().await?;
         let response = self.client.reqwest.get(&self.bucket_acl_url).headers(headers).send().await?;
 
-        let object = response.json::<Response<ListResponse<BucketAccessControl>>>().await??.items;
+        let object = response.json::<Response<ListResponse<BucketAccessControl>>>().await?.ok()?.items;
         Ok(object)
     }
 
@@ -92,7 +92,7 @@ impl<'a> BucketAccessControlClient<'a> {
         );
         let headers = self.client.get_headers().await?;
         let result: crate::models::Response<BucketAccessControl> = self.client.reqwest.get(&url).headers(headers).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Update this `BucketAccessControl`.
@@ -126,7 +126,7 @@ impl<'a> BucketAccessControlClient<'a> {
         );
         let headers = self.client.get_headers().await?;
         let result: crate::models::Response<BucketAccessControl> = self.client.reqwest.put(&url).headers(headers).json(bucket_access_control).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Permanently deletes the ACL entry for the specified entity on the specified bucket.

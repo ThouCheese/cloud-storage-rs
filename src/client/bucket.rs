@@ -39,7 +39,7 @@ impl<'a> BucketClient<'a> {
         let project = &self.project_id;
         let query = [("project", project)];
         let result: crate::models::Response<Bucket> = self.client.reqwest.post(&url).headers(headers).query(&query).json(new_bucket).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Returns all `Bucket`s within this project.
@@ -65,7 +65,7 @@ impl<'a> BucketClient<'a> {
         let project = &self.project_id;
         let query = [("project", project)];
         let result: crate::models::Response<ListResponse<Bucket>> = self.client.reqwest.get(&url).headers(headers).query(&query).send().await?.json().await?;
-        Ok(result?.items)
+        Ok(result.ok()?.items)
     }
 
     /// Returns a single `Bucket` by its name. If the Bucket does not exist, an error is returned.
@@ -93,7 +93,7 @@ impl<'a> BucketClient<'a> {
         let headers = self.client.get_headers().await?;
         let url = format!("{}/{}", self.bucket_url, crate::percent_encode(name));
         let result: crate::models::Response<Bucket> = self.client.reqwest.get(&url).headers(headers).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Update an existing `Bucket`. If you declare you bucket as mutable, you can edit its fields.
@@ -128,7 +128,7 @@ impl<'a> BucketClient<'a> {
         let headers = self.client.get_headers().await?;
         let url = format!("{}/{}", self.bucket_url, crate::percent_encode(&bucket.name),);
         let result: crate::models::Response<Bucket> = self.client.reqwest.put(&url).headers(headers).json(bucket).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Delete an existing `Bucket`. This permanently removes a bucket from Google Cloud Storage.
@@ -191,7 +191,7 @@ impl<'a> BucketClient<'a> {
         let headers = self.client.get_headers().await?;
         let url = format!("{}/{}/iam", self.bucket_url, crate::percent_encode(&bucket.name));
         let result: crate::models::Response<IamPolicy> = self.client.reqwest.get(&url).headers(headers).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Updates the [IAM Policy](https://cloud.google.com/iam/docs/) for this bucket.
@@ -236,7 +236,7 @@ impl<'a> BucketClient<'a> {
         let headers = self.client.get_headers().await?;
         let url = format!("{}/{}/iam", self.bucket_url, crate::percent_encode(&bucket.name));
         let result: crate::models::Response<IamPolicy> = self.client.reqwest.put(&url).headers(headers).json(iam).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 
     /// Checks whether the user provided in the service account has this permission.
@@ -269,6 +269,6 @@ impl<'a> BucketClient<'a> {
         );
         let headers = self.client.get_headers().await?;
         let result: crate::models::Response<TestIamPermission> = self.client.reqwest.get(&url).headers(headers).query(&[("permissions", permission)]).send().await?.json().await?;
-        Ok(result?)
+        Ok(result.ok()?)
     }
 }
