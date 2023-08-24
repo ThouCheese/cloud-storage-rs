@@ -171,7 +171,7 @@ fn read_test_bucket_sync() -> Bucket {
 
 #[cfg(all(test, feature = "global-client"))]
 async fn read_test_bucket() -> Bucket {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     let name = std::env::var("TEST_BUCKET").unwrap();
     match Bucket::read(&name).await {
         Ok(bucket) => bucket,
@@ -197,7 +197,7 @@ fn create_test_bucket_sync(name: &str) -> Bucket {
 async fn create_test_bucket(name: &str) -> Bucket {
     std::thread::sleep(std::time::Duration::from_millis(1500)); // avoid getting rate limited
 
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     let base_name = std::env::var("TEST_BUCKET").unwrap();
     let name = format!("{}-{}", base_name, name);
     let new_bucket = NewBucket {

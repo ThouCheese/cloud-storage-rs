@@ -8,7 +8,7 @@ A library that can be used to push blobs to [Google Cloud Storage](https://cloud
 Add the following line to your Cargo.toml
 ```toml
 [dependencies]
-cloud-storage = "0.10"
+cloud-storage = "0.11"
 ```
 ### Examples
 ```rust
