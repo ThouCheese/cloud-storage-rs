@@ -1,3 +1,5 @@
+use dotenvy::dotenv;
+
 /// A deserialized `service-account-********.json`-file.
 #[derive(serde::Deserialize, Debug)]
 pub struct ServiceAccount {
@@ -26,7 +28,7 @@ pub struct ServiceAccount {
 
 impl ServiceAccount {
     pub(crate) fn get() -> Self {
-        dotenv::dotenv().ok();
+        dotenv().ok();
         let credentials_json = std::env::var("SERVICE_ACCOUNT")
             .or_else(|_| std::env::var("GOOGLE_APPLICATION_CREDENTIALS"))
             .map(|path| std::fs::read_to_string(path).expect("SERVICE_ACCOUNT file not found"))
